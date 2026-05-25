@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Install orchestrator. Sources libs, runs install/steps/NN_*.sh in order,
-# emits a final summary, and prompts for reboot.
+# Install orchestrator. Sources libs and runs install/steps/NN_*.sh in order.
+# Silent during normal operation; only fatal errors print (with the tail of
+# the captured tool output to make them debuggable). --verbose restores the
+# previous loud behavior plus `set -x`.
 set -euo pipefail
 
 [[ -n "${VLARCH_SCRIPT_DIR:-}" && -d "${VLARCH_SCRIPT_DIR}" ]] \
@@ -32,17 +34,23 @@ while (($#)); do
   case "$1" in
     --dry-run) VLARCH_DRY_RUN=1; shift ;;
     --verbose) VLARCH_VERBOSE=1; shift ;;
+    --quiet)   VLARCH_VERBOSE=0; shift ;;
     --repo)    [[ $# -ge 2 ]] || vlarch_die "--repo requires a URL";    export VLARCH_GIT_URL="$2";    shift 2 ;;
     --branch)  [[ $# -ge 2 ]] || vlarch_die "--branch requires a ref";  export VLARCH_GIT_BRANCH="$2"; shift 2 ;;
     --help|-h)
       cat <<USAGE
 Vlarch installer
-Usage: install.sh [--dry-run] [--verbose] [--repo URL] [--branch REF]
+Usage: install.sh [--quiet|--verbose] [--dry-run] [--repo URL] [--branch REF]
 
+  --quiet     Silent except on fatal errors (default).
+  --verbose   Stream every command's output and enable bash xtrace.
   --dry-run   Stop after collect_input; print the captured config.
-  --verbose   Show vlarch_info messages.
   --repo URL  Override clone source (passed through by install.sh).
   --branch R  Override clone ref (passed through by install.sh).
+
+On a fatal error vlarch always prints the failure reason and the last 20
+lines of the captured tool log; the full log path is printed too so you
+can inspect it without re-running.
 USAGE
       exit 0
       ;;
@@ -54,6 +62,7 @@ export VLARCH_DRY_RUN VLARCH_VERBOSE
 ((VLARCH_VERBOSE)) && set -x
 
 VLARCH_CURRENT_STEP="boot"
+export VLARCH_CURRENT_STEP
 trap 'vlarch_die "install failed in step ${VLARCH_CURRENT_STEP:-?}"' ERR
 
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -73,12 +82,12 @@ shopt -u nullglob
 for step_path in "${VLARCH_STEPS[@]}"; do
   step_name="$(basename "$step_path" .sh)"
   VLARCH_CURRENT_STEP="$step_name"
+  export VLARCH_CURRENT_STEP
   vlarch_step "Step: ${step_name}"
   bash "$step_path"
   if ((VLARCH_DRY_RUN)) && [[ "$step_name" == 02_collect_input ]]; then
-    vlarch_step "Dry-run requested; stopping after ${step_name}"
     if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
-      vlarch_info "Captured config (${VLARCH_CONFIG_FILE}):"
+      printf '[vlarch] dry-run: captured config at %s\n' "$VLARCH_CONFIG_FILE"
       sed 's/^/  /' "$VLARCH_CONFIG_FILE"
     fi
     exit 0
@@ -87,22 +96,11 @@ done
 
 trap - ERR
 
-vlarch_step "Install summary"
-if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
-  # shellcheck disable=SC1090
-  source "$VLARCH_CONFIG_FILE"
-  printf '  user:      %s\n' "${VLARCH_USER:-?}"
-  printf '  disk:      %s\n' "${VLARCH_DISK:-?}"
-  printf '  timezone:  %s\n' "${VLARCH_TIMEZONE:-?}"
-  printf '  locale:    %s\n' "${VLARCH_LOCALE:-?}"
-  printf '  partitions: EFI=%s BOOT=%s LUKS=%s\n' \
-    "${VLARCH_PART_EFI:-?}" "${VLARCH_PART_BOOT:-?}" "${VLARCH_PART_LUKS:-?}"
-fi
-
+# Final interactive prompt is always shown - it's user interaction, not logging.
 printf '\nInstall complete. Press Enter to reboot, or Ctrl-C to drop to a shell...\n'
 if read -r _; then
   vlarch_partition_unmount
   reboot
 else
-  vlarch_warn "no interactive input; not rebooting automatically"
+  printf '[vlarch] error: no interactive input; not rebooting automatically\n' >&2
 fi

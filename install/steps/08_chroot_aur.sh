@@ -26,7 +26,6 @@ VLARCH_PACMAN_PKGS="$(read_manifest "$pac_manifest" | tr '\n' ' ')"
 VLARCH_AUR_PKGS="$(read_manifest "$aur_manifest" | tr '\n' ' ')"
 export VLARCH_PACMAN_PKGS VLARCH_AUR_PKGS
 
-vlarch_step "Bootstrapping yay and installing pacman+AUR manifests"
 vlarch_chroot_run '
 set -euo pipefail
 
@@ -37,7 +36,6 @@ fi
 
 # yay-bin must be built as a non-root user.
 if ! command -v yay >/dev/null 2>&1; then
-  echo "[vlarch-chroot] cloning yay-bin"
   rm -rf /tmp/yay-bin
   install -d -o "${VLARCH_USER}" -g "${VLARCH_USER}" /tmp/yay-bin
   su - "${VLARCH_USER}" -c "

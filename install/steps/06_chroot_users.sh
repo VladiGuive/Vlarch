@@ -12,7 +12,6 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/chroot.sh"
 vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
 
-vlarch_step "Creating accounts and configuring autologin"
 vlarch_chroot_run '
 set -euo pipefail
 

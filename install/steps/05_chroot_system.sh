@@ -12,7 +12,6 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/chroot.sh"
 vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
 
-vlarch_step "Configuring system layer in /mnt"
 vlarch_chroot_run '
 set -euo pipefail
 ln -sf "/usr/share/zoneinfo/${VLARCH_TIMEZONE}" /etc/localtime

@@ -18,5 +18,3 @@ vlarch_partition_mount
 # Persist the partition paths back into the saved config so later steps and
 # resumed runs can reuse them without re-discovering blkid.
 vlarch_config_save "$VLARCH_CONFIG_FILE"
-
-vlarch_step "Partitioning complete"

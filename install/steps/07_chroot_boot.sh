@@ -14,7 +14,6 @@ vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
 [[ -n "${VLARCH_LUKS_UUID:-}" ]] || vlarch_die "VLARCH_LUKS_UUID not set; rerun step 03"
 
-vlarch_step "Configuring mkinitcpio + GRUB (LUKS passphrase at GRUB)"
 vlarch_chroot_run '
 set -euo pipefail
 

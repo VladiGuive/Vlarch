@@ -17,30 +17,43 @@ manifest="${VLARCH_MANIFEST_DIR}/pacstrap.txt"
 
 mountpoint -q /mnt || vlarch_die "/mnt is not mounted; run step 03 first"
 
-vlarch_info "Enabling [multilib] on the live ISO"
+# Enable multilib on the live ISO (so pacstrap can pull 32-bit deps if asked).
 sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
 # Strip comments + blanks from the manifest.
 mapfile -t pkgs < <(sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$manifest")
 ((${#pkgs[@]})) || vlarch_die "pacstrap manifest is empty"
 
-vlarch_step "pacstrap (${#pkgs[@]} packages)"
+# pacstrap is the loudest command in the whole install; capture every attempt
+# into the per-step log and retry up to 3 times. Only the final failure
+# surfaces (with the captured tail) via vlarch_die.
+log="$(vlarch_log_path step)"
+mkdir -p "$(dirname "$log")"
 attempt=1
 max_attempts=3
 while ((attempt <= max_attempts)); do
-  if pacstrap -K /mnt "${pkgs[@]}"; then
+  rc=0
+  {
+    printf '\n--- pacstrap attempt %d/%d ---\n' "$attempt" "$max_attempts"
+  } >>"$log"
+  if ((VLARCH_VERBOSE)); then
+    pacstrap -K /mnt "${pkgs[@]}" || rc=$?
+  else
+    pacstrap -K /mnt "${pkgs[@]}" >>"$log" 2>&1 || rc=$?
+  fi
+  if ((rc == 0)); then
     break
   fi
   if ((attempt == max_attempts)); then
-    vlarch_die "pacstrap failed after ${max_attempts} attempts"
+    VLARCH_LAST_LOG="$log"
+    vlarch_die "pacstrap failed after ${max_attempts} attempts (exit ${rc})"
   fi
-  vlarch_warn "pacstrap failed; refreshing mirrors and retrying"
   vlarch_live_refresh_mirrors
-  pacman -Syy --noconfirm
+  vlarch_run "pacman -Syy" pacman -Syy --noconfirm
   ((attempt++)) || true
 done
 
-vlarch_info "Verifying every manifest package is present in /mnt"
+# Verify every manifest package landed in /mnt; fail loudly if not.
 missing=()
 for pkg in "${pkgs[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
@@ -49,12 +62,17 @@ for pkg in "${pkgs[@]}"; do
 done
 ((${#missing[@]} == 0)) || vlarch_die "pacstrap incomplete; missing: ${missing[*]}"
 
-vlarch_info "Generating /etc/fstab"
-genfstab -U /mnt >>/mnt/etc/fstab
+# genfstab's stdout *is* the fstab content; only silence its stderr.
+if ((VLARCH_VERBOSE)); then
+  genfstab -U /mnt >>/mnt/etc/fstab
+else
+  if ! genfstab -U /mnt >>/mnt/etc/fstab 2>>"$log"; then
+    VLARCH_LAST_LOG="$log"
+    vlarch_die "genfstab failed"
+  fi
+fi
 
 # Carry the live ISO's resolver into the chroot so AUR/yay calls have DNS.
 if [[ -f /etc/resolv.conf ]]; then
   cp -L /etc/resolv.conf /mnt/etc/resolv.conf
 fi
-
-vlarch_step "pacstrap done"

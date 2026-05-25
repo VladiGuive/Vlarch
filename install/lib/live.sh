@@ -20,9 +20,8 @@ vlarch_live_ensure_cowspace() {
   for path in / "$cow"; do
     avail_k=$(vlarch_live_path_free_k "$path")
     if ((avail_k < VLARCH_LIVE_MIN_FREE_K)); then
-      vlarch_info "Expanding live writable space (${cow}) to ${target}"
-      mount -o remount,size="${target}" "$cow" \
-        || vlarch_warn "could not expand ${cow}; reboot with cow_spacesize=${target}"
+      vlarch_run "expand cowspace to ${target}" \
+        mount -o remount,size="${target}" "$cow"
       return 0
     fi
   done
@@ -54,14 +53,10 @@ vlarch_live_ensure_keyring() {
     healthy=0
   fi
 
-  if ((healthy)); then
-    vlarch_info "Pacman keyring OK"
-    return 0
-  fi
+  ((healthy)) && return 0
 
-  vlarch_info "Initializing pacman keyring"
-  pacman-key --init
-  pacman-key --populate archlinux
+  vlarch_run "pacman-key --init"               pacman-key --init
+  vlarch_run "pacman-key --populate archlinux" pacman-key --populate archlinux
 
   pacman-key -l >/dev/null 2>&1 \
     || vlarch_die "pacman keyring still unhealthy after --init/--populate"
@@ -69,11 +64,8 @@ vlarch_live_ensure_keyring() {
 
 vlarch_live_refresh_mirrors() {
   if command -v reflector >/dev/null 2>&1; then
-    vlarch_info "Refreshing mirrorlist via reflector"
-    reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist \
-      || vlarch_warn "reflector failed; keeping existing /etc/pacman.d/mirrorlist"
-  else
-    vlarch_info "reflector not available; keeping existing /etc/pacman.d/mirrorlist"
+    vlarch_run "reflector mirrorlist refresh" \
+      reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
   fi
   [[ -s /etc/pacman.d/mirrorlist ]] || vlarch_die "/etc/pacman.d/mirrorlist is empty"
   grep -q '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist \

@@ -14,7 +14,6 @@ vlarch_config_validate
 
 [[ -d "$VLARCH_DOTFILES_DIR" ]] || vlarch_die "dotfiles dir missing: $VLARCH_DOTFILES_DIR"
 
-vlarch_step "Staging dotfiles into /mnt/root/vlarch-dotfiles"
 rm -rf /mnt/root/vlarch-dotfiles
 cp -a "$VLARCH_DOTFILES_DIR" /mnt/root/vlarch-dotfiles
 

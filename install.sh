@@ -1,17 +1,42 @@
 #!/usr/bin/env bash
 # Vlarch live-USB entry point. Runs from `curl ... | bash` on a fresh Arch live ISO.
 # Three responsibilities: live preflight, bootstrap+clone, hand off to install/main.sh.
+#
+# Silent during normal operation; only fatal errors print, and they include the
+# captured tail of the failing command. Set VLARCH_VERBOSE=1 (or pass --verbose
+# through to main.sh) to stream every command's output.
 set -euo pipefail
 
 : "${VLARCH_GIT_URL:=https://github.com/VladiGuive/Vlarch.git}"
 : "${VLARCH_GIT_BRANCH:=}"
+: "${VLARCH_VERBOSE:=0}"
 VLARCH_LIVE_MIN_FREE_K="${VLARCH_LIVE_MIN_FREE_K:-524288}" # ~512 MiB
+VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-bootstrap.log}"
 
-_log() { printf '[vlarch] %s\n' "$*"; }
-_warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
+_log() {
+  ((VLARCH_VERBOSE)) && printf '[vlarch] %s\n' "$*"
+}
 _die() {
   printf '[vlarch] error: %s\n' "$*" >&2
+  if [[ -s "$VLARCH_BOOTSTRAP_LOG" ]]; then
+    printf '[vlarch] last 20 lines of %s:\n' "$VLARCH_BOOTSTRAP_LOG" >&2
+    tail -n 20 "$VLARCH_BOOTSTRAP_LOG" | sed 's/^/  /' >&2
+    printf '[vlarch] full log: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
+  fi
   exit 1
+}
+
+# Run a command silently in quiet mode (output appended to bootstrap log) and
+# stream it directly in verbose mode. Dies with the tail on failure.
+_run() {
+  local label="$1"; shift
+  if ((VLARCH_VERBOSE)); then
+    "$@" || _die "${label} failed (exit $?)"
+    return 0
+  fi
+  : >>"$VLARCH_BOOTSTRAP_LOG"
+  printf '\n--- %s ---\ncmd: %s\n' "$label" "$*" >>"$VLARCH_BOOTSTRAP_LOG"
+  "$@" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 || _die "${label} failed (exit $?)"
 }
 
 # Live overlay is a RAM-backed tmpfs (~25% RAM by default). Expand to 75% when low.
@@ -27,9 +52,7 @@ _ensure_cowspace_early() {
   for path in / "$cow"; do
     avail_k=$(df -k "$path" | awk 'NR==2 {print $4}')
     if ((avail_k < VLARCH_LIVE_MIN_FREE_K)); then
-      _log "Expanding live writable space (${cow}) to ${target}"
-      mount -o remount,size="${target}" "$cow" 2>/dev/null \
-        || _warn "could not expand ${cow}; reboot and add cow_spacesize=${target} at GRUB"
+      _run "remount cowspace ${target}" mount -o remount,size="${target}" "$cow"
       break
     fi
   done
@@ -48,8 +71,7 @@ _ensure_bootstrap_pkgs() {
     _die "git/fzf missing; run as root on the live ISO so pacman can install them"
   fi
   command -v pacman >/dev/null 2>&1 || _die "pacman not found; this script expects an Arch live ISO"
-  _log "Installing live-ISO bootstrap packages: git, fzf"
-  pacman -Sy --noconfirm --needed git fzf
+  _run "pacman -Sy git fzf" pacman -Sy --noconfirm --needed git fzf
 }
 
 _run_main() {
@@ -85,10 +107,17 @@ WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-install.XXXXXX)}"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 rm -rf "${WORKDIR}"
 
-# Allow --repo / --branch overrides without consuming other flags meant for main.sh.
+# Pre-scan args so --verbose flips bootstrap output back on (it's also passed
+# through to main.sh below). --repo / --branch are consumed here; everything
+# else passes through unchanged.
 ARGS=()
 while (($#)); do
   case "$1" in
+    --verbose)
+      VLARCH_VERBOSE=1
+      ARGS+=("$1")
+      shift
+      ;;
     --repo)
       [[ $# -ge 2 ]] || _die "--repo requires a URL"
       VLARCH_GIT_URL="$2"
@@ -106,11 +135,12 @@ while (($#)); do
   esac
 done
 
-_log "Cloning ${VLARCH_GIT_URL} into ${WORKDIR}"
 if [[ -n "${VLARCH_GIT_BRANCH}" ]]; then
-  git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
+  _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
+    git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
 else
-  git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
+  _run "git clone ${VLARCH_GIT_URL}" \
+    git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
 fi
 
 _run_main "${WORKDIR}" "${ARGS[@]}"

@@ -4,6 +4,10 @@
 #   p2    1 GiB  /boot (ext4, unencrypted - GRUB needs it readable)
 #   p3   rest    LUKS1 -> btrfs subvolumes @, @home, @snapshots, @var_log, @swap
 # Public: vlarch_partition_apply <disk>, vlarch_partition_mount, vlarch_partition_unmount
+#
+# All loud commands run via vlarch_run so they are silent unless --verbose;
+# their output is captured into the per-step log and the tail is dumped on
+# failure via vlarch_die.
 
 vlarch_partition_part_path() {
   local disk="$1" idx="$2"
@@ -20,6 +24,13 @@ vlarch_partition_default_swap_size_mib() {
   printf '%s' $((ram_mib + 2048))
 }
 
+# Quietly close any prior cryptroot / mounts / swap from a previous attempt.
+_vlarch_partition_reset() {
+  swapoff -a >/dev/null 2>&1 || true
+  umount -R /mnt >/dev/null 2>&1 || true
+  cryptsetup close cryptroot >/dev/null 2>&1 || true
+}
+
 # Erase, partition, encrypt, format the target disk in `VLARCH_DISK`.
 # Exports VLARCH_PART_EFI / VLARCH_PART_BOOT / VLARCH_PART_LUKS / VLARCH_LUKS_UUID.
 vlarch_partition_apply() {
@@ -27,18 +38,17 @@ vlarch_partition_apply() {
   [[ -b "$disk" ]] || vlarch_die "not a block device: $disk"
   [[ -n "${VLARCH_LUKS_PASSPHRASE:-}" ]] || vlarch_die "VLARCH_LUKS_PASSPHRASE not set"
 
-  vlarch_step "Wiping and partitioning $disk"
-  swapoff -a 2>/dev/null || true
-  umount -R /mnt 2>/dev/null || true
-  cryptsetup close cryptroot 2>/dev/null || true
-  wipefs -af "$disk"
-  sgdisk --zap-all "$disk"
-  sgdisk \
-    -n1:0:+512M -t1:ef00 -c1:VLARCH_EFI \
-    -n2:0:+1G   -t2:8300 -c2:VLARCH_BOOT \
-    -n3:0:0     -t3:8309 -c3:VLARCH_LUKS \
-    "$disk"
-  partprobe "$disk"
+  _vlarch_partition_reset
+
+  vlarch_run "wipefs ${disk}"     wipefs -af "$disk"
+  vlarch_run "sgdisk zap ${disk}" sgdisk --zap-all "$disk"
+  vlarch_run "sgdisk layout ${disk}" \
+    sgdisk \
+      -n1:0:+512M -t1:ef00 -c1:VLARCH_EFI \
+      -n2:0:+1G   -t2:8300 -c2:VLARCH_BOOT \
+      -n3:0:0     -t3:8309 -c3:VLARCH_LUKS \
+      "$disk"
+  vlarch_run "partprobe ${disk}" partprobe "$disk"
   sleep 1
 
   local p1 p2 p3
@@ -46,29 +56,37 @@ vlarch_partition_apply() {
   p2="$(vlarch_partition_part_path "$disk" 2)"
   p3="$(vlarch_partition_part_path "$disk" 3)"
 
-  vlarch_info "Formatting $p1 (EFI)"
-  mkfs.vfat -F32 -n VLARCH_EFI "$p1"
+  vlarch_run "mkfs.vfat ${p1}" mkfs.vfat -F32 -n VLARCH_EFI "$p1"
+  vlarch_run "mkfs.ext4 ${p2}" mkfs.ext4 -F -L VLARCH_BOOT "$p2"
 
-  vlarch_info "Formatting $p2 (/boot)"
-  mkfs.ext4 -F -L VLARCH_BOOT "$p2"
+  # luksFormat reads the passphrase from stdin; vlarch_run can't help here
+  # because we need to pipe the passphrase in. Capture stderr to the step log
+  # ourselves so the run stays silent.
+  local log
+  log="$(vlarch_log_path step)"
+  mkdir -p "$(dirname "$log")"
+  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
+       | cryptsetup --type luks1 --batch-mode -v luksFormat "$p3" --key-file - \
+         >>"$log" 2>&1; then
+    VLARCH_LAST_LOG="$log"
+    vlarch_die "cryptsetup luksFormat ${p3} failed"
+  fi
+  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
+       | cryptsetup open "$p3" cryptroot --key-file - >>"$log" 2>&1; then
+    VLARCH_LAST_LOG="$log"
+    vlarch_die "cryptsetup open ${p3} failed"
+  fi
 
-  vlarch_step "Encrypting $p3 with LUKS1"
-  printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
-    | cryptsetup --type luks1 --batch-mode -v luksFormat "$p3" --key-file -
-  printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
-    | cryptsetup open "$p3" cryptroot --key-file -
-
-  vlarch_info "Creating btrfs filesystem on /dev/mapper/cryptroot"
-  mkfs.btrfs -f -L VLARCH_ROOT /dev/mapper/cryptroot
+  vlarch_run "mkfs.btrfs cryptroot" mkfs.btrfs -f -L VLARCH_ROOT /dev/mapper/cryptroot
 
   local tmp_mnt="/mnt"
-  mount /dev/mapper/cryptroot "$tmp_mnt"
-  btrfs subvolume create "$tmp_mnt/@"
-  btrfs subvolume create "$tmp_mnt/@home"
-  btrfs subvolume create "$tmp_mnt/@snapshots"
-  btrfs subvolume create "$tmp_mnt/@var_log"
-  btrfs subvolume create "$tmp_mnt/@swap"
-  umount "$tmp_mnt"
+  vlarch_run "mount cryptroot top" mount /dev/mapper/cryptroot "$tmp_mnt"
+  vlarch_run "btrfs subvolume create @"          btrfs subvolume create "$tmp_mnt/@"
+  vlarch_run "btrfs subvolume create @home"      btrfs subvolume create "$tmp_mnt/@home"
+  vlarch_run "btrfs subvolume create @snapshots" btrfs subvolume create "$tmp_mnt/@snapshots"
+  vlarch_run "btrfs subvolume create @var_log"   btrfs subvolume create "$tmp_mnt/@var_log"
+  vlarch_run "btrfs subvolume create @swap"      btrfs subvolume create "$tmp_mnt/@swap"
+  vlarch_run "umount cryptroot top"              umount "$tmp_mnt"
 
   local luks_uuid
   luks_uuid=$(blkid -s UUID -o value "$p3")
@@ -88,39 +106,37 @@ vlarch_partition_mount() {
   [[ -e /dev/mapper/cryptroot ]] || vlarch_die "cryptroot is not open"
 
   local opts="rw,noatime,compress=zstd:3,space_cache=v2"
-  vlarch_step "Mounting target filesystem at /mnt"
-  mount -o "${opts},subvol=@" /dev/mapper/cryptroot /mnt
-  mkdir -p /mnt/{home,.snapshots,var/log,swap,boot,boot/EFI}
-  mount -o "${opts},subvol=@home"      /dev/mapper/cryptroot /mnt/home
-  mount -o "${opts},subvol=@snapshots" /dev/mapper/cryptroot /mnt/.snapshots
-  mount -o "${opts},subvol=@var_log"   /dev/mapper/cryptroot /mnt/var/log
-  # Swap subvolume must not be compressed/CoW.
-  mount -o "rw,noatime,subvol=@swap"   /dev/mapper/cryptroot /mnt/swap
 
-  mount "${VLARCH_PART_BOOT}" /mnt/boot
+  vlarch_run "mount @"          mount -o "${opts},subvol=@"          /dev/mapper/cryptroot /mnt
+  mkdir -p /mnt/{home,.snapshots,var/log,swap,boot,boot/EFI}
+  vlarch_run "mount @home"      mount -o "${opts},subvol=@home"      /dev/mapper/cryptroot /mnt/home
+  vlarch_run "mount @snapshots" mount -o "${opts},subvol=@snapshots" /dev/mapper/cryptroot /mnt/.snapshots
+  vlarch_run "mount @var_log"   mount -o "${opts},subvol=@var_log"   /dev/mapper/cryptroot /mnt/var/log
+  # Swap subvolume must not be compressed/CoW.
+  vlarch_run "mount @swap"      mount -o "rw,noatime,subvol=@swap"   /dev/mapper/cryptroot /mnt/swap
+
+  vlarch_run "mount /boot"      mount "${VLARCH_PART_BOOT}" /mnt/boot
   mkdir -p /mnt/boot/EFI
-  mount "${VLARCH_PART_EFI}"  /mnt/boot/EFI
+  vlarch_run "mount /boot/EFI"  mount "${VLARCH_PART_EFI}"  /mnt/boot/EFI
 
   local swapfile="/mnt/swap/swapfile"
   if [[ ! -f "$swapfile" ]]; then
     local size_mib
     size_mib=$(vlarch_partition_default_swap_size_mib)
-    vlarch_info "Creating ${size_mib} MiB swapfile at ${swapfile}"
-    chattr +C /mnt/swap 2>/dev/null || true
-    btrfs filesystem mkswapfile --size "${size_mib}m" "$swapfile" 2>/dev/null \
-      || {
-        truncate -s 0 "$swapfile"
-        chattr +C "$swapfile" 2>/dev/null || true
-        fallocate -l "${size_mib}M" "$swapfile"
-        chmod 600 "$swapfile"
-        mkswap "$swapfile"
-      }
+    chattr +C /mnt/swap >/dev/null 2>&1 || true
+    if ! btrfs filesystem mkswapfile --size "${size_mib}m" "$swapfile" >/dev/null 2>&1; then
+      vlarch_run "fallocate swapfile" truncate -s 0 "$swapfile"
+      chattr +C "$swapfile" >/dev/null 2>&1 || true
+      vlarch_run "fallocate ${size_mib}M swapfile" fallocate -l "${size_mib}M" "$swapfile"
+      chmod 600 "$swapfile"
+      vlarch_run "mkswap" mkswap "$swapfile"
+    fi
   fi
-  swapon "$swapfile" 2>/dev/null || true
+  swapon "$swapfile" >/dev/null 2>&1 || true
 }
 
 vlarch_partition_unmount() {
-  swapoff -a 2>/dev/null || true
-  umount -R /mnt 2>/dev/null || true
-  cryptsetup close cryptroot 2>/dev/null || true
+  swapoff -a >/dev/null 2>&1 || true
+  umount -R /mnt >/dev/null 2>&1 || true
+  cryptsetup close cryptroot >/dev/null 2>&1 || true
 }

@@ -29,11 +29,11 @@ _read_password_twice() {
     read -rsp "$prompt (again): " second
     echo
     if [[ "$first" != "$second" ]]; then
-      vlarch_warn "passwords don't match; try again"
+      printf "  passwords don't match; try again\n" >&2
       continue
     fi
     if [[ -z "$first" ]]; then
-      vlarch_warn "password cannot be empty"
+      printf '  password cannot be empty\n' >&2
       continue
     fi
     printf '%s' "$first"
@@ -71,10 +71,9 @@ if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
   if [[ "$reuse" == "Use existing config" ]]; then
     vlarch_config_load "$VLARCH_CONFIG_FILE"
     if vlarch_config_validate 2>/dev/null; then
-      vlarch_step "Reusing saved config"
       exit 0
     fi
-    vlarch_warn "saved config is incomplete; starting fresh"
+    printf '  saved config is incomplete; starting fresh\n' >&2
   fi
 fi
 
