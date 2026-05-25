@@ -22,12 +22,16 @@ _fzf() {
 }
 
 _read_password_twice() {
+  # NOTE: this function is called as $(_read_password_twice ...) so anything
+  # written to stdout is captured into the password. Every visible character
+  # (prompt newlines, validation messages) MUST go to stderr. Only the final
+  # `printf '%s' "$first"` writes the captured value.
   local prompt="$1" first second
   while :; do
     read -rsp "$prompt: " first
-    echo
+    printf '\n' >&2
     read -rsp "$prompt (again): " second
-    echo
+    printf '\n' >&2
     if [[ "$first" != "$second" ]]; then
       printf "  passwords don't match; try again\n" >&2
       continue
