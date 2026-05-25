@@ -98,7 +98,7 @@ VLARCH_TIMEZONE=$(find /usr/share/zoneinfo -type f ! -name '*.tab' ! -name '*.li
   | _fzf --header 'Timezone' --prompt='> ')
 [[ -n "$VLARCH_TIMEZONE" ]] || vlarch_die "no timezone selected"
 
-VLARCH_LOCALE=$(grep -E '^#?[a-z][a-z_]+\.UTF-8' /etc/locale.gen \
+VLARCH_LOCALE=$(grep -E '^#?[a-z][a-zA-Z_]+\.UTF-8' /etc/locale.gen \
   | sed 's/^# *//' \
   | _fzf --query='en_US.UTF-8' --header 'Locale' --prompt='> ' \
   | awk '{print $1}')
