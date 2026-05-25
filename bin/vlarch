@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# vlarch - personal Arch flavor CLI. Lives at /usr/local/bin/vlarch on the
+# installed system (placed there by install/steps/10_finalize.sh).
+#
+# Help is auto-generated from `# vlarch:summary=` comments above each
+# subcommand function in this file.
+
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+VLARCH_STATE_DIR="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+VLARCH_FIRST_BOOT_MARKER="${VLARCH_STATE_DIR}/first-boot.pending"
+VLARCH_POST_INSTALL_MARKER="${VLARCH_STATE_DIR}/post-install.done"
+VLARCH_RUNTIME_ENV="${VLARCH_STATE_DIR}/runtime.env"
+
+_log()  { printf '[vlarch] %s\n' "$*"; }
+_warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
+_die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
+
+_sudo() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+# vlarch:summary=Idempotent finalization (NetworkManager, snapshot, hyprpm).
+cmd_post_install() {
+  local force=0
+  while (($#)); do
+    case "$1" in
+      --force) force=1; shift ;;
+      *) _die "unknown option: $1" ;;
+    esac
+  done
+
+  if ((!force)) && [[ -f "$VLARCH_POST_INSTALL_MARKER" ]]; then
+    _log "post-install already ran; pass --force to re-run"
+    return 0
+  fi
+
+  _log "Enabling and starting NetworkManager"
+  _sudo systemctl enable --now NetworkManager.service >/dev/null 2>&1 \
+    || _warn "could not enable NetworkManager"
+
+  if [[ -f "$VLARCH_RUNTIME_ENV" ]]; then
+    # shellcheck disable=SC1090
+    source "$VLARCH_RUNTIME_ENV"
+  fi
+  if [[ -n "${VLARCH_WIFI_SSID:-}" ]] && command -v nmcli >/dev/null 2>&1; then
+    _log "Joining WiFi: $VLARCH_WIFI_SSID"
+    nmcli device wifi connect "$VLARCH_WIFI_SSID" \
+      ${VLARCH_WIFI_PASSWORD:+password "$VLARCH_WIFI_PASSWORD"} \
+      || _warn "could not join $VLARCH_WIFI_SSID"
+  fi
+
+  if command -v timeshift >/dev/null 2>&1; then
+    _log "Creating baseline timeshift snapshot"
+    _sudo timeshift --create --comments "vlarch baseline" --tags D \
+      || _warn "timeshift snapshot failed"
+  fi
+
+  if command -v hyprpm >/dev/null 2>&1; then
+    _log "Refreshing hyprpm plugins"
+    hyprpm update  || _warn "hyprpm update failed"
+    hyprpm reload  || _warn "hyprpm reload failed"
+  fi
+
+  _sudo install -d -m 0755 "$VLARCH_STATE_DIR"
+  _sudo touch "$VLARCH_POST_INSTALL_MARKER"
+  _log "post-install done"
+}
+
+# vlarch:summary=One-shot first-login bootstrap; chains into post-install.
+cmd_first_boot() {
+  if [[ ! -f "$VLARCH_FIRST_BOOT_MARKER" ]]; then
+    return 0
+  fi
+  _log "First-boot bootstrap"
+  cmd_post_install
+  _sudo rm -f "$VLARCH_FIRST_BOOT_MARKER"
+}
+
+# vlarch:summary=Print install metadata recorded at install time.
+cmd_version() {
+  if [[ -f "$VLARCH_INFO_FILE" ]]; then
+    cat "$VLARCH_INFO_FILE"
+  else
+    _die "$VLARCH_INFO_FILE not found"
+  fi
+}
+
+# vlarch:summary=Update Vlarch (not yet implemented; see roadmap).
+cmd_update() {
+  _log "update flow not yet implemented; see roadmap"
+}
+
+# vlarch:summary=Show this help.
+cmd_help() {
+  local sub="${1:-}"
+  if [[ -n "$sub" ]]; then
+    if declare -F "cmd_${sub//-/_}" >/dev/null 2>&1; then
+      printf 'vlarch %s\n' "$sub"
+      _summary_for "$sub" | sed 's/^/  /'
+      return 0
+    fi
+    _die "unknown subcommand: $sub"
+  fi
+  printf 'vlarch - personal Arch CLI\n\nSubcommands:\n'
+  local fn name summary
+  while IFS= read -r fn; do
+    name="${fn#cmd_}"
+    name="${name//_/-}"
+    summary="$(_summary_for "$name")"
+    printf '  %-14s %s\n' "$name" "$summary"
+  done < <(compgen -A function | grep '^cmd_' | sort)
+}
+
+# Pull `# vlarch:summary=...` from the line above the subcommand function.
+_summary_for() {
+  local name="$1"
+  local fn="cmd_${name//-/_}"
+  awk -v fn="$fn" '
+    /^# vlarch:summary=/ { last=substr($0, index($0,"=")+1); next }
+    $0 ~ "^"fn"\\(\\) \\{" { print last; exit }
+    { last="" }
+  ' "${BASH_SOURCE[0]}"
+}
+
+main() {
+  if (($# == 0)); then
+    cmd_help
+    return 0
+  fi
+  local sub="$1"
+  shift
+  local fn="cmd_${sub//-/_}"
+  if ! declare -F "$fn" >/dev/null 2>&1; then
+    _die "unknown subcommand: $sub (try 'vlarch help')"
+  fi
+  "$fn" "$@"
+}
+
+main "$@"

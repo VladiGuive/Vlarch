@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vlarch</title>
+    <meta
+      name="description"
+      content="Vlarch is a personal Arch Linux flavor installed in one command from a live USB."
+    />
+    <style>
+      :root {
+        --bg: #1d2021;
+        --panel: #282828;
+        --border: #3c3836;
+        --fg: #ebdbb2;
+        --muted: #a89984;
+        --accent: #83a598;
+        --accent-2: #b8bb26;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.6;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+      }
+
+      header,
+      section {
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+        background: var(--panel);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 0.75rem;
+        color: var(--fg);
+      }
+
+      h1 {
+        font-size: 2rem;
+        color: var(--accent);
+      }
+
+      h2 {
+        font-size: 1.3rem;
+        color: var(--accent-2);
+      }
+
+      .tagline {
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+      }
+
+      p {
+        margin: 0 0 0.75rem;
+      }
+
+      ul {
+        margin: 0.25rem 0 0;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin-bottom: 0.4rem;
+      }
+
+      code,
+      pre {
+        font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+
+      .logo {
+        margin: 0 0 0.75rem;
+        padding: 1rem;
+        overflow-x: auto;
+        color: var(--accent);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        font-size: 0.85rem;
+        line-height: 1.2;
+      }
+
+      .command {
+        display: block;
+        margin-top: 0.4rem;
+        padding: 0.75rem;
+        overflow-x: auto;
+        color: var(--accent-2);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        white-space: pre;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      footer {
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 720px) {
+        h1 {
+          font-size: 1.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <pre class="logo"><code> _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/</code></pre>
+        <h1>Vlarch</h1>
+        <p class="tagline"><em>Just, Vlad's Arch</em></p>
+        <p>
+          Vlarch is a personal Arch Linux flavor. It is installed in one command from a fresh
+          <a href="https://archlinux.org/download/">Arch Linux live ISO</a>.
+        </p>
+      </header>
+
+      <section>
+        <h2>Install</h2>
+        <p>Boot the live ISO, get networking, then:</p>
+        <code class="command">curl -fsSL 'https://vlarch.vladi.tech/install.sh' | bash</code>
+        <p>Optional flags:</p>
+        <code class="command">curl -fsSL 'https://vlarch.vladi.tech/install.sh' | bash -s -- --dry-run --verbose</code>
+      </section>
+
+      <section>
+        <h2>What it does</h2>
+        <ul>
+          <li>Detects ethernet vs WiFi and prompts for credentials when needed</li>
+          <li>Picks timezone, locale, target disk through an fzf TUI</li>
+          <li>Partitions the disk, encrypts root with LUKS1, sets up btrfs subvolumes</li>
+          <li>Installs the Vlarch package set and applies dotfiles</li>
+          <li>Configures GRUB so a single passphrase at boot unlocks the system</li>
+          <li>Boots straight into autologin and Hyprland</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Live USB note</h2>
+        <p>
+          The Arch live ISO keeps writable state on a RAM-backed overlay at
+          <code>/run/archiso/cowspace</code>. If RAM is tight, append
+          <code>cow_spacesize=75%</code> at the GRUB boot prompt. The installer's preflight step
+          also remounts cowspace to 75% automatically when free space is low.
+        </p>
+      </section>
+
+      <footer>
+        License: GPL · Source: <a href="https://github.com/VladiGuive/Vlarch">github.com/VladiGuive/Vlarch</a>
+      </footer>
+    </main>
+  </body>
+</html>

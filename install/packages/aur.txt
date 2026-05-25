@@ -1,0 +1,4 @@
+# AUR packages installed via yay (yay-bin itself is bootstrapped manually first).
+oh-my-posh-bin
+walker-bin
+timeshift-autosnap
