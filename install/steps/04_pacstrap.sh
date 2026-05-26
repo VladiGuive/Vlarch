@@ -24,6 +24,9 @@ sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 mapfile -t pkgs < <(sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$manifest")
 ((${#pkgs[@]})) || vlarch_die "pacstrap manifest is empty"
 
+vlarch_live_refresh_mirrors
+vlarch_live_sync_keyring
+
 # pacstrap is the loudest command in the whole install; capture every attempt
 # into the per-step log and retry up to 3 times. Only the final failure
 # surfaces (with the captured tail) via vlarch_die.
@@ -49,6 +52,7 @@ while ((attempt <= max_attempts)); do
     vlarch_die "pacstrap failed after ${max_attempts} attempts (exit ${rc})"
   fi
   vlarch_live_refresh_mirrors
+  vlarch_live_sync_keyring
   vlarch_run "pacman -Syy" pacman -Syy --noconfirm
   ((attempt++)) || true
 done

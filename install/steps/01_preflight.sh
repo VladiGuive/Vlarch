@@ -11,6 +11,7 @@ vlarch_live_ensure_cowspace
 vlarch_live_assert_disk_space
 vlarch_live_ensure_keyring
 vlarch_live_refresh_mirrors
+vlarch_live_sync_keyring
 
 for cmd in pacstrap arch-chroot cryptsetup mkfs.btrfs mkfs.vfat mkfs.ext4 sgdisk efibootmgr lsblk blkid genfstab fzf; do
   vlarch_require_cmd "$cmd"

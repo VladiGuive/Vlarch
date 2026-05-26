@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Live-ISO helpers: cowspace expansion, pacman keyring, mirrors, disk space.
 # Public: vlarch_live_ensure_cowspace, vlarch_live_assert_disk_space,
-#         vlarch_live_ensure_keyring, vlarch_live_refresh_mirrors
+#         vlarch_live_ensure_keyring, vlarch_live_sync_keyring,
+#         vlarch_live_refresh_mirrors
 
 VLARCH_LIVE_MIN_FREE_K="${VLARCH_LIVE_MIN_FREE_K:-524288}"
 
@@ -60,6 +61,19 @@ vlarch_live_ensure_keyring() {
 
   pacman-key -l >/dev/null 2>&1 \
     || vlarch_die "pacman keyring still unhealthy after --init/--populate"
+}
+
+# Pull the current archlinux-keyring from mirrors and refresh packager trust.
+# Live ISOs ship a stale keyring; without this, pacstrap fails with "unknown trust".
+vlarch_live_sync_keyring() {
+  command -v pacman-key >/dev/null 2>&1 || vlarch_die "pacman-key missing on live ISO"
+  [[ -s /etc/pacman.d/mirrorlist ]] \
+    || vlarch_die "mirrorlist empty; run vlarch_live_refresh_mirrors first"
+
+  vlarch_run "pacman -Sy archlinux-keyring" \
+    pacman -Sy archlinux-keyring --needed --noconfirm
+  vlarch_run "pacman-key --populate archlinux" \
+    pacman-key --populate archlinux
 }
 
 vlarch_live_refresh_mirrors() {
