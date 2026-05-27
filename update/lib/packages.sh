@@ -20,26 +20,6 @@ vlarch_bootstrap_yay() {
   "
 }
 
-vlarch_remove_elephant_source_pkgs() {
-  local user="$1" installed pkg to_remove=""
-
-  installed="$(su - "$user" -c 'pacman -Qq' 2>/dev/null || true)"
-  while IFS= read -r pkg; do
-    [[ -n "$pkg" ]] || continue
-    case "$pkg" in
-      elephant-bin|elephant-*-bin) continue ;;
-      elephant|elephant-*) to_remove+="$pkg " ;;
-    esac
-  done <<< "$installed"
-
-  [[ -n "${to_remove// /}" ]] || return 0
-
-  if declare -F vlarch_warn >/dev/null 2>&1; then
-    vlarch_warn "removing source elephant packages (conflict with elephant-bin): ${to_remove}"
-  fi
-  su - "$user" -c "yay -Rns --noconfirm ${to_remove}"
-}
-
 vlarch_yay_install_pkgs() {
   local user="$1"
   shift
@@ -60,9 +40,6 @@ vlarch_yay_install_manifests() {
     vlarch_yay_install_pkgs "$user" $pac_pkgs
   fi
   if [[ -n "$aur_pkgs" ]]; then
-    if [[ " $aur_pkgs " == *" elephant-bin "* ]]; then
-      vlarch_remove_elephant_source_pkgs "$user"
-    fi
     vlarch_yay_install_pkgs "$user" $aur_pkgs
   fi
 }
