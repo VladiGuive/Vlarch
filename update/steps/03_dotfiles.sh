@@ -9,6 +9,8 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/dotfiles.sh"
 # shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/session.sh"
+# shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 
 vlarch_load_install_info "$VLARCH_INFO_FILE" \
@@ -24,4 +26,8 @@ fi
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
-vlarch_update_note "dotfiles: ok"
+if vlarch_reload_tmux_config "$VLARCH_USER"; then
+  vlarch_update_note "dotfiles: ok (tmux reloaded)"
+else
+  vlarch_update_note "dotfiles: ok"
+fi
