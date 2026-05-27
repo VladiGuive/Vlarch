@@ -21,30 +21,42 @@ vlarch_bootstrap_yay() {
 }
 
 vlarch_remove_elephant_source_pkgs() {
-  local user="$1" installed pkg to_remove=""
+  local user="$1"
+  local -a to_remove=()
+  local pkg
 
-  installed="$(su - "$user" -c 'pacman -Qq' 2>/dev/null || true)"
   while IFS= read -r pkg; do
     [[ -n "$pkg" ]] || continue
     case "$pkg" in
       elephant-bin|elephant-*-bin) continue ;;
-      elephant|elephant-*) to_remove+="$pkg " ;;
+      elephant|elephant-*) to_remove+=("$pkg") ;;
     esac
-  done <<< "$installed"
+  done < <(pacman -Qq 2>/dev/null || true)
 
-  [[ -n "${to_remove// /}" ]] || return 0
+  ((${#to_remove[@]})) || return 0
 
   if declare -F vlarch_warn >/dev/null 2>&1; then
-    vlarch_warn "removing source elephant packages (conflict with elephant-bin): ${to_remove}"
+    vlarch_warn "removing source elephant packages (conflict with elephant-bin): ${to_remove[*]}"
   fi
-  su - "$user" -c "yay -Rns --noconfirm ${to_remove}"
+
+  pacman -Rdd --noconfirm "${to_remove[@]}" \
+    || pacman -Rns --noconfirm "${to_remove[@]}" \
+    || runuser -u "$user" -- yay -Rdd --noconfirm "${to_remove[@]}" \
+    || true
+
+  if pacman -Q elephant >/dev/null 2>&1; then
+    if declare -F vlarch_die >/dev/null 2>&1; then
+      vlarch_die "could not remove source elephant; run: sudo pacman -Rdd $(pacman -Qq | grep '^elephant' | grep -v '\-bin$' | tr '\n' ' ')"
+    fi
+    return 1
+  fi
 }
 
 vlarch_yay_install_pkgs() {
   local user="$1"
   shift
   (("$#")) || return 0
-  su - "$user" -c "yay -S --noconfirm --needed --norebuild --noredownload $*"
+  runuser -u "$user" -- yay -S --noconfirm --needed --norebuild --noredownload "$@"
 }
 
 vlarch_yay_install_manifests() {
@@ -52,17 +64,41 @@ vlarch_yay_install_manifests() {
   local pac_manifest="$2"
   local aur_manifest="$3"
   local pac_pkgs aur_pkgs
+  local -a all_aur_pkgs elephant_pkgs other_pkgs=() providers=()
+  local pkg
 
   pac_pkgs="$(vlarch_manifest_to_space_list "$pac_manifest")"
   aur_pkgs="$(vlarch_manifest_to_space_list "$aur_manifest")"
 
   if [[ -n "$pac_pkgs" ]]; then
+    # shellcheck disable=SC2086
     vlarch_yay_install_pkgs "$user" $pac_pkgs
   fi
   if [[ -n "$aur_pkgs" ]]; then
-    if [[ " $aur_pkgs " == *" elephant-bin "* ]]; then
+    read -r -a all_aur_pkgs <<< "$aur_pkgs"
+    for pkg in "${all_aur_pkgs[@]}"; do
+      case "$pkg" in
+        elephant-bin|elephant-*-bin) elephant_pkgs+=("$pkg") ;;
+        *) other_pkgs+=("$pkg") ;;
+      esac
+    done
+
+    if ((${#elephant_pkgs[@]})); then
       vlarch_remove_elephant_source_pkgs "$user"
+      for pkg in "${elephant_pkgs[@]}"; do
+        if [[ "$pkg" != elephant-bin ]]; then
+          providers+=("$pkg")
+        fi
+      done
+      if printf '%s\n' "${elephant_pkgs[@]}" | grep -qx elephant-bin; then
+        vlarch_yay_install_pkgs "$user" elephant-bin
+      fi
+      if ((${#providers[@]})); then
+        vlarch_yay_install_pkgs "$user" "${providers[@]}"
+      fi
     fi
-    vlarch_yay_install_pkgs "$user" $aur_pkgs
+    if ((${#other_pkgs[@]})); then
+      vlarch_yay_install_pkgs "$user" "${other_pkgs[@]}"
+    fi
   fi
 }
