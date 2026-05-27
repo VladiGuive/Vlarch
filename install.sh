@@ -181,6 +181,4 @@ else
     git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
 fi
 
-_print_bootstrap_logo "${WORKDIR}/install/assets"
-_print_bootstrap_preparing
 _run_main "${WORKDIR}" "${ARGS[@]}"
