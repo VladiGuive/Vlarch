@@ -1,5 +1,4 @@
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="/usr/bin:$PATH"
+export PATH="/usr/local/bin:$HOME/.local/bin:/usr/bin:$PATH"
 
 # agetty autologin often skips .zprofile; only hook non-login interactive tty1.
 if [[ -z ${WAYLAND_DISPLAY-} && ${XDG_VTNR-0} -eq 1 && ! -o login ]] \
@@ -76,7 +75,7 @@ alias ll='ls -lah --color'
 alias vim='nvim'
 alias c='clear'
 vu() {
-  curl -fsSL 'https://vlarch.vladi.tech/update.sh' | sudo bash
+  vlarch update "$@"
 }
 
 # Evals
