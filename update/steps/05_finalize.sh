@@ -11,9 +11,10 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 
 [[ -f "${VLARCH_BIN_DIR}/vlarch" ]] || vlarch_die "missing bin/vlarch"
 [[ -f "${VLARCH_BIN_DIR}/start-hyprland" ]] || vlarch_die "missing bin/start-hyprland"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 
 if ((VLARCH_DRY_RUN)); then
-  vlarch_update_note "finalize: dry-run (would install bin/vlarch, start-hyprland and bump version to ${VLARCH_VERSION})"
+  vlarch_update_note "finalize: dry-run (would install bin scripts and bump version to ${VLARCH_VERSION})"
   exit 0
 fi
 
@@ -22,6 +23,9 @@ vlarch_run "install vlarch CLI" \
 
 vlarch_run "install start-hyprland" \
   install -Dm0755 "${VLARCH_BIN_DIR}/start-hyprland" /usr/local/bin/start-hyprland
+
+vlarch_run "install vlarch-tty-login" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-tty-login" /usr/local/bin/vlarch-tty-login
 
 vlarch_write_install_info_version "$VLARCH_VERSION" \
   || vlarch_die "could not update ${VLARCH_INFO_FILE}"
