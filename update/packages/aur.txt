@@ -1,11 +1,12 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 oh-my-posh-bin
-walker-bin
-# Walker backend + providers — source packages (built together; do not mix with elephant-*-bin).
+# Walker + elephant stack — source packages only, one yay transaction (never mix with *-bin).
+walker
 elephant
 elephant-providerlist
 elephant-desktopapplications
 elephant-files
+elephant-runner
 elephant-calc
 elephant-symbols
 elephant-websearch

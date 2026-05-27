@@ -44,6 +44,21 @@ vlarch_remove_elephant_bin_pkgs() {
     || true
 }
 
+vlarch_remove_walker_bin_pkg() {
+  local user="$1"
+
+  pacman -Q walker-bin >/dev/null 2>&1 || return 0
+
+  if declare -F vlarch_warn >/dev/null 2>&1; then
+    vlarch_warn "removing walker-bin (switching to source walker)"
+  fi
+
+  pacman -Rdd --noconfirm walker-bin \
+    || pacman -Rns --noconfirm walker-bin \
+    || runuser -u "$user" -- yay -Rdd --noconfirm walker-bin \
+    || true
+}
+
 vlarch_yay_install_pkgs() {
   local user="$1"
   shift
@@ -56,7 +71,7 @@ vlarch_yay_install_manifests() {
   local pac_manifest="$2"
   local aur_manifest="$3"
   local pac_pkgs aur_pkgs
-  local -a all_aur_pkgs elephant_pkgs other_pkgs=()
+  local -a all_aur_pkgs walker_stack_pkgs other_pkgs=()
   local pkg
 
   pac_pkgs="$(vlarch_manifest_to_space_list "$pac_manifest")"
@@ -70,15 +85,16 @@ vlarch_yay_install_manifests() {
     read -r -a all_aur_pkgs <<< "$aur_pkgs"
     for pkg in "${all_aur_pkgs[@]}"; do
       case "$pkg" in
-        elephant|elephant-*) elephant_pkgs+=("$pkg") ;;
+        walker|elephant|elephant-*) walker_stack_pkgs+=("$pkg") ;;
         *) other_pkgs+=("$pkg") ;;
       esac
     done
 
-    if ((${#elephant_pkgs[@]})); then
+    if ((${#walker_stack_pkgs[@]})); then
       vlarch_remove_elephant_bin_pkgs "$user"
-      # One yay transaction keeps elephant + plugins on the same version.
-      vlarch_yay_install_pkgs "$user" "${elephant_pkgs[@]}"
+      vlarch_remove_walker_bin_pkg "$user"
+      # One yay transaction keeps walker, elephant, and plugins on the same version.
+      vlarch_yay_install_pkgs "$user" "${walker_stack_pkgs[@]}"
     fi
     if ((${#other_pkgs[@]})); then
       vlarch_yay_install_pkgs "$user" "${other_pkgs[@]}"

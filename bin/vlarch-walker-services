@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start elephant (wait for providers), then walker --gapplication-service.
+# Start elephant (wait for providers + app index), then walker --gapplication-service.
 
 set +e
 
@@ -11,6 +11,12 @@ log() {
 
 _elephant_ready() {
   elephant l 2>/dev/null | grep -q desktopapplications
+}
+
+_elephant_has_apps() {
+  local out
+  out="$(elephant query "desktopapplications;;50;false" 2>/dev/null || true)"
+  [[ -n "$out" ]]
 }
 
 start_elephant() {
@@ -30,13 +36,18 @@ start_elephant() {
   fi
 
   local i
-  for i in $(seq 1 60); do
-    if _elephant_ready; then
-      log "elephant ready (${i} checks)"
+  for i in $(seq 1 80); do
+    if _elephant_ready && _elephant_has_apps; then
+      log "elephant ready with apps (${i} checks)"
       return 0
     fi
     sleep 0.25
   done
+
+  if _elephant_ready; then
+    log "elephant providers loaded but desktop query empty: $(elephant query 'desktopapplications;;5;false' 2>&1 | tr '\n' ' ')"
+    return 0
+  fi
 
   log "elephant not ready; providers: $(elephant l 2>&1 | tr '\n' ' ')"
   return 1
@@ -48,10 +59,8 @@ start_walker_service() {
     return 0
   }
 
-  if pgrep -f '[w]alker --gapplication-service' >/dev/null; then
-    log 'walker service already running'
-    return 0
-  fi
+  pkill -f '[w]alker --gapplication-service' 2>/dev/null || true
+  sleep 0.2
 
   walker --gapplication-service >>"$LOG" 2>&1 &
   log 'started walker --gapplication-service'

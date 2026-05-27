@@ -11,21 +11,27 @@ hide_action_hints = true
 max_results = 256
 default = [
   "desktopapplications",
+  "calc",
+  "websearch",
 ]
 empty = [
   "desktopapplications",
 ]
 
 [[providers.prefixes]]
-prefix = "/"
+prefix = ";"
 provider = "providerlist"
 
 [[providers.prefixes]]
-prefix = "."
+prefix = ">"
+provider = "runner"
+
+[[providers.prefixes]]
+prefix = "/"
 provider = "files"
 
 [[providers.prefixes]]
-prefix = ":"
+prefix = "."
 provider = "symbols"
 
 [[providers.prefixes]]
@@ -37,5 +43,5 @@ prefix = "@"
 provider = "websearch"
 
 [[providers.prefixes]]
-prefix = "$"
+prefix = ":"
 provider = "clipboard"

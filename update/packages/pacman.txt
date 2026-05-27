@@ -28,7 +28,7 @@ playerctl
 grim
 slurp
 wl-clipboard
-xdg-desktop-portal-hyprland
+gtk4-layer-shell
 # hyprpm plugin build deps (see wiki.hypr.land/Plugins/Using-Plugins/)
 cmake
 cpio
