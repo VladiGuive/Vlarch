@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # Run commands in the install user's login shell; quiet unless verbose.
 
+vlarch_user_home() {
+  printf '/home/%s' "$1"
+}
+
+vlarch_user_runtime() {
+  printf '/run/user/%s' "$(id -u "$1")"
+}
+
 vlarch_run_user() {
   local user="$1" label="$2" cmd="$3"
+  local home runtime wrapped
+
+  home="$(vlarch_user_home "$user")"
+  runtime="$(vlarch_user_runtime "$user")"
+  wrapped="export HOME='${home}' USER='${user}' XDG_RUNTIME_DIR='${runtime}'; ${cmd}"
 
   if ((VLARCH_VERBOSE)); then
-    runuser -u "$user" -- bash -lc "$cmd" || return 1
+    runuser -u "$user" -- bash -lc "$wrapped" || return 1
     declare -F vlarch_ui_tick >/dev/null 2>&1 && vlarch_ui_tick "$label"
     return 0
   fi
@@ -17,9 +30,9 @@ vlarch_run_user() {
   {
     printf '\n--- vlarch_run_user: %s ---\n' "$label"
     printf 'user: %s\n' "$user"
-    printf 'cmd: %s\n' "$cmd"
+    printf 'cmd: %s\n' "$wrapped"
   } >>"$log"
-  runuser -u "$user" -- bash -lc "$cmd" >>"$log" 2>&1 || rc=$?
+  runuser -u "$user" -- bash -lc "$wrapped" >>"$log" 2>&1 || rc=$?
   if ((rc == 0)) && declare -F vlarch_ui_tick >/dev/null 2>&1; then
     vlarch_ui_tick "$label"
   fi
@@ -59,19 +72,19 @@ vlarch_sync_tmux_plugins() {
 
   command -v tmux >/dev/null 2>&1 || return 1
   conf="$(vlarch_tmux_conf_for_user "$user")" || return 1
-  home="/home/${user}"
+  home="$(vlarch_user_home "$user")"
   tpm_install="${home}/.tmux/plugins/tpm/bin/install_plugins"
 
   [[ -x "$tpm_install" ]] || return 1
-  su - "$user" -c 'tmux list-sessions >/dev/null 2>&1' || return 1
+  runuser -u "$user" -- bash -lc \
+    "export HOME='${home}'; tmux list-sessions >/dev/null 2>&1" || return 1
 
   vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || return 1
   vlarch_run_user "$user" "tmux install plugins" "'${tpm_install}'"
 }
 
+# Headers/plugins refresh; reload happens on Hyprland start (start-hyprland / exec-once).
 vlarch_hyprpm_update() {
   local user="$1"
-
-  vlarch_run_user "$user" "hyprpm update" 'hyprpm update -f' \
-    || vlarch_run_user "$user" "hyprpm update retry" 'hyprpm update -f'
+  vlarch_run_user "$user" "hyprpm update" 'hyprpm update -f' || return 0
 }
