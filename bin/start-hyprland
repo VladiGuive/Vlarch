@@ -6,7 +6,7 @@ if [[ -n "${WAYLAND_DISPLAY-}" ]] || [[ ${XDG_VTNR:-0} -ne 1 ]]; then
 fi
 
 if ! command -v Hyprland >/dev/null 2>&1; then
-  printf '[vlarch] Hyprland not installed; run: curl -fsSL https://vlarch.vladi.tech/update.sh | sudo bash\n' >&2
+  printf '[vlarch] Hyprland not installed; run: vlarch update\n' >&2
   exit 0
 fi
 

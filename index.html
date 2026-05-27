@@ -291,7 +291,7 @@
         <p>
           A personal Arch Linux flavor — one command from a fresh
           <a href="https://archlinux.org/download/">Arch Linux live ISO</a>.
-          Install lays down the base; update brings the desktop.
+          Install lays down the base; <code>vlarch update</code> brings the desktop.
         </p>
         <div class="pill-row">
           <span class="pill pill--cyan">LUKS + btrfs</span>
@@ -312,10 +312,12 @@
       <section>
         <h2>Update</h2>
         <p>On an installed system:</p>
-        <span class="command-label">One-liner</span>
-        <code class="command">curl -fsSL 'https://vlarch.vladi.tech/update.sh' | sudo bash</code>
+        <span class="command-label">CLI</span>
+        <code class="command">vlarch update</code>
+        <span class="command-label">Without the CLI</span>
+        <code class="command">curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash</code>
         <span class="command-label">Optional flags</span>
-        <code class="command">curl -fsSL 'https://vlarch.vladi.tech/update.sh' | sudo bash -s -- --force --verbose</code>
+        <code class="command">vlarch update --dry-run --verbose --force</code>
       </section>
 
       <section>
