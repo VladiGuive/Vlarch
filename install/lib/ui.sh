@@ -72,7 +72,8 @@ vlarch_ui_init() {
   local runs chroots steps total
   runs=$(grep -rhE '^\s*vlarch_run ' "${VLARCH_SCRIPT_DIR}/install" 2>/dev/null | wc -l | tr -d ' ')
   chroots=$(grep -rh 'vlarch_chroot_run' "${VLARCH_SCRIPT_DIR}/install/steps" 2>/dev/null | wc -l | tr -d ' ')
-  steps=${#VLARCH_STEPS[@]:-10}
+  steps=${#VLARCH_STEPS[@]}
+  ((steps < 1)) && steps=10
   total=$((runs + chroots + 1 + steps))
   ((total < 1)) && total=1
   rm -f "$VLARCH_UI_STATE"
