@@ -62,20 +62,28 @@ _try_wifi_connect() {
 }
 
 _wait_for_network() {
-  local quiet=0
-  [[ "${1:-}" == --quiet ]] && quiet=1
+  local quiet=0 connect=0
+  while (($#)); do
+    case "$1" in
+      --quiet)   quiet=1; shift ;;
+      --connect) connect=1; shift ;;
+      *) shift ;;
+    esac
+  done
   local timeout="${VLARCH_NETWORK_TIMEOUT:-180}"
   local elapsed=0 interval=3
 
   ((!quiet)) && _log "Waiting for network (up to ${timeout}s)..."
-  _try_wifi_connect || ((!quiet)) && _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
+  if ((connect)); then
+    _try_wifi_connect || ((!quiet)) && _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
+  fi
 
   while ((elapsed < timeout)); do
     if _has_network; then
       ((!quiet)) && _log "Network ready"
       return 0
     fi
-    if ((elapsed > 0 && elapsed % 15 == 0)); then
+    if ((connect && elapsed > 0 && elapsed % 15 == 0)); then
       ((!quiet)) && _log "Still waiting; retrying WiFi..."
       _try_wifi_connect || true
     fi
@@ -121,7 +129,7 @@ cmd_post_install() {
     || _warn "could not enable NetworkManager"
 
   _load_runtime_env
-  _wait_for_network
+  _wait_for_network --connect
 
   install -d -m 0755 "$VLARCH_STATE_DIR"
   touch "$VLARCH_POST_INSTALL_MARKER"
@@ -154,7 +162,6 @@ cmd_version() {
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
-  _load_runtime_env
   _wait_for_network --quiet
   _vlog "Fetching update bootstrap from ${url}"
   curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
