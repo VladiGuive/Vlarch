@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Vlarch update entry point. Runs from `curl ... | bash` or via `vlarch update`.
+# Vlarch update entry point. Run: curl -fsSL 'https://vlarch.vladi.tech/update.sh' | sudo bash
 # Compares CDN version.txt against /etc/vlarch/install-info, clones the repo,
 # and hands off to update/main.sh.
 #
@@ -193,7 +193,7 @@ if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}"
   fi
 fi
 
-[[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: vlarch update)"
+[[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: curl -fsSL '${VLARCH_CDN_BASE}/update.sh' | sudo bash)"
 
 command -v git >/dev/null 2>&1 || _die "git not found"
 command -v curl >/dev/null 2>&1 || _die "curl not found"

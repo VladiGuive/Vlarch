@@ -139,6 +139,17 @@ cmd_post_install() {
   _log "post-install done"
 }
 
+: "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
+
+_bootstrap_update() {
+  local url="${VLARCH_CDN_BASE}/update.sh"
+  local rc=0
+  curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
+  if ((rc != 0)); then
+    _die "update failed (exit ${rc})"
+  fi
+}
+
 # vlarch:summary=One-shot first-login bootstrap; post-install then update from CDN.
 cmd_first_boot() {
   if [[ ! -f "$VLARCH_FIRST_BOOT_MARKER" ]]; then
@@ -146,7 +157,7 @@ cmd_first_boot() {
   fi
   _log "First-boot bootstrap"
   cmd_post_install
-  cmd_update --force
+  _bootstrap_update --force
   rm -f "$VLARCH_FIRST_BOOT_MARKER"
 }
 
@@ -156,19 +167,6 @@ cmd_version() {
     cat "$VLARCH_INFO_FILE"
   else
     _die "$VLARCH_INFO_FILE not found"
-  fi
-}
-
-: "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
-
-# vlarch:summary=Update Vlarch from CDN (packages, dotfiles, hyprpm, CLI).
-cmd_update() {
-  local url="${VLARCH_CDN_BASE}/update.sh"
-  local rc=0
-  _vlog "Fetching update bootstrap from ${url}"
-  curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
-  if ((rc != 0)); then
-    _die "update failed (exit ${rc}); try: vlarch update --verbose"
   fi
 }
 
@@ -191,6 +189,8 @@ cmd_help() {
     summary="$(_summary_for "$name")"
     printf '  %-14s %s\n' "$name" "$summary"
   done < <(compgen -A function | grep '^cmd_' | sort)
+  printf '\nUpdate:\n  curl -fsSL '\''%s/update.sh'\'' | sudo bash\n' "$VLARCH_CDN_BASE"
+  printf '  curl -fsSL '\''%s/update.sh'\'' | sudo bash -s -- --force\n' "$VLARCH_CDN_BASE"
 }
 
 # Pull `# vlarch:summary=...` from the line above the subcommand function.
@@ -206,7 +206,7 @@ _summary_for() {
 
 _needs_root() {
   case "${1:-}" in
-    update|post-install|first-boot) return 0 ;;
+    post-install|first-boot) return 0 ;;
     *) return 1 ;;
   esac
 }

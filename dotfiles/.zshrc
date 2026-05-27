@@ -76,7 +76,7 @@ alias ll='ls -lah --color'
 alias vim='nvim'
 alias c='clear'
 vu() {
-  curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash
+  curl -fsSL 'https://vlarch.vladi.tech/update.sh' | sudo bash
 }
 
 # Evals
