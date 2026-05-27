@@ -50,60 +50,19 @@ vlarch_tmux_conf_for_user() {
   fi
 }
 
-vlarch_tmux_plugins_from_conf() {
-  local conf="$1"
-  grep -E '^[[:space:]]*set -g @plugin' "$conf" \
-    | sed -n "s/.*@plugin ['\"]\([^'\"]*\)['\"].*/\1/p"
-}
-
-vlarch_ensure_tmux_tpm() {
-  local user="$1" home="/home/${user}"
-  local tpm_dir="${home}/.tmux/plugins/tpm"
-
-  install -d -o "$user" -g "$user" "${home}/.tmux/plugins"
-  [[ -d "${tpm_dir}/.git" ]] && return 0
-
-  vlarch_run_user "$user" "tmux tpm clone" \
-    "git clone --depth 1 https://github.com/tmux-plugins/tpm.git '${tpm_dir}'"
-}
-
-vlarch_clone_tmux_plugins() {
-  local user="$1" conf="$2" home="/home/${user}"
-  local repo name plugin_dir
-
-  while IFS= read -r repo; do
-    [[ -n "$repo" ]] || continue
-    [[ "$repo" == tmux-plugins/tpm ]] && continue
-    name="${repo##*/}"
-    plugin_dir="${home}/.tmux/plugins/${name}"
-    [[ -d "${plugin_dir}/.git" ]] && continue
-    install -d -o "$user" -g "$user" "${home}/.tmux/plugins"
-    vlarch_run_user "$user" "tmux plugin ${name}" \
-      "git clone --depth 1 'https://github.com/${repo}.git' '${plugin_dir}'" \
-      || true
-  done < <(vlarch_tmux_plugins_from_conf "$conf")
-}
-
-# Bootstrap TPM and plugins on update — no manual source or prefix+I.
 vlarch_sync_tmux_plugins() {
-  local user="$1" conf home tpm_bin update_bin
+  local user="$1" conf home tpm_install
 
   command -v tmux >/dev/null 2>&1 || return 1
   conf="$(vlarch_tmux_conf_for_user "$user")" || return 1
   home="/home/${user}"
-  tpm_bin="${home}/.tmux/plugins/tpm/bin/install_plugins"
-  update_bin="${home}/.tmux/plugins/tpm/bin/update_plugins"
+  tpm_install="${home}/.tmux/plugins/tpm/bin/install_plugins"
 
-  vlarch_ensure_tmux_tpm "$user" || return 1
-  vlarch_clone_tmux_plugins "$user" "$conf"
+  [[ -x "$tpm_install" ]] || return 1
+  su - "$user" -c 'tmux list-sessions >/dev/null 2>&1' || return 1
 
-  if su - "$user" -c 'tmux list-sessions >/dev/null 2>&1'; then
-    vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || true
-    [[ -x "$tpm_bin" ]] && vlarch_run_user "$user" "tmux plugins install" "'${tpm_bin}'" || true
-    [[ -x "$update_bin" ]] && vlarch_run_user "$user" "tmux plugins update" "'${update_bin}'" || true
-  fi
-
-  return 0
+  vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || return 1
+  vlarch_run_user "$user" "tmux install plugins" "'${tpm_install}'"
 }
 
 vlarch_hyprpm_update() {
