@@ -31,6 +31,9 @@ _wifi_device() {
 }
 
 _has_network() {
+  if curl -fsS --max-time 5 -o /dev/null "${VLARCH_CDN_BASE:-https://vlarch.vladi.tech}/version.txt" 2>/dev/null; then
+    return 0
+  fi
   local connectivity
   connectivity="$(nmcli -t -f CONNECTIVITY general 2>/dev/null | tr -d '[:space:]')"
   if [[ "$connectivity" == "full" || "$connectivity" == "limited" ]]; then
@@ -162,7 +165,6 @@ cmd_version() {
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
-  _wait_for_network --quiet
   _vlog "Fetching update bootstrap from ${url}"
   curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
   if ((rc != 0)); then
@@ -202,6 +204,13 @@ _summary_for() {
   ' "${BASH_SOURCE[0]}"
 }
 
+_needs_root() {
+  case "${1:-}" in
+    update|post-install|first-boot) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 main() {
   if (($# == 0)); then
     cmd_help
@@ -216,5 +225,7 @@ main() {
   "$fn" "$@"
 }
 
-_ensure_root "$@"
+if (($# > 0)) && _needs_root "$1"; then
+  _ensure_root "$@"
+fi
 main "$@"
