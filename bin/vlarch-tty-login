@@ -18,8 +18,14 @@ if [[ -f /var/lib/vlarch/first-boot.pending ]] && command -v vlarch >/dev/null 2
   (vlarch first-boot >>/var/log/vlarch-first-boot.log 2>&1) &
 fi
 
-if command -v start-hyprland >/dev/null 2>&1; then
-  exec start-hyprland
+# Hyprland 0.53+ ships /usr/bin/start-hyprland; never shadow it under /usr/local/bin.
+_hyprland_launcher="/usr/bin/start-hyprland"
+if [[ -x "$_hyprland_launcher" ]]; then
+  exec "$_hyprland_launcher"
+fi
+
+if command -v Hyprland >/dev/null 2>&1; then
+  printf '[vlarch] start-hyprland missing; run: vlarch update\n' >&2
 fi
 
 exit 0

@@ -13,7 +13,6 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
   || vlarch_die "could not load ${VLARCH_INFO_FILE}"
 
 [[ -f "${VLARCH_BIN_DIR}/vlarch" ]] || vlarch_die "missing bin/vlarch"
-[[ -f "${VLARCH_BIN_DIR}/start-hyprland" ]] || vlarch_die "missing bin/start-hyprland"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 
 if ((VLARCH_DRY_RUN)); then
@@ -24,11 +23,13 @@ fi
 vlarch_run "install vlarch CLI" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch" /usr/local/bin/vlarch
 
-vlarch_run "install start-hyprland" \
-  install -Dm0755 "${VLARCH_BIN_DIR}/start-hyprland" /usr/local/bin/start-hyprland
-
 vlarch_run "install vlarch-tty-login" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-tty-login" /usr/local/bin/vlarch-tty-login
+
+# Remove legacy wrapper that shadowed Hyprland's official /usr/bin/start-hyprland.
+if [[ -e /usr/local/bin/start-hyprland ]]; then
+  rm -f /usr/local/bin/start-hyprland
+fi
 
 # Drop stale first-boot marker and old ~/.local/bin/vlarch wrappers after a manual recovery.
 if [[ -f "${VLARCH_STATE_DIR:-/var/lib/vlarch}/post-install.done" ]]; then
