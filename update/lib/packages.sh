@@ -20,7 +20,7 @@ vlarch_bootstrap_yay() {
   "
 }
 
-vlarch_remove_elephant_source_pkgs() {
+vlarch_remove_elephant_bin_pkgs() {
   local user="$1"
   local -a to_remove=()
   local pkg
@@ -28,28 +28,20 @@ vlarch_remove_elephant_source_pkgs() {
   while IFS= read -r pkg; do
     [[ -n "$pkg" ]] || continue
     case "$pkg" in
-      elephant-bin|elephant-*-bin) continue ;;
-      elephant|elephant-*) to_remove+=("$pkg") ;;
+      elephant-bin|elephant-*-bin) to_remove+=("$pkg") ;;
     esac
   done < <(pacman -Qq 2>/dev/null || true)
 
   ((${#to_remove[@]})) || return 0
 
   if declare -F vlarch_warn >/dev/null 2>&1; then
-    vlarch_warn "removing source elephant packages (conflict with elephant-bin): ${to_remove[*]}"
+    vlarch_warn "removing elephant-bin packages (switching to source elephant): ${to_remove[*]}"
   fi
 
   pacman -Rdd --noconfirm "${to_remove[@]}" \
     || pacman -Rns --noconfirm "${to_remove[@]}" \
     || runuser -u "$user" -- yay -Rdd --noconfirm "${to_remove[@]}" \
     || true
-
-  if pacman -Q elephant >/dev/null 2>&1; then
-    if declare -F vlarch_die >/dev/null 2>&1; then
-      vlarch_die "could not remove source elephant; run: sudo pacman -Rdd $(pacman -Qq | grep '^elephant' | grep -v '\-bin$' | tr '\n' ' ')"
-    fi
-    return 1
-  fi
 }
 
 vlarch_yay_install_pkgs() {
@@ -64,7 +56,7 @@ vlarch_yay_install_manifests() {
   local pac_manifest="$2"
   local aur_manifest="$3"
   local pac_pkgs aur_pkgs
-  local -a all_aur_pkgs elephant_pkgs other_pkgs=() providers=()
+  local -a all_aur_pkgs elephant_pkgs other_pkgs=()
   local pkg
 
   pac_pkgs="$(vlarch_manifest_to_space_list "$pac_manifest")"
@@ -78,24 +70,15 @@ vlarch_yay_install_manifests() {
     read -r -a all_aur_pkgs <<< "$aur_pkgs"
     for pkg in "${all_aur_pkgs[@]}"; do
       case "$pkg" in
-        elephant-bin|elephant-*-bin) elephant_pkgs+=("$pkg") ;;
+        elephant|elephant-*) elephant_pkgs+=("$pkg") ;;
         *) other_pkgs+=("$pkg") ;;
       esac
     done
 
     if ((${#elephant_pkgs[@]})); then
-      vlarch_remove_elephant_source_pkgs "$user"
-      for pkg in "${elephant_pkgs[@]}"; do
-        if [[ "$pkg" != elephant-bin ]]; then
-          providers+=("$pkg")
-        fi
-      done
-      if printf '%s\n' "${elephant_pkgs[@]}" | grep -qx elephant-bin; then
-        vlarch_yay_install_pkgs "$user" elephant-bin
-      fi
-      if ((${#providers[@]})); then
-        vlarch_yay_install_pkgs "$user" "${providers[@]}"
-      fi
+      vlarch_remove_elephant_bin_pkgs "$user"
+      # One yay transaction keeps elephant + plugins on the same version.
+      vlarch_yay_install_pkgs "$user" "${elephant_pkgs[@]}"
     fi
     if ((${#other_pkgs[@]})); then
       vlarch_yay_install_pkgs "$user" "${other_pkgs[@]}"

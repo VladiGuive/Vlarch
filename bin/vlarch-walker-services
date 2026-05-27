@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Start elephant (wait for providers), then walker --gapplication-service.
+
+set +e
+
+LOG="${VLARCH_WALKER_LOG:-/tmp/vlarch-walker-services.log}"
+
+log() {
+  printf '[vlarch-walker] %s\n' "$*" >>"$LOG"
+}
+
+_elephant_ready() {
+  elephant l 2>/dev/null | grep -q desktopapplications
+}
+
+start_elephant() {
+  command -v elephant >/dev/null 2>&1 || {
+    log 'elephant not installed'
+    return 1
+  }
+
+  if systemctl --user is-active --quiet elephant.service 2>/dev/null; then
+    log 'elephant.service already active'
+  else
+    elephant service enable >>"$LOG" 2>&1 || true
+    if ! systemctl --user start elephant.service >>"$LOG" 2>&1; then
+      log 'systemctl start failed; falling back to background elephant'
+      elephant >>"$LOG" 2>&1 &
+    fi
+  fi
+
+  local i
+  for i in $(seq 1 60); do
+    if _elephant_ready; then
+      log "elephant ready (${i} checks)"
+      return 0
+    fi
+    sleep 0.25
+  done
+
+  log "elephant not ready; providers: $(elephant l 2>&1 | tr '\n' ' ')"
+  return 1
+}
+
+start_walker_service() {
+  command -v walker >/dev/null 2>&1 || {
+    log 'walker not installed'
+    return 0
+  }
+
+  if pgrep -f '[w]alker --gapplication-service' >/dev/null; then
+    log 'walker service already running'
+    return 0
+  fi
+
+  walker --gapplication-service >>"$LOG" 2>&1 &
+  log 'started walker --gapplication-service'
+}
+
+: >"$LOG"
+start_elephant || true
+start_walker_service
