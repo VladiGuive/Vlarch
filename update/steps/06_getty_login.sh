@@ -27,4 +27,6 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin ${VLARCH_USER} --noclear %I \$TERM
 UNIT
 
+vlarch_run "reload systemd" systemctl daemon-reload
+
 vlarch_update_note "getty: ok"
