@@ -5,7 +5,6 @@ VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
 
 VLARCH_ESC_RESET=$'\033[0m'
-VLARCH_NORD_BG=$'\033[48;5;236m'
 VLARCH_NORD_FG=$'\033[38;5;253m'
 VLARCH_NORD_DIM=$'\033[38;5;245m'
 VLARCH_NORD_RED=$'\033[38;5;174m'
@@ -77,13 +76,13 @@ vlarch_ui_print_logo() {
   local plain="${assets}/logo.txt"
 
   if [[ -f "$plain" ]]; then
-    printf '%b%b' "${VLARCH_NORD_BG}" "${VLARCH_NORD_CYAN}"
+    printf '%b' "${VLARCH_NORD_CYAN}"
     cat "$plain"
     printf '%b\n' "${VLARCH_ESC_RESET}"
     return 0
   fi
 
-  printf '%b%b' "${VLARCH_NORD_BG}" "${VLARCH_NORD_CYAN}"
+  printf '%b' "${VLARCH_NORD_CYAN}"
   cat <<'LOGO'
  _   ____             __
 | | / / /__ _________/ /

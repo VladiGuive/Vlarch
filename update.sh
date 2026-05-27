@@ -16,7 +16,6 @@ set -euo pipefail
 VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-update-bootstrap.log}"
 
 _VLARCH_ESC_RESET=$'\033[0m'
-_VLARCH_NORD_BG=$'\033[48;5;236m'
 _VLARCH_NORD_FG=$'\033[38;5;253m'
 _VLARCH_NORD_CYAN=$'\033[38;5;109m'
 
@@ -39,7 +38,7 @@ _die() {
 _ui_print_logo() {
   local logo_url="${VLARCH_CDN_BASE}/install/assets/logo.txt"
 
-  printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
+  printf '%b' "${_VLARCH_NORD_CYAN}"
   if curl -fsSL "$logo_url" 2>/dev/null; then
     printf '%b\n' "${_VLARCH_ESC_RESET}"
     return 0
