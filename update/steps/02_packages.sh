@@ -3,11 +3,11 @@
 set -euo pipefail
 
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/log.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/commons/lib/runtime.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/commons/lib/packages.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/packages.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 

@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 # Installed-system runtime helpers. Sourced - no set -e here.
-# Public:
-#   vlarch_load_install_info
-#   vlarch_write_install_info_version <version>
 
 vlarch_load_install_info() {
   local path="${1:-${VLARCH_INFO_FILE:-/etc/vlarch/install-info}}"
@@ -27,7 +24,7 @@ vlarch_load_install_info() {
 vlarch_write_install_info_version() {
   local version="$1"
   local path="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
-  local tmp updated_at line key
+  local tmp updated_at
   [[ -f "$path" ]] || return 1
 
   updated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -4,23 +4,66 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vlarch</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzJlMzQ0MCIvPjxwYXRoIGZpbGw9IiM4OGMwZDAiIGQ9Ik05IDcgMTYgMjIgMjMgN2gtMi44TDE2IDE3LjIgMTEuOCA3SDl6Ii8+PHJlY3QgeD0iOCIgeT0iMjQuNSIgd2lkdGg9IjE2IiBoZWlnaHQ9IjIiIHJ4PSIxIiBmaWxsPSIjODFhMWMxIi8+PC9zdmc+"
+    />
     <meta
       name="description"
       content="Vlarch is a personal Arch Linux flavor installed in one command from a live USB."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #1d2021;
-        --panel: #282828;
-        --border: #3c3836;
-        --fg: #ebdbb2;
-        --muted: #a89984;
-        --accent: #83a598;
-        --accent-2: #b8bb26;
+        /* Nord — primary */
+        --nord0: #2e3440;
+        --nord1: #3b4252;
+        --nord2: #434c5e;
+        --nord3: #4c566a;
+        --nord4: #d8dee9;
+        --nord5: #e5e9f0;
+        --nord6: #eceff4;
+        --nord7: #8fbcbb;
+        --nord8: #88c0d0;
+        --nord9: #81a1c1;
+        --nord10: #5e81ac;
+        --nord11: #bf616a;
+        --nord12: #d08770;
+        --nord13: #ebcb8b;
+        --nord14: #a3be8c;
+        --nord15: #b48ead;
+
+        --bg: var(--nord0);
+        --panel: var(--nord1);
+        --panel-raised: var(--nord2);
+        --border: var(--nord3);
+        --fg: var(--nord4);
+        --fg-dim: #a5abb6;
+        --fg-bright: var(--nord6);
+        --selection: var(--nord3);
+        --accent: var(--nord8);
+        --accent-blue: var(--nord9);
+        --accent-green: var(--nord14);
+        --accent-yellow: var(--nord13);
+        --accent-red: var(--nord11);
+        --accent-magenta: var(--nord15);
+        --radius: 6px;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
       }
 
       * {
         box-sizing: border-box;
+      }
+
+      ::selection {
+        color: var(--fg);
+        background: var(--selection);
       }
 
       html,
@@ -31,100 +74,207 @@
 
       body {
         font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-        background: var(--bg);
+        font-size: 1rem;
+        background:
+          radial-gradient(ellipse 120% 80% at 50% -20%, rgba(136, 192, 208, 0.08), transparent 55%),
+          var(--bg);
         color: var(--fg);
-        line-height: 1.6;
+        line-height: 1.65;
+        min-height: 100vh;
       }
 
       main {
-        max-width: 880px;
+        max-width: 44rem;
         margin: 0 auto;
-        padding: 2rem 1.25rem 3rem;
+        padding: 2.5rem 1.25rem 3.5rem;
       }
 
-      header,
+      header {
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.75rem;
+        border-bottom: 1px solid var(--border);
+      }
+
       section {
-        padding: 1.25rem;
+        padding: 1.25rem 1.35rem;
         margin-bottom: 1rem;
         border: 1px solid var(--border);
+        border-radius: var(--radius);
         background: var(--panel);
+        box-shadow: var(--shadow);
       }
 
       h1,
       h2,
       h3 {
-        margin: 0 0 0.75rem;
-        color: var(--fg);
+        margin: 0 0 0.65rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
       }
 
       h1 {
-        font-size: 2rem;
-        color: var(--accent);
+        font-size: 2.1rem;
+        color: var(--nord8);
       }
 
       h2 {
-        font-size: 1.3rem;
-        color: var(--accent-2);
+        font-size: 1.05rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent-blue);
       }
 
       .tagline {
-        color: var(--accent);
-        margin-bottom: 0.75rem;
+        color: var(--accent-magenta);
+        font-style: italic;
+        margin: 0 0 1rem;
       }
 
       p {
-        margin: 0 0 0.75rem;
+        margin: 0 0 0.85rem;
+        color: var(--fg);
+      }
+
+      p:last-child {
+        margin-bottom: 0;
       }
 
       ul {
-        margin: 0.25rem 0 0;
-        padding-left: 1.25rem;
+        margin: 0.35rem 0 0;
+        padding-left: 1.2rem;
       }
 
       li {
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.45rem;
+        color: var(--fg);
+      }
+
+      li::marker {
+        color: var(--accent);
       }
 
       code,
       pre {
         font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 0.88em;
+      }
+
+      p code,
+      li code {
+        padding: 0.12em 0.38em;
+        border-radius: 4px;
+        background: var(--panel-raised);
+        border: 1px solid var(--border);
+        color: var(--nord7);
       }
 
       .logo {
-        margin: 0 0 0.75rem;
-        padding: 1rem;
+        margin: 0 0 1.25rem;
+        padding: 1rem 1.1rem;
         overflow-x: auto;
-        color: var(--accent);
-        background: var(--bg);
+        color: var(--accent-blue);
+        background: var(--nord0);
         border: 1px solid var(--border);
-        font-size: 0.85rem;
-        line-height: 1.2;
+        border-radius: var(--radius);
+        font-size: 0.78rem;
+        line-height: 1.15;
+      }
+
+      .command-label {
+        display: block;
+        margin: 0.85rem 0 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--fg-dim);
+      }
+
+      .command-label:first-of-type {
+        margin-top: 0.25rem;
       }
 
       .command {
         display: block;
-        margin-top: 0.4rem;
-        padding: 0.75rem;
+        margin: 0;
+        padding: 0.8rem 0.95rem;
         overflow-x: auto;
-        color: var(--accent-2);
-        background: var(--bg);
+        color: var(--accent-green);
+        background: var(--nord0);
         border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--radius);
         white-space: pre;
+        line-height: 1.5;
       }
 
       a {
         color: var(--accent);
+        text-decoration-color: rgba(136, 192, 208, 0.45);
+        text-underline-offset: 2px;
+        transition: color 0.15s ease;
+      }
+
+      a:hover {
+        color: var(--nord7);
       }
 
       footer {
-        margin-top: 1rem;
-        color: var(--muted);
+        margin-top: 1.75rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        color: var(--fg-dim);
         font-size: 0.9rem;
       }
 
+      footer a {
+        color: var(--accent-blue);
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin: 0.75rem 0 0;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid var(--border);
+        background: var(--panel-raised);
+        color: var(--fg-dim);
+      }
+
+      .pill--cyan {
+        color: var(--accent);
+        border-color: rgba(136, 192, 208, 0.35);
+      }
+
+      .pill--green {
+        color: var(--accent-green);
+        border-color: rgba(163, 190, 140, 0.35);
+      }
+
+      .pill--yellow {
+        color: var(--accent-yellow);
+        border-color: rgba(235, 203, 139, 0.35);
+      }
+
       @media (max-width: 720px) {
+        main {
+          padding-top: 1.75rem;
+        }
+
         h1 {
-          font-size: 1.6rem;
+          font-size: 1.75rem;
+        }
+
+        .logo {
+          font-size: 0.68rem;
         }
       }
     </style>
@@ -137,28 +287,36 @@
 | |/ / / _ `/ __/ __/ _ \
 |___/_/\_,_/_/  \__/_//_/</code></pre>
         <h1>Vlarch</h1>
-        <p class="tagline"><em>Just, Vlad's Arch</em></p>
+        <p class="tagline">Just, Vlad's Arch</p>
         <p>
-          Vlarch is a personal Arch Linux flavor. It is installed in one command from a fresh
+          A personal Arch Linux flavor — one command from a fresh
           <a href="https://archlinux.org/download/">Arch Linux live ISO</a>.
+          Install lays down the base; <code>vlarch update</code> brings the desktop.
         </p>
+        <div class="pill-row">
+          <span class="pill pill--cyan">LUKS + btrfs</span>
+          <span class="pill pill--green">Hyprland</span>
+          <span class="pill pill--yellow">yay</span>
+        </div>
       </header>
 
       <section>
         <h2>Install</h2>
         <p>Boot the live ISO, get networking, then:</p>
+        <span class="command-label">One-liner</span>
         <code class="command">curl -fsSL 'https://vlarch.vladi.tech/install.sh' | bash</code>
-        <p>Optional flags:</p>
+        <span class="command-label">Optional flags</span>
         <code class="command">curl -fsSL 'https://vlarch.vladi.tech/install.sh' | bash -s -- --dry-run --verbose</code>
       </section>
 
       <section>
         <h2>Update</h2>
         <p>On an installed system:</p>
+        <span class="command-label">CLI</span>
         <code class="command">vlarch update</code>
-        <p>Or without the CLI:</p>
+        <span class="command-label">Without the CLI</span>
         <code class="command">curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash</code>
-        <p>Optional flags:</p>
+        <span class="command-label">Optional flags</span>
         <code class="command">vlarch update --dry-run --verbose --force</code>
       </section>
 
@@ -166,11 +324,11 @@
         <h2>What it does</h2>
         <ul>
           <li>Detects ethernet vs WiFi and prompts for credentials when needed</li>
-          <li>Picks timezone, locale, target disk through an fzf TUI</li>
-          <li>Partitions the disk, encrypts root with LUKS1, sets up btrfs subvolumes</li>
-          <li>Installs the Vlarch package set and applies dotfiles</li>
-          <li>Configures GRUB so a single passphrase at boot unlocks the system</li>
-          <li>Boots straight into autologin and Hyprland</li>
+          <li>Picks timezone, locale, and target disk through an fzf TUI</li>
+          <li>Partitions the disk, encrypts root with LUKS, sets up btrfs subvolumes</li>
+          <li>Installs a minimal base, bootstraps yay, and arms first-boot update</li>
+          <li>On first login: networking, full package sync, dotfiles, Hyprland</li>
+          <li>Configures GRUB so one passphrase at boot unlocks the system</li>
         </ul>
       </section>
 
@@ -185,7 +343,8 @@
       </section>
 
       <footer>
-        License: GPL · Source: <a href="https://github.com/VladiGuive/Vlarch">github.com/VladiGuive/Vlarch</a>
+        License: GPL · Source:
+        <a href="https://github.com/VladiGuive/Vlarch">github.com/VladiGuive/Vlarch</a>
       </footer>
     </main>
   </body>

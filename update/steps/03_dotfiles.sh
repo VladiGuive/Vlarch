@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# 03 - dotfiles: non-destructive rsync from install/dotfiles/.
+# 03 - dotfiles: non-destructive rsync from dotfiles/.
 set -euo pipefail
 
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/log.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/commons/lib/runtime.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/commons/lib/dotfiles.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/dotfiles.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 

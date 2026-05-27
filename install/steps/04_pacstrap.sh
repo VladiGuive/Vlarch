@@ -12,24 +12,31 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/live.sh"
 vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
 
-manifest="${VLARCH_MANIFEST_DIR}/pacstrap.txt"
-[[ -f "$manifest" ]] || vlarch_die "missing manifest: $manifest"
-
 mountpoint -q /mnt || vlarch_die "/mnt is not mounted; run step 03 first"
+
+# Minimum base installed via pacstrap into /mnt.
+pkgs=(
+  base
+  base-devel
+  linux
+  linux-firmware
+  btrfs-progs
+  grub
+  efibootmgr
+  networkmanager
+  git
+  curl
+  sudo
+  zsh
+  rsync
+)
 
 # Enable multilib on the live ISO (so pacstrap can pull 32-bit deps if asked).
 sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
-# Strip comments + blanks from the manifest.
-mapfile -t pkgs < <(sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$manifest")
-((${#pkgs[@]})) || vlarch_die "pacstrap manifest is empty"
-
 vlarch_live_refresh_mirrors
 vlarch_live_sync_keyring
 
-# pacstrap is the loudest command in the whole install; capture every attempt
-# into the per-step log and retry up to 3 times. Only the final failure
-# surfaces (with the captured tail) via vlarch_die.
 log="$(vlarch_log_path step)"
 mkdir -p "$(dirname "$log")"
 attempt=1
@@ -60,7 +67,6 @@ while ((attempt <= max_attempts)); do
   ((attempt++)) || true
 done
 
-# Verify every manifest package landed in /mnt; fail loudly if not.
 missing=()
 for pkg in "${pkgs[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
@@ -69,7 +75,6 @@ for pkg in "${pkgs[@]}"; do
 done
 ((${#missing[@]} == 0)) || vlarch_die "pacstrap incomplete; missing: ${missing[*]}"
 
-# genfstab's stdout *is* the fstab content; only silence its stderr.
 if ((VLARCH_VERBOSE)); then
   genfstab -U /mnt >>/mnt/etc/fstab
 else
@@ -79,7 +84,6 @@ else
   fi
 fi
 
-# Carry the live ISO's resolver into the chroot so AUR/yay calls have DNS.
 if [[ -f /etc/resolv.conf ]]; then
   cp -L /etc/resolv.conf /mnt/etc/resolv.conf
 fi

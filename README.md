@@ -12,7 +12,7 @@ Boot a fresh [Arch Linux live ISO](https://archlinux.org/download/), then run:
 curl -fsSL 'https://vlarch.vladi.tech/install.sh' | bash
 ```
 
-Answer the prompts. The installer partitions the target disk, encrypts it with LUKS, installs the Vlarch package set, applies dotfiles, and reboots into an autologin Hyprland session.
+Answer the prompts. The installer partitions the target disk, encrypts it with LUKS, installs a minimal base (`pacstrap.txt`), bootstraps `yay`, and reboots into autologin. On first login, `vlarch first-boot` brings up networking and runs a full `vlarch update` (packages, dotfiles, desktop).
 
 Optional flags:
 
@@ -35,7 +35,7 @@ The installer's preflight step also remounts cowspace to 75% automatically when 
 The installed system ships a `vlarch` CLI. Useful commands:
 
 - `vlarch update` — full system update: `pacman -Syu`, sync manifest packages, dotfiles, hyprpm, and refresh the CLI.
-- `vlarch post-install` — re-run idempotent finalization (NetworkManager, baseline snapshot, Hyprland plugins).
+- `vlarch post-install` — re-run idempotent finalization (NetworkManager, WiFi).
 - `vlarch version` — print install metadata.
 - `vlarch help` — list all subcommands.
 
@@ -45,7 +45,9 @@ Update also works without the CLI:
 curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash
 ```
 
-The bootstrap compares your installed version against `https://vlarch.vladi.tech/version.txt` and skips when already up to date. Use `--force` to re-run anyway.
+The bootstrap compares your installed `version=` (written on first update) against `https://vlarch.vladi.tech/version.txt` and skips when already up to date. Fresh installs have no version until the first update completes. Use `--force` to re-run anyway.
+
+Package manifests live under `update/packages/`; dotfiles live at `dotfiles/` in the repo root. Install embeds the pacstrap list in `install/steps/04_pacstrap.sh` and seeds `install/assets/.zprofile` before the first update.
 
 Optional flags:
 

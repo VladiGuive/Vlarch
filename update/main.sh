@@ -6,9 +6,9 @@ set -euo pipefail
   || { printf '[vlarch] error: VLARCH_SCRIPT_DIR not set\n' >&2; exit 1; }
 
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/log.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/commons/lib/runtime.sh"
+source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 
@@ -16,8 +16,8 @@ VLARCH_DRY_RUN="${VLARCH_DRY_RUN:-0}"
 VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 VLARCH_VERSION="${VLARCH_VERSION:-0.0.0-dev}"
-VLARCH_MANIFEST_DIR="${VLARCH_MANIFEST_DIR:-${VLARCH_SCRIPT_DIR}/install/packages}"
-VLARCH_DOTFILES_DIR="${VLARCH_DOTFILES_DIR:-${VLARCH_SCRIPT_DIR}/install/dotfiles}"
+VLARCH_MANIFEST_DIR="${VLARCH_MANIFEST_DIR:-${VLARCH_SCRIPT_DIR}/update/packages}"
+VLARCH_DOTFILES_DIR="${VLARCH_DOTFILES_DIR:-${VLARCH_SCRIPT_DIR}/dotfiles}"
 VLARCH_BIN_DIR="${VLARCH_BIN_DIR:-${VLARCH_SCRIPT_DIR}/bin}"
 VLARCH_UPDATE_SUMMARY_FILE="${VLARCH_UPDATE_SUMMARY_FILE:-/tmp/vlarch-update-summary.$$}"
 export VLARCH_DRY_RUN VLARCH_VERBOSE VLARCH_INFO_FILE VLARCH_VERSION
@@ -30,19 +30,11 @@ while (($#)); do
     --dry-run) VLARCH_DRY_RUN=1; shift ;;
     --verbose) VLARCH_VERBOSE=1; shift ;;
     --quiet)   VLARCH_VERBOSE=0; shift ;;
-    --force)   shift ;; # consumed by update.sh bootstrap
+    --force)   shift ;;
     --help|-h)
       cat <<USAGE
 Vlarch update
 Usage: update.sh [--quiet|--verbose] [--dry-run] [--force] [--cdn-base URL] [--repo URL] [--branch REF]
-
-  --quiet     Silent except on fatal errors and the final summary (default).
-  --verbose   Stream every command's output and enable bash xtrace.
-  --dry-run   Run preflight and print planned actions; skip mutations.
-  --force     Skip CDN version check (handled by bootstrap).
-  --cdn-base  Override CDN base URL (handled by bootstrap).
-  --repo URL  Override clone source (handled by bootstrap).
-  --branch R  Override clone ref (handled by bootstrap).
 USAGE
       exit 0
       ;;

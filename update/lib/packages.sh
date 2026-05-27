@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 # Package install helpers. Sourced - no set -e here.
-# Requires: commons/lib/manifest.sh
-# Public:
-#   vlarch_bootstrap_yay <user>
-#   vlarch_yay_install_pkgs <user> <pkg...>
-#   vlarch_yay_install_manifests <user> <pacman.txt> <aur.txt>
 
-_VLARCH_COMMONS_LIB="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+_VLARCH_UPDATE_LIB="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck disable=SC1091
-source "${_VLARCH_COMMONS_LIB}/manifest.sh"
+source "${_VLARCH_UPDATE_LIB}/manifest.sh"
 
 vlarch_bootstrap_yay() {
   local user="$1"

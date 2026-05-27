@@ -18,7 +18,6 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch" /mnt/usr/local/bin/vlarch
 
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {
-  printf 'version=%s\n'      "${VLARCH_VERSION}"
   printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'user=%s\n'         "${VLARCH_USER}"
   printf 'disk=%s\n'         "${VLARCH_DISK}"

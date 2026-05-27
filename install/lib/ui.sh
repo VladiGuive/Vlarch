@@ -26,8 +26,8 @@ declare -gA VLARCH_STEP_TITLES=(
   [05_chroot_system]="Configure system locale"
   [06_chroot_users]="Create users"
   [07_chroot_boot]="Install bootloader"
-  [08_chroot_aur]="Install packages"
-  [09_dotfiles]="Deploy dotfiles"
+  [08_chroot_aur]="Bootstrap yay"
+  [09_dotfiles]="Install first-boot hook"
   [10_finalize]="Finalize installation"
 )
 
@@ -173,17 +173,4 @@ vlarch_ui_tick() {
 vlarch_ui_tick_step_boundary() {
   vlarch_ui_enabled || return 0
   vlarch_ui_tick "starting step"
-}
-
-vlarch_install_wallpapers() {
-  local src="${VLARCH_ASSETS_DIR}/background.png"
-  local dest=/mnt/usr/share/hypr
-  [[ -f "$src" ]] || vlarch_die "missing wallpaper asset: $src"
-  mountpoint -q /mnt || vlarch_die "/mnt not mounted; cannot install wallpapers"
-  mkdir -p "$dest"
-  local n
-  for n in 0 1 2; do
-    cp -f "$src" "${dest}/wall${n}.png"
-  done
-  vlarch_ui_enabled && vlarch_ui_tick "install hypr wallpapers"
 }

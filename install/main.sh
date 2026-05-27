@@ -25,12 +25,10 @@ VLARCH_DRY_RUN="${VLARCH_DRY_RUN:-0}"
 VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
 VLARCH_CONFIG_FILE="${VLARCH_CONFIG_FILE:-/tmp/vlarch-install.env}"
 VLARCH_VERSION="${VLARCH_VERSION:-0.0.0-dev}"
-VLARCH_MANIFEST_DIR="${VLARCH_MANIFEST_DIR:-${VLARCH_SCRIPT_DIR}/install/packages}"
-VLARCH_DOTFILES_DIR="${VLARCH_DOTFILES_DIR:-${VLARCH_SCRIPT_DIR}/install/dotfiles}"
 VLARCH_ASSETS_DIR="${VLARCH_ASSETS_DIR:-${VLARCH_SCRIPT_DIR}/install/assets}"
 VLARCH_BIN_DIR="${VLARCH_BIN_DIR:-${VLARCH_SCRIPT_DIR}/bin}"
 export VLARCH_DRY_RUN VLARCH_VERBOSE VLARCH_CONFIG_FILE VLARCH_VERSION
-export VLARCH_MANIFEST_DIR VLARCH_DOTFILES_DIR VLARCH_ASSETS_DIR VLARCH_BIN_DIR
+export VLARCH_ASSETS_DIR VLARCH_BIN_DIR
 
 while (($#)); do
   case "$1" in
@@ -105,10 +103,6 @@ for step_path in "${VLARCH_STEPS[@]}"; do
       ;;
   esac
   export VLARCH_UI
-
-  if [[ "$step_name" == 09_dotfiles ]]; then
-    vlarch_install_wallpapers
-  fi
 
   bash "$step_path"
   if ((VLARCH_DRY_RUN)) && [[ "$step_name" == 02_collect_input ]]; then

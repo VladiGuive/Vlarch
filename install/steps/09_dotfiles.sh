@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 09 - dotfiles: rsync install/dotfiles/ into the new user's home.
+# 09 - zprofile: install first-boot hook from install/assets/.zprofile.
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -12,16 +12,15 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/chroot.sh"
 vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
 
-[[ -d "$VLARCH_DOTFILES_DIR" ]] || vlarch_die "dotfiles dir missing: $VLARCH_DOTFILES_DIR"
+zprofile="${VLARCH_ASSETS_DIR}/.zprofile"
+[[ -f "$zprofile" ]] || vlarch_die "missing install asset: $zprofile"
 
-rm -rf /mnt/root/vlarch-dotfiles /mnt/root/vlarch-commons
-cp -a "$VLARCH_DOTFILES_DIR" /mnt/root/vlarch-dotfiles
-cp -a "${VLARCH_SCRIPT_DIR}/commons/lib" /mnt/root/vlarch-commons
+install -Dm0644 "$zprofile" /mnt/root/vlarch-zprofile
 
 vlarch_chroot_run '
 set -euo pipefail
-# shellcheck disable=SC1091
-source /root/vlarch-commons/dotfiles.sh
-vlarch_deploy_dotfiles "${VLARCH_USER}" /root/vlarch-dotfiles
-rm -rf /root/vlarch-dotfiles /root/vlarch-commons
+home="/home/${VLARCH_USER}"
+[[ -d "$home" ]] || { echo "$home missing" >&2; exit 1; }
+install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" /root/vlarch-zprofile "${home}/.zprofile"
+rm -f /root/vlarch-zprofile
 '

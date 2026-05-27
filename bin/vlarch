@@ -28,16 +28,7 @@ _ensure_root() {
     "$0" "$@"
 }
 
-# Hyprland plugins belong to the login user, not root.
-_as_invoker() {
-  if [[ -n "${SUDO_USER:-}" ]]; then
-    sudo -u "$SUDO_USER" -- "$@"
-  else
-    "$@"
-  fi
-}
-
-# vlarch:summary=Idempotent finalization (NetworkManager, snapshot, hyprpm).
+# vlarch:summary=Idempotent finalization (NetworkManager, WiFi).
 cmd_post_install() {
   local force=0
   while (($#)); do
@@ -67,30 +58,19 @@ cmd_post_install() {
       || _warn "could not join $VLARCH_WIFI_SSID"
   fi
 
-  if command -v timeshift >/dev/null 2>&1; then
-    _log "Creating baseline timeshift snapshot"
-    timeshift --create --comments "vlarch baseline" --tags D \
-      || _warn "timeshift snapshot failed"
-  fi
-
-  if command -v hyprpm >/dev/null 2>&1; then
-    _log "Refreshing hyprpm plugins"
-    _as_invoker hyprpm update  || _warn "hyprpm update failed"
-    _as_invoker hyprpm reload || _warn "hyprpm reload failed"
-  fi
-
   install -d -m 0755 "$VLARCH_STATE_DIR"
   touch "$VLARCH_POST_INSTALL_MARKER"
   _log "post-install done"
 }
 
-# vlarch:summary=One-shot first-login bootstrap; chains into post-install.
+# vlarch:summary=One-shot first-login bootstrap; post-install then update from CDN.
 cmd_first_boot() {
   if [[ ! -f "$VLARCH_FIRST_BOOT_MARKER" ]]; then
     return 0
   fi
   _log "First-boot bootstrap"
   cmd_post_install
+  cmd_update
   rm -f "$VLARCH_FIRST_BOOT_MARKER"
 }
 

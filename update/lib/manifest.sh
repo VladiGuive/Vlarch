@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Manifest helpers. Sourced - no set -e here.
-# Public: vlarch_read_manifest <file>
 
 vlarch_read_manifest() {
   local manifest="$1"
