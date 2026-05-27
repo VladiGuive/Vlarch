@@ -29,8 +29,11 @@ grim
 slurp
 wl-clipboard
 xdg-desktop-portal-hyprland
-# hyprpm plugin build deps
+# hyprpm plugin build deps (see wiki.hypr.land/Plugins/Using-Plugins/)
 cmake
 cpio
 pkg-config
 base-devel
+git
+meson
+ninja

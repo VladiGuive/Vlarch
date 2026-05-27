@@ -25,8 +25,12 @@ if ! command -v hyprpm >/dev/null 2>&1; then
 fi
 
 vlarch_run "hyprpm build deps" \
-  pacman -S --noconfirm --needed cmake cpio pkg-config base-devel git hyprland
+  pacman -S --noconfirm --needed \
+    cmake cpio pkg-config base-devel git meson ninja hyprland
 
-vlarch_hyprpm_update "$VLARCH_USER" || true
-
-vlarch_update_note "hyprpm: ok"
+if vlarch_hyprpm_update "$VLARCH_USER"; then
+  vlarch_update_note "hyprpm: ok"
+else
+  vlarch_warn "hyprpm: header update failed (try: hyprpm purge-cache && hyprpm update -fv)"
+  vlarch_update_note "hyprpm: failed"
+fi

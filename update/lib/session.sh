@@ -83,8 +83,51 @@ vlarch_sync_tmux_plugins() {
   vlarch_run_user "$user" "tmux install plugins" "'${tpm_install}'"
 }
 
-# Headers/plugins refresh; reload happens on Hyprland start (start-hyprland / exec-once).
+vlarch_hyprpm_user_env() {
+  local user="$1" home runtime sig
+  home="$(vlarch_user_home "$user")"
+  runtime="$(vlarch_user_runtime "$user")"
+  printf "export HOME='%s' USER='%s' XDG_RUNTIME_DIR='%s'" "$home" "$user" "$runtime"
+  sig="$(vlarch_hyprland_signature_for_user "$user" 2>/dev/null || true)"
+  if [[ -n "$sig" ]]; then
+    printf " HYPRLAND_INSTANCE_SIGNATURE='%s'" "$sig"
+  fi
+}
+
+vlarch_hyprpm_headers_ok() {
+  local user="$1" home
+  home="$(vlarch_user_home "$user")"
+  [[ -d "${home}/.local/share/hyprpm/headersRoot/include/hyprland" ]]
+}
+
+# Headers/plugins refresh; plugin reload also runs via vlarch-hyprpm-sync on Hyprland start.
 vlarch_hyprpm_update() {
-  local user="$1"
-  vlarch_run_user "$user" "hyprpm update" 'hyprpm update -f' || return 0
+  local user="$1" env cmd
+
+  command -v hyprpm >/dev/null 2>&1 || return 0
+
+  env="$(vlarch_hyprpm_user_env "$user")"
+  cmd="${env}; hyprpm update -f"
+
+  if vlarch_run_user "$user" "hyprpm update" "$cmd"; then
+    return 0
+  fi
+
+  if declare -F vlarch_warn >/dev/null 2>&1; then
+    vlarch_warn "hyprpm update failed; purging cache and retrying"
+  fi
+  vlarch_run_user "$user" "hyprpm purge-cache" "${env}; hyprpm purge-cache" || true
+  cmd="${env}; hyprpm update -fv"
+  if vlarch_run_user "$user" "hyprpm update retry" "$cmd"; then
+    return 0
+  fi
+
+  if vlarch_hyprpm_headers_ok "$user"; then
+    if declare -F vlarch_warn >/dev/null 2>&1; then
+      vlarch_warn "hyprpm could not reload plugins (Hyprland offline); headers present"
+    fi
+    return 0
+  fi
+
+  return 1
 }

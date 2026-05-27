@@ -14,6 +14,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 
 [[ -f "${VLARCH_BIN_DIR}/vlarch" ]] || vlarch_die "missing bin/vlarch"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
 
 if ((VLARCH_DRY_RUN)); then
   vlarch_update_note "finalize: dry-run (would install bin scripts and bump version to ${VLARCH_VERSION})"
@@ -25,6 +26,9 @@ vlarch_run "install vlarch CLI" \
 
 vlarch_run "install vlarch-tty-login" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-tty-login" /usr/local/bin/vlarch-tty-login
+
+vlarch_run "install vlarch-hyprpm-sync" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" /usr/local/bin/vlarch-hyprpm-sync
 
 # Remove legacy wrapper that shadowed Hyprland's official /usr/bin/start-hyprland.
 if [[ -e /usr/local/bin/start-hyprland ]]; then

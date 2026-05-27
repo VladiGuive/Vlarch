@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# vlarch-hyprpm-sync - refresh hyprpm headers/plugins once Hyprland is ready.
+
+set +e
+
+command -v hyprpm >/dev/null 2>&1 || exit 0
+
+for _ in $(seq 1 50); do
+  [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && break
+  sleep 0.1
+done
+
+if hyprpm update -f; then
+  hyprpm reload -n
+  exit 0
+fi
+
+hyprpm purge-cache 2>/dev/null
+if hyprpm update -f; then
+  hyprpm reload -n
+  exit 0
+fi
+
+hyprpm reload -n 2>/dev/null
+exit 0
