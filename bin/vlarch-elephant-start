@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Start elephant (Walker backend) as a user service, or fall back to a background process.
+
+command -v elephant >/dev/null 2>&1 || exit 0
+
+if systemctl --user is-active --quiet elephant.service 2>/dev/null; then
+  exit 0
+fi
+
+elephant service enable 2>/dev/null || true
+if systemctl --user start elephant.service 2>/dev/null; then
+  exit 0
+fi
+
+elephant >/dev/null 2>&1 &

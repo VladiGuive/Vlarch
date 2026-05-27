@@ -1,4 +1,5 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 oh-my-posh-bin
 walker-bin
+elephant-all-bin
 timeshift-autosnap
