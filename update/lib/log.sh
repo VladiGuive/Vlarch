@@ -71,5 +71,13 @@ vlarch_run() {
     VLARCH_LAST_LOG="$log"
     vlarch_die "${label} failed (exit ${rc})"
   fi
+  if declare -F vlarch_ui_tick >/dev/null 2>&1; then
+    vlarch_ui_tick "$label"
+  fi
   return 0
 }
+
+if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/lib/ui.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "${VLARCH_SCRIPT_DIR}/update/lib/ui.sh"
+fi

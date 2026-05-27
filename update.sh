@@ -3,9 +3,8 @@
 # Compares CDN version.txt against /etc/vlarch/install-info, clones the repo,
 # and hands off to update/main.sh.
 #
-# Silent during normal operation; only fatal errors print, and they include the
-# captured tail of the failing command. Set VLARCH_VERBOSE=1 (or pass --verbose)
-# to stream every command's output.
+# Quiet mode shows a Nord TTY UI with progress bars (like install).
+# Set VLARCH_VERBOSE=1 or pass --verbose to stream every command's output.
 set -euo pipefail
 
 : "${VLARCH_GIT_URL:=https://github.com/VladiGuive/Vlarch.git}"
@@ -16,11 +15,17 @@ set -euo pipefail
 : "${VLARCH_FORCE_UPDATE:=0}"
 VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-update-bootstrap.log}"
 
+_VLARCH_ESC_RESET=$'\033[0m'
+_VLARCH_NORD_BG=$'\033[48;5;236m'
+_VLARCH_NORD_FG=$'\033[38;5;253m'
+_VLARCH_NORD_CYAN=$'\033[38;5;109m'
+
 _log() {
   if ((VLARCH_VERBOSE)); then
     printf '[vlarch] %s\n' "$*"
   fi
 }
+
 _die() {
   printf '[vlarch] error: %s\n' "$*" >&2
   if [[ -s "$VLARCH_BOOTSTRAP_LOG" ]]; then
@@ -29,6 +34,44 @@ _die() {
     printf '[vlarch] full log: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
   fi
   exit 1
+}
+
+_ui_print_logo() {
+  local ansi_url="${VLARCH_CDN_BASE}/install/assets/ansi_logo.txt"
+  if curl -fsSL "$ansi_url" 2>/dev/null; then
+    printf '%b\n' "${_VLARCH_ESC_RESET}"
+    return 0
+  fi
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/ansi_logo.txt" ]]; then
+    printf '%b' "${_VLARCH_NORD_BG}"
+    cat "${VLARCH_SCRIPT_DIR}/install/assets/ansi_logo.txt"
+    printf '%b\n' "${_VLARCH_ESC_RESET}"
+    return 0
+  fi
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/logo.txt" ]]; then
+    printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
+    cat "${VLARCH_SCRIPT_DIR}/install/assets/logo.txt"
+    printf '%b\n' "${_VLARCH_ESC_RESET}"
+    return 0
+  fi
+  printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
+  cat <<'LOGO'
+ _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/
+LOGO
+  printf '%b\n' "${_VLARCH_ESC_RESET}"
+}
+
+_ui_show_banner() {
+  local from="$1" to="$2"
+  ((VLARCH_VERBOSE)) && return 0
+  [[ -t 1 ]] || return 0
+  clear || true
+  _ui_print_logo
+  printf '\n'
+  printf '%bUpdating %s → %s%b\n\n' "${_VLARCH_NORD_FG}" "$from" "$to" "${_VLARCH_ESC_RESET}"
 }
 
 _run() {
@@ -56,6 +99,14 @@ _fetch_remote_version() {
 _check_version_gate() {
   if ((VLARCH_FORCE_UPDATE)); then
     _log "Skipping version check (--force)"
+    local remote local_ver
+    local_ver="$(_local_version "$VLARCH_INFO_FILE")"
+    VLARCH_FROM_VERSION="${local_ver:-none}"
+    remote="$(_fetch_remote_version)" || true
+    if [[ -n "$remote" ]]; then
+      _ui_show_banner "${VLARCH_FROM_VERSION}" "$remote"
+    fi
+    export VLARCH_FROM_VERSION
     return 0
   fi
 
@@ -69,7 +120,10 @@ _check_version_gate() {
     exit 0
   fi
 
-  printf '[vlarch] update available: %s -> %s\n' "${local_ver:-none}" "$remote"
+  VLARCH_FROM_VERSION="${local_ver:-none}"
+  export VLARCH_FROM_VERSION
+  _log "update available: ${VLARCH_FROM_VERSION} -> ${remote}"
+  _ui_show_banner "${VLARCH_FROM_VERSION}" "$remote"
 }
 
 _run_main() {
@@ -80,6 +134,11 @@ _run_main() {
   if [[ -f "${root}/version.txt" ]]; then
     VLARCH_VERSION="$(tr -d '[:space:]' <"${root}/version.txt")"
     export VLARCH_VERSION
+  fi
+  if (( ! VLARCH_VERBOSE )); then
+    export VLARCH_UI=1
+  else
+    export VLARCH_UI=0
   fi
   exec bash "${root}/update/main.sh" "$@"
 }
@@ -135,6 +194,7 @@ _self="${BASH_SOURCE[0]:-}"
 if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
   _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
   if [[ -f "${_root}/update/main.sh" ]]; then
+    export VLARCH_SCRIPT_DIR="$_root"
     _check_version_gate
     _run_main "${_root}" "${ARGS[@]}"
   fi

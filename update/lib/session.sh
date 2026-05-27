@@ -6,6 +6,7 @@ vlarch_run_user() {
 
   if ((VLARCH_VERBOSE)); then
     su - "$user" -c "$cmd" || return 1
+    declare -F vlarch_ui_tick >/dev/null 2>&1 && vlarch_ui_tick "$label"
     return 0
   fi
 
@@ -19,6 +20,9 @@ vlarch_run_user() {
     printf 'cmd: %s\n' "$cmd"
   } >>"$log"
   su - "$user" -c "$cmd" >>"$log" 2>&1 || rc=$?
+  if ((rc == 0)) && declare -F vlarch_ui_tick >/dev/null 2>&1; then
+    vlarch_ui_tick "$label"
+  fi
   return "$rc"
 }
 

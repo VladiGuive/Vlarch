@@ -14,21 +14,24 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
 
 VLARCH_DRY_RUN="${VLARCH_DRY_RUN:-0}"
 VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
+VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 VLARCH_VERSION="${VLARCH_VERSION:-0.0.0-dev}"
+VLARCH_FROM_VERSION="${VLARCH_FROM_VERSION:-}"
 VLARCH_MANIFEST_DIR="${VLARCH_MANIFEST_DIR:-${VLARCH_SCRIPT_DIR}/update/packages}"
 VLARCH_DOTFILES_DIR="${VLARCH_DOTFILES_DIR:-${VLARCH_SCRIPT_DIR}/dotfiles}"
 VLARCH_BIN_DIR="${VLARCH_BIN_DIR:-${VLARCH_SCRIPT_DIR}/bin}"
+VLARCH_ASSETS_DIR="${VLARCH_ASSETS_DIR:-${VLARCH_SCRIPT_DIR}/install/assets}"
 VLARCH_UPDATE_SUMMARY_FILE="${VLARCH_UPDATE_SUMMARY_FILE:-/tmp/vlarch-update-summary.$$}"
-export VLARCH_DRY_RUN VLARCH_VERBOSE VLARCH_INFO_FILE VLARCH_VERSION
-export VLARCH_MANIFEST_DIR VLARCH_DOTFILES_DIR VLARCH_BIN_DIR VLARCH_UPDATE_SUMMARY_FILE
+export VLARCH_DRY_RUN VLARCH_VERBOSE VLARCH_UI VLARCH_INFO_FILE VLARCH_VERSION VLARCH_FROM_VERSION
+export VLARCH_MANIFEST_DIR VLARCH_DOTFILES_DIR VLARCH_BIN_DIR VLARCH_ASSETS_DIR VLARCH_UPDATE_SUMMARY_FILE
 
 : >"$VLARCH_UPDATE_SUMMARY_FILE"
 
 while (($#)); do
   case "$1" in
     --dry-run) VLARCH_DRY_RUN=1; shift ;;
-    --verbose) VLARCH_VERBOSE=1; shift ;;
+    --verbose) VLARCH_VERBOSE=1; VLARCH_UI=0; shift ;;
     --quiet)   VLARCH_VERBOSE=0; shift ;;
     --force)   shift ;;
     --help|-h)
@@ -44,7 +47,10 @@ USAGE
     *) vlarch_die "unknown option: $1" ;;
   esac
 done
-export VLARCH_DRY_RUN VLARCH_VERBOSE
+export VLARCH_DRY_RUN VLARCH_VERBOSE VLARCH_UI
+
+((VLARCH_VERBOSE)) && VLARCH_UI=0
+export VLARCH_UI
 
 ((VLARCH_VERBOSE)) && set -x
 
@@ -61,20 +67,40 @@ mapfile -t VLARCH_STEPS < <(printf '%s\n' "${VLARCH_SCRIPT_DIR}/update/steps/"[0
 shopt -u nullglob
 ((${#VLARCH_STEPS[@]})) || vlarch_die "no step scripts found in update/steps"
 
+if declare -F vlarch_ui_init >/dev/null 2>&1; then
+  vlarch_ui_init
+  if [[ -n "$VLARCH_FROM_VERSION" ]]; then
+    vlarch_ui_set_versions "$VLARCH_FROM_VERSION" "$VLARCH_VERSION"
+  fi
+fi
+
+step_idx=0
+step_total=${#VLARCH_STEPS[@]}
+
 for step_path in "${VLARCH_STEPS[@]}"; do
   step_name="$(basename "$step_path" .sh)"
   VLARCH_CURRENT_STEP="$step_name"
   export VLARCH_CURRENT_STEP
+  step_idx=$((step_idx + 1))
   vlarch_step "Step: ${step_name}"
+
+  if declare -F vlarch_ui_begin_step >/dev/null 2>&1 && vlarch_ui_enabled; then
+    vlarch_ui_begin_step "$step_idx" "$step_total" "$step_name"
+  fi
+
   bash "$step_path"
 done
 
 trap - ERR
 
-printf '[vlarch] update complete (%s)\n' "${VLARCH_VERSION}"
-if [[ -s "$VLARCH_UPDATE_SUMMARY_FILE" ]]; then
-  while IFS= read -r line; do
-    printf '[vlarch]   %s\n' "$line"
-  done <"$VLARCH_UPDATE_SUMMARY_FILE"
+if declare -F vlarch_ui_show_complete >/dev/null 2>&1 && vlarch_ui_enabled; then
+  vlarch_ui_show_complete
+else
+  printf '[vlarch] update complete (%s)\n' "${VLARCH_VERSION}"
+  if [[ -s "$VLARCH_UPDATE_SUMMARY_FILE" ]]; then
+    while IFS= read -r line; do
+      printf '[vlarch]   %s\n' "$line"
+    done <"$VLARCH_UPDATE_SUMMARY_FILE"
+  fi
 fi
 rm -f "$VLARCH_UPDATE_SUMMARY_FILE"

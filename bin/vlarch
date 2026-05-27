@@ -9,11 +9,13 @@ set -euo pipefail
 
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 VLARCH_STATE_DIR="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
 VLARCH_FIRST_BOOT_MARKER="${VLARCH_STATE_DIR}/first-boot.pending"
 VLARCH_POST_INSTALL_MARKER="${VLARCH_STATE_DIR}/post-install.done"
 VLARCH_RUNTIME_ENV="${VLARCH_STATE_DIR}/runtime.env"
 
 _log()  { printf '[vlarch] %s\n' "$*"; }
+_vlog() { ((VLARCH_VERBOSE)) && printf '[vlarch] %s\n' "$*"; }
 _warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
 _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
@@ -53,26 +55,28 @@ _try_wifi_connect() {
   if nmcli device wifi connect "$VLARCH_WIFI_SSID" \
     ${VLARCH_WIFI_PASSWORD:+password "$VLARCH_WIFI_PASSWORD"} \
     >/dev/null 2>&1; then
-    _log "Joined WiFi: $VLARCH_WIFI_SSID"
+    _vlog "Joined WiFi: $VLARCH_WIFI_SSID"
     return 0
   fi
   return 1
 }
 
 _wait_for_network() {
+  local quiet=0
+  [[ "${1:-}" == --quiet ]] && quiet=1
   local timeout="${VLARCH_NETWORK_TIMEOUT:-180}"
   local elapsed=0 interval=3
 
-  _log "Waiting for network (up to ${timeout}s)..."
-  _try_wifi_connect || _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
+  ((!quiet)) && _log "Waiting for network (up to ${timeout}s)..."
+  _try_wifi_connect || ((!quiet)) && _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
 
   while ((elapsed < timeout)); do
     if _has_network; then
-      _log "Network ready"
+      ((!quiet)) && _log "Network ready"
       return 0
     fi
     if ((elapsed > 0 && elapsed % 15 == 0)); then
-      _log "Still waiting; retrying WiFi..."
+      ((!quiet)) && _log "Still waiting; retrying WiFi..."
       _try_wifi_connect || true
     fi
     sleep "$interval"
@@ -93,7 +97,7 @@ _ensure_root() {
     return 0
   fi
   exec sudo \
-    --preserve-env=VLARCH_INFO_FILE,VLARCH_STATE_DIR,VLARCH_FIRST_BOOT_MARKER,VLARCH_POST_INSTALL_MARKER,VLARCH_RUNTIME_ENV,VLARCH_CDN_BASE,VLARCH_VERBOSE \
+    --preserve-env=VLARCH_INFO_FILE,VLARCH_STATE_DIR,VLARCH_FIRST_BOOT_MARKER,VLARCH_POST_INSTALL_MARKER,VLARCH_RUNTIME_ENV,VLARCH_CDN_BASE,VLARCH_VERBOSE,VLARCH_UI \
     "$VLARCH_SELF" "$@"
 }
 
@@ -151,8 +155,8 @@ cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
   _load_runtime_env
-  _wait_for_network
-  _log "Fetching update bootstrap from ${url}"
+  _wait_for_network --quiet
+  _vlog "Fetching update bootstrap from ${url}"
   curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
   if ((rc != 0)); then
     _die "update failed (exit ${rc}); try: vlarch update --verbose"
