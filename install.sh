@@ -26,6 +26,38 @@ _die() {
   exit 1
 }
 
+# Nord bootstrap branding (sync heredoc with install/assets/ansi_logo.txt)
+_BS_RESET=$'\033[0m'
+_BS_DIM=$'\033[38;5;245m'
+_BS_FG=$'\033[38;5;253m'
+
+_print_bootstrap_logo() {
+  local assets_dir="${1:-}"
+  if [[ -n "$assets_dir" && -f "${assets_dir}/ansi_logo.txt" ]]; then
+    cat "${assets_dir}/ansi_logo.txt"
+    printf '\n'
+    return 0
+  fi
+  cat <<'VLARCH_BOOTSTRAP_LOGO'
+[48;5;236m[38;5;255m▄█████▄     ▄█████████████▄                                           ▄███████▄[0m
+[48;5;236m[38;5;109m██   ██    ▄█▀   ▄█▀   ▄█▀                                           ▄█▀   ▄█▀[0m
+[48;5;236m[38;5;109m██   ██   ▄█▀   ▄█▀   ▄█▀                              [38;5;176m@ VladiGuive[38;5;109m ▄█▀   ▄█▀[0m
+[48;5;236m[38;5;109m██   ██  ▄█▀   ▄█▀   ▄█████████████▄   ▄█████████████████████████████▀   ▄█▀[0m
+[48;5;236m[38;5;109m██   ██ ▄█▀   ▄█▀   ▄█▀           ▀█▄ ▄█▀           ▄█▀           ▄█▀    ▀▀▀▀▀▀▀█▄[0m
+[48;5;236m[38;5;109m██   ██▄█▀   ▄█▀   ▄█▀             ▀█▄█▀           ▄█▀           ▄█▀            ▀█▄[0m
+[48;5;236m[38;5;109m██   ███▀   ▄█▀   ▄█▀      ▄▄▄▄     ▄█▀   ▄▄▄▄▄▄▄▄▄█▀    ▄▄▄▄▄▄▄▄█▀    ▄▄▄▄▄▄    ▀█▄[0m
+[48;5;236m[38;5;109m██         ▄█▀   ▄█▀█▄             ▄█▀   ▄█▀      ▀█▄          ▄█▀   ▄█▀   ▄█▀   ▄█▀[0m
+[48;5;236m[38;5;109m██        ▄█▀   ▄█▀ ▀█▄           ▄█▀   ▄█▀        ▀█▄        ▄█▀   ▄█▀   ▄█▀   ▄█▀[0m
+[48;5;236m[38;5;255m▀██▄▄▄▄▄▄██▀▄▄▄▄█▀   ▀█▄▄▄▄▄█▀▄▄▄▄█▀▄▄▄▄█▀          ▀█▄▄▄▄▄▄▄▄█▀▄▄▄▄█▀    ▀█▄▄▄▄█▀[0m
+VLARCH_BOOTSTRAP_LOGO
+  printf '\n'
+}
+
+_print_bootstrap_preparing() {
+  printf '%b%b%b\n' "${_BS_DIM}" 'Preparing installation environment...' "${_BS_RESET}"
+}
+
+
 # Run a command silently in quiet mode (output appended to bootstrap log) and
 # stream it directly in verbose mode. Dies with the tail on failure.
 _run() {
@@ -88,17 +120,23 @@ _run_main() {
 
 # When `install.sh` is run directly from a checked-out repo (not via curl), reuse it.
 if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/main.sh" ]]; then
+  _print_bootstrap_logo "${VLARCH_SCRIPT_DIR}/install/assets"
+  _print_bootstrap_preparing
   _run_main "${VLARCH_SCRIPT_DIR}" "$@"
 fi
 _self="${BASH_SOURCE[0]:-}"
 if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
   _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
   if [[ -f "${_root}/install/main.sh" ]]; then
+    _print_bootstrap_logo "${_root}/install/assets"
+    _print_bootstrap_preparing
     _run_main "${_root}" "$@"
   fi
 fi
 
 # Otherwise we are piped from curl: prep the live ISO, clone, and hand off.
+_print_bootstrap_logo
+_print_bootstrap_preparing
 _ensure_cowspace_early
 _ensure_bootstrap_pkgs
 
@@ -143,4 +181,6 @@ else
     git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
 fi
 
+_print_bootstrap_logo "${WORKDIR}/install/assets"
+_print_bootstrap_preparing
 _run_main "${WORKDIR}" "${ARGS[@]}"

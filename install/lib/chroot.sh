@@ -36,5 +36,8 @@ vlarch_chroot_run() {
     VLARCH_LAST_LOG="$log"
     vlarch_die "chroot script failed in ${VLARCH_CURRENT_STEP:-unknown} (exit ${rc})"
   fi
+  if declare -F vlarch_ui_tick >/dev/null 2>&1; then
+    vlarch_ui_tick "chroot: ${VLARCH_CURRENT_STEP:-unknown}"
+  fi
   return 0
 }

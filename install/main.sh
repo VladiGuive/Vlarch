@@ -11,6 +11,8 @@ set -euo pipefail
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
 # shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/install/lib/ui.sh"
+# shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/install/lib/config.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/install/lib/live.sh"
@@ -79,11 +81,35 @@ mapfile -t VLARCH_STEPS < <(printf '%s\n' "${VLARCH_SCRIPT_DIR}/install/steps/"[
 shopt -u nullglob
 ((${#VLARCH_STEPS[@]})) || vlarch_die "no step scripts found in install/steps"
 
+vlarch_ui_init
+export VLARCH_SCRIPT_DIR
+step_idx=0
+step_total=${#VLARCH_STEPS[@]}
+
 for step_path in "${VLARCH_STEPS[@]}"; do
   step_name="$(basename "$step_path" .sh)"
   VLARCH_CURRENT_STEP="$step_name"
   export VLARCH_CURRENT_STEP
+  step_idx=$((step_idx + 1))
   vlarch_step "Step: ${step_name}"
+
+  case "$step_name" in
+    01_preflight|02_collect_input)
+      VLARCH_UI=0
+      ;;
+    *)
+      export VLARCH_UI=1
+      if vlarch_ui_enabled; then
+        vlarch_ui_begin_step "$step_idx" "$step_total" "$step_name"
+      fi
+      ;;
+  esac
+  export VLARCH_UI
+
+  if [[ "$step_name" == 09_dotfiles ]]; then
+    vlarch_install_wallpapers
+  fi
+
   bash "$step_path"
   if ((VLARCH_DRY_RUN)) && [[ "$step_name" == 02_collect_input ]]; then
     if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
@@ -97,7 +123,16 @@ done
 trap - ERR
 
 # Final interactive prompt is always shown - it's user interaction, not logging.
-printf '\nInstall complete. Press Enter to reboot, or Ctrl-C to drop to a shell...\n'
+if declare -F vlarch_ui_say >/dev/null 2>&1 && !((VLARCH_VERBOSE)); then
+  clear || true
+  vlarch_ui_print_logo || true
+  printf '\n'
+  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Install complete."
+  printf '\n'
+  vlarch_ui_say "${VLARCH_NORD_DIM}" "Press Enter to reboot, or Ctrl-C to drop to a shell..."
+else
+  printf '\nInstall complete. Press Enter to reboot, or Ctrl-C to drop to a shell...\n'
+fi
 if read -r _; then
   vlarch_partition_unmount
   reboot

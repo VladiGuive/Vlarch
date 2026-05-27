@@ -35,6 +35,9 @@ mkdir -p "$(dirname "$log")"
 attempt=1
 max_attempts=3
 while ((attempt <= max_attempts)); do
+  if declare -F vlarch_ui_tick >/dev/null 2>&1; then
+    vlarch_ui_tick "pacstrap (${attempt}/${max_attempts})"
+  fi
   rc=0
   {
     printf '\n--- pacstrap attempt %d/%d ---\n' "$attempt" "$max_attempts"

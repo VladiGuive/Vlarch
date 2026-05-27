@@ -33,11 +33,11 @@ _read_password_twice() {
     read -rsp "$prompt (again): " second
     printf '\n' >&2
     if [[ "$first" != "$second" ]]; then
-      printf "  passwords don't match; try again\n" >&2
+      printf '%b  passwords do not match; try again%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
       continue
     fi
     if [[ -z "$first" ]]; then
-      printf '  password cannot be empty\n' >&2
+      printf '%b  password cannot be empty%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
       continue
     fi
     printf '%s' "$first"
@@ -62,12 +62,10 @@ _detect_network_type() {
 }
 
 clear || true
-if [[ -f "${VLARCH_ASSETS_DIR}/logo.txt" ]]; then
-  cat "${VLARCH_ASSETS_DIR}/logo.txt"
-  echo
-fi
-echo "Vlarch installer"
-echo
+vlarch_ui_print_logo || true
+printf '\n'
+vlarch_ui_say "${VLARCH_NORD_FG}" "Vlarch installer"
+printf '\n'
 
 if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
   reuse=$(printf 'Use existing config\nStart fresh\n' \
@@ -77,7 +75,7 @@ if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
     if vlarch_config_validate 2>/dev/null; then
       exit 0
     fi
-    printf '  saved config is incomplete; starting fresh\n' >&2
+    printf '%b  saved config is incomplete; starting fresh%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
   fi
 fi
 
@@ -132,15 +130,11 @@ export VLARCH_USER_PASSWORD VLARCH_ROOT_PASSWORD VLARCH_LUKS_PASSPHRASE
 vlarch_config_validate
 vlarch_config_save "$VLARCH_CONFIG_FILE"
 
-cat <<SUMMARY
-
-  Captured configuration:
-    user:        ${VLARCH_USER} (${VLARCH_REAL_NAME})
-    network:     ${VLARCH_NETWORK_TYPE}${VLARCH_WIFI_SSID:+ (SSID: ${VLARCH_WIFI_SSID})}
-    timezone:    ${VLARCH_TIMEZONE}
-    locale:      ${VLARCH_LOCALE}
-    disk:        ${VLARCH_DISK}
-
-SUMMARY
-
-read -rp "Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort..." _
+vlarch_ui_say "${VLARCH_NORD_CYAN}" "Captured configuration:"
+printf '%b  user:        %s (%s)%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_USER}" "${VLARCH_REAL_NAME}" "${VLARCH_ESC_RESET}"
+printf '%b  network:     %s%s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_NETWORK_TYPE}" "${VLARCH_WIFI_SSID:+ (SSID: ${VLARCH_WIFI_SSID})}" "${VLARCH_ESC_RESET}"
+printf '%b  timezone:    %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_TIMEZONE}" "${VLARCH_ESC_RESET}"
+printf '%b  locale:      %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_LOCALE}" "${VLARCH_ESC_RESET}"
+printf '%b  disk:        %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_DISK}" "${VLARCH_ESC_RESET}"
+printf '\n'
+read -rp "$(printf '%b' "${VLARCH_NORD_YELLOW}")Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort...$(printf '%b' "${VLARCH_ESC_RESET}")" _
