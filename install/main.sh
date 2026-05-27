@@ -104,10 +104,6 @@ for step_path in "${VLARCH_STEPS[@]}"; do
   esac
   export VLARCH_UI
 
-  if [[ "$step_name" == 09_dotfiles ]]; then
-    vlarch_install_wallpapers
-  fi
-
   bash "$step_path"
   if ((VLARCH_DRY_RUN)) && [[ "$step_name" == 02_collect_input ]]; then
     if [[ -f "$VLARCH_CONFIG_FILE" ]]; then

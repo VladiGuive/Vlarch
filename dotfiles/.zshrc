@@ -1,40 +1,83 @@
-# Vlarch zsh interactive config.
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="/usr/bin:$PATH"
 
-setopt AUTO_CD HIST_IGNORE_DUPS HIST_IGNORE_SPACE SHARE_HISTORY
-HISTFILE="$HOME/.zsh_history"
-HISTSIZE=10000
-SAVEHIST=10000
+if [[ -o interactive ]] && [[ -f "$HOME/.local/bin/vlarch-onboarding" ]]; then
+  bash "$HOME/.local/bin/vlarch-onboarding" || true
+fi
 
+# Set the directory we want to store zinit and plugins
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+
+# Download Zinit, if it's not there yet
+if [ ! -d "$ZINIT_HOME" ]; then
+   mkdir -p "$(dirname $ZINIT_HOME)"
+   git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+
+# Source/Load zinit
+source "${ZINIT_HOME}/zinit.zsh"
+
+# Add in zsh plugins
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+zinit light zsh-users/zsh-autosuggestions
+zinit light Aloxaf/fzf-tab
+
+# Add in snippets
+zinit snippet OMZL::git.zsh
+zinit snippet OMZP::git
+zinit snippet OMZP::sudo
+zinit snippet OMZP::archlinux
+zinit snippet OMZP::aws
+zinit snippet OMZP::kubectl
+zinit snippet OMZP::kubectx
+zinit snippet OMZP::command-not-found
+
+# Load completions
+autoload -Uz compinit && compinit
+
+zinit cdreplay -q
+
+# Keybindings
 bindkey -e
+bindkey  "^[[1~"   beginning-of-line
+bindkey  "^[[4~"   end-of-line
+bindkey  "^[[3~"  delete-char
 
-autoload -U colors && colors
-autoload -Uz compinit && compinit -i
-zstyle ':completion:*' menu select
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+# History
+HISTSIZE=5000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+setopt appendhistory
+setopt sharehistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
 
-export EDITOR="${EDITOR:-nvim}"
-export VISUAL="$EDITOR"
-export PAGER="${PAGER:-less}"
-export LESS="-R"
+# Completion styling
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
-alias ls='ls --color=auto'
-alias ll='ls -alh'
-alias la='ls -A'
-alias grep='grep --color=auto'
-alias g='git'
-alias v='nvim'
+# Aliases
+alias ls='ls --color'
+alias ll='ls -lah --color'
+alias vim='nvim'
+alias c='clear'
+vu() {
+  curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash
+}
 
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"
-fi
-if command -v fzf >/dev/null 2>&1 && [[ -f /usr/share/fzf/key-bindings.zsh ]]; then
-  source /usr/share/fzf/key-bindings.zsh
-  source /usr/share/fzf/completion.zsh 2>/dev/null || true
-fi
-if command -v oh-my-posh >/dev/null 2>&1; then
-  eval "$(oh-my-posh init zsh)"
-fi
+vlarch() {
+  bash "$HOME/.local/bin/vlarch" "$@"
+}
+# Evals
+eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/conf.toml)"
+eval "$(fzf --zsh)"
+eval "$(zoxide init --cmd cd zsh)"
 
-if command -v fastfetch >/dev/null 2>&1 && [[ -z $WAYLAND_DISPLAY && $- == *i* ]]; then
-  fastfetch 2>/dev/null || true
-fi
