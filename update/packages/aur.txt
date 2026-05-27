@@ -1,5 +1,13 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 oh-my-posh-bin
 walker-bin
-elephant-all-bin
+# Walker backend + providers (avoid elephant-all-bin — includes windows-only packages).
+elephant-bin
+elephant-providerlist-bin
+elephant-desktopapplications-bin
+elephant-files-bin
+elephant-calc-bin
+elephant-symbols-bin
+elephant-websearch-bin
+elephant-clipboard-bin
 timeshift-autosnap
