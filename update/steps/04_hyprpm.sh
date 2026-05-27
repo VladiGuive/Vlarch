@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 04 - hyprpm: refresh Hyprland plugins as the login user (quiet; reload deferred if needed).
+# 04 - hyprpm: ensure plugin headers and builds are up to date (quiet).
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -25,13 +25,9 @@ if ! command -v hyprpm >/dev/null 2>&1; then
 fi
 
 vlarch_run "hyprpm build deps" \
-  pacman -S --noconfirm --needed cmake cpio pkg-config base-devel git
+  pacman -S --noconfirm --needed cmake cpio pkg-config base-devel git hyprland
 
-if vlarch_run_user "$VLARCH_USER" "hyprpm update" 'hyprpm update -f'; then
-  :
-else
-  vlarch_info "hyprpm update skipped; plugins reload on next Hyprland start"
-fi
+vlarch_hyprpm_update "$VLARCH_USER" || vlarch_info "hyprpm update deferred to next Hyprland start"
 
 if vlarch_hyprland_session_for_user "$VLARCH_USER"; then
   uid="$(id -u "$VLARCH_USER")"

@@ -26,8 +26,8 @@ fi
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
-if vlarch_reload_tmux_config "$VLARCH_USER"; then
-  vlarch_update_note "dotfiles: ok (tmux reloaded)"
+if vlarch_sync_tmux_plugins "$VLARCH_USER"; then
+  vlarch_update_note "dotfiles: ok (tmux plugins synced)"
 else
   vlarch_update_note "dotfiles: ok"
 fi
