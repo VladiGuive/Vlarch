@@ -11,7 +11,9 @@ hide_action_hints = true
 max_results = 256
 default = [
   "desktopapplications",
-  "websearch",
+]
+empty = [
+  "desktopapplications",
 ]
 
 [[providers.prefixes]]
