@@ -15,7 +15,11 @@ VLARCH_POST_INSTALL_MARKER="${VLARCH_STATE_DIR}/post-install.done"
 VLARCH_RUNTIME_ENV="${VLARCH_STATE_DIR}/runtime.env"
 
 _log()  { printf '[vlarch] %s\n' "$*"; }
-_vlog() { ((VLARCH_VERBOSE)) && printf '[vlarch] %s\n' "$*"; }
+_vlog() {
+  if ((VLARCH_VERBOSE)); then
+    printf '[vlarch] %s\n' "$*"
+  fi
+}
 _warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
 _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
@@ -76,18 +80,18 @@ _wait_for_network() {
   local timeout="${VLARCH_NETWORK_TIMEOUT:-180}"
   local elapsed=0 interval=3
 
-  ((!quiet)) && _log "Waiting for network (up to ${timeout}s)..."
+  if ((!quiet)); then _log "Waiting for network (up to ${timeout}s)..."; fi
   if ((connect)); then
-    _try_wifi_connect || ((!quiet)) && _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
+    _try_wifi_connect || { if ((!quiet)); then _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"; fi; }
   fi
 
   while ((elapsed < timeout)); do
     if _has_network; then
-      ((!quiet)) && _log "Network ready"
+      if ((!quiet)); then _log "Network ready"; fi
       return 0
     fi
     if ((connect && elapsed > 0 && elapsed % 15 == 0)); then
-      ((!quiet)) && _log "Still waiting; retrying WiFi..."
+      if ((!quiet)); then _log "Still waiting; retrying WiFi..."; fi
       _try_wifi_connect || true
     fi
     sleep "$interval"
@@ -165,8 +169,20 @@ cmd_version() {
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
-  _vlog "Fetching update bootstrap from ${url}"
-  curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
+  local -a args=()
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --verbose|-v) VLARCH_VERBOSE=1 ;;
+      *) args+=("$arg") ;;
+    esac
+  done
+  if ((VLARCH_VERBOSE)); then
+    _vlog "Fetching update bootstrap from ${url}"
+  else
+    _log "Updating from ${url}"
+  fi
+  curl -fsSL "${url}" | bash -s -- "${args[@]}" || rc=$?
   if ((rc != 0)); then
     _die "update failed (exit ${rc}); try: vlarch update --verbose"
   fi
@@ -222,7 +238,15 @@ main() {
   if ! declare -F "$fn" >/dev/null 2>&1; then
     _die "unknown subcommand: $sub (try 'vlarch help')"
   fi
-  "$fn" "$@"
+  local -a args=()
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --verbose|-v) VLARCH_VERBOSE=1 ;;
+      *) args+=("$arg") ;;
+    esac
+  done
+  "$fn" "${args[@]}"
 }
 
 if (($# > 0)) && _needs_root "$1"; then
