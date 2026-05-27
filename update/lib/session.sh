@@ -5,7 +5,7 @@ vlarch_run_user() {
   local user="$1" label="$2" cmd="$3"
 
   if ((VLARCH_VERBOSE)); then
-    su - "$user" -c "$cmd" || return 1
+    runuser -u "$user" -- bash -lc "$cmd" || return 1
     declare -F vlarch_ui_tick >/dev/null 2>&1 && vlarch_ui_tick "$label"
     return 0
   fi
@@ -19,7 +19,7 @@ vlarch_run_user() {
     printf 'user: %s\n' "$user"
     printf 'cmd: %s\n' "$cmd"
   } >>"$log"
-  su - "$user" -c "$cmd" >>"$log" 2>&1 || rc=$?
+  runuser -u "$user" -- bash -lc "$cmd" >>"$log" 2>&1 || rc=$?
   if ((rc == 0)) && declare -F vlarch_ui_tick >/dev/null 2>&1; then
     vlarch_ui_tick "$label"
   fi
@@ -70,14 +70,8 @@ vlarch_sync_tmux_plugins() {
 }
 
 vlarch_hyprpm_update() {
-  local user="$1" attempt cmd='hyprpm update -f'
+  local user="$1"
 
-  for attempt in 1 2; do
-    if vlarch_run_user "$user" "hyprpm update (attempt ${attempt})" "$cmd"; then
-      return 0
-    fi
-    ((attempt == 1)) || return 1
-    vlarch_info "hyprpm update retrying after dependency refresh"
-    pacman -S --noconfirm --needed cmake cpio pkg-config base-devel git hyprland >/dev/null 2>&1 || true
-  done
+  vlarch_run_user "$user" "hyprpm update" 'hyprpm update -f' \
+    || vlarch_run_user "$user" "hyprpm update retry" 'hyprpm update -f'
 }

@@ -27,7 +27,7 @@ fi
 vlarch_run "hyprpm build deps" \
   pacman -S --noconfirm --needed cmake cpio pkg-config base-devel git hyprland
 
-vlarch_hyprpm_update "$VLARCH_USER" || vlarch_info "hyprpm update deferred to next Hyprland start"
+vlarch_hyprpm_update "$VLARCH_USER"
 
 if vlarch_hyprland_session_for_user "$VLARCH_USER"; then
   uid="$(id -u "$VLARCH_USER")"
@@ -35,7 +35,7 @@ if vlarch_hyprland_session_for_user "$VLARCH_USER"; then
   sig="$(vlarch_hyprland_signature_for_user "$VLARCH_USER")"
   vlarch_run_user "$VLARCH_USER" "hyprpm reload" \
     "export XDG_RUNTIME_DIR='${runtime}' HYPRLAND_INSTANCE_SIGNATURE='${sig}'; hyprpm reload -n" \
-    || vlarch_info "hyprpm reload skipped"
+    || true
 fi
 
 vlarch_update_note "hyprpm: ok"

@@ -37,24 +37,18 @@ _die() {
 }
 
 _ui_print_logo() {
-  local ansi_url="${VLARCH_CDN_BASE}/install/assets/ansi_logo.txt"
-  if curl -fsSL "$ansi_url" 2>/dev/null; then
-    printf '%b\n' "${_VLARCH_ESC_RESET}"
-    return 0
-  fi
-  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/ansi_logo.txt" ]]; then
-    printf '%b' "${_VLARCH_NORD_BG}"
-    cat "${VLARCH_SCRIPT_DIR}/install/assets/ansi_logo.txt"
+  local logo_url="${VLARCH_CDN_BASE}/install/assets/logo.txt"
+
+  printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
+  if curl -fsSL "$logo_url" 2>/dev/null; then
     printf '%b\n' "${_VLARCH_ESC_RESET}"
     return 0
   fi
   if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/logo.txt" ]]; then
-    printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
     cat "${VLARCH_SCRIPT_DIR}/install/assets/logo.txt"
     printf '%b\n' "${_VLARCH_ESC_RESET}"
     return 0
   fi
-  printf '%b%b' "${_VLARCH_NORD_BG}" "${_VLARCH_NORD_CYAN}"
   cat <<'LOGO'
  _   ____             __
 | | / / /__ _________/ /

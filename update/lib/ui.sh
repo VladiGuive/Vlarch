@@ -74,15 +74,7 @@ vlarch_ui_init() {
 
 vlarch_ui_print_logo() {
   local assets="${VLARCH_ASSETS_DIR:-${VLARCH_SCRIPT_DIR}/install/assets}"
-  local ansi="${assets}/ansi_logo.txt"
   local plain="${assets}/logo.txt"
-
-  if [[ -f "$ansi" ]]; then
-    printf '%b' "${VLARCH_NORD_BG}"
-    cat "$ansi"
-    printf '%b\n' "${VLARCH_ESC_RESET}"
-    return 0
-  fi
 
   if [[ -f "$plain" ]]; then
     printf '%b%b' "${VLARCH_NORD_BG}" "${VLARCH_NORD_CYAN}"
@@ -91,7 +83,15 @@ vlarch_ui_print_logo() {
     return 0
   fi
 
-  return 1
+  printf '%b%b' "${VLARCH_NORD_BG}" "${VLARCH_NORD_CYAN}"
+  cat <<'LOGO'
+ _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/
+LOGO
+  printf '%b\n' "${VLARCH_ESC_RESET}"
+  return 0
 }
 
 vlarch_ui_say() {
