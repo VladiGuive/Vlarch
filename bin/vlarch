@@ -19,13 +19,17 @@ _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
 # Vlarch targets wheel users with NOPASSWD sudo; re-exec once so every subcommand
 # runs as root (state under /var/lib/vlarch, systemctl, timeshift, etc.).
+VLARCH_SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || true)"
+[[ -n "$VLARCH_SELF" && -x "$VLARCH_SELF" ]] || VLARCH_SELF="$(command -v -- "${BASH_SOURCE[0]}")"
+[[ -n "$VLARCH_SELF" ]] || VLARCH_SELF="$0"
+
 _ensure_root() {
   if [[ "$(id -u)" -eq 0 ]]; then
     return 0
   fi
   exec sudo \
     --preserve-env=VLARCH_INFO_FILE,VLARCH_STATE_DIR,VLARCH_FIRST_BOOT_MARKER,VLARCH_POST_INSTALL_MARKER,VLARCH_RUNTIME_ENV,VLARCH_CDN_BASE,VLARCH_VERBOSE \
-    "$0" "$@"
+    "$VLARCH_SELF" "$@"
 }
 
 # vlarch:summary=Idempotent finalization (NetworkManager, WiFi).
@@ -70,7 +74,7 @@ cmd_first_boot() {
   fi
   _log "First-boot bootstrap"
   cmd_post_install
-  cmd_update
+  cmd_update --force
   rm -f "$VLARCH_FIRST_BOOT_MARKER"
 }
 
@@ -88,8 +92,12 @@ cmd_version() {
 # vlarch:summary=Update Vlarch from CDN (packages, dotfiles, hyprpm, CLI).
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
+  local rc=0
   _log "Fetching update bootstrap from ${url}"
-  curl -fsSL "${url}" | bash -s -- "$@"
+  curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
+  if ((rc != 0)); then
+    _die "update failed (exit ${rc}); try: vlarch update --verbose"
+  fi
 }
 
 # vlarch:summary=Show this help.
@@ -125,8 +133,6 @@ _summary_for() {
 }
 
 main() {
-  _ensure_root
-
   if (($# == 0)); then
     cmd_help
     return 0
@@ -140,4 +146,5 @@ main() {
   "$fn" "$@"
 }
 
+_ensure_root "$@"
 main "$@"

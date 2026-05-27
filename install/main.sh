@@ -116,20 +116,15 @@ done
 
 trap - ERR
 
-# Final interactive prompt is always shown - it's user interaction, not logging.
+# Reboot automatically when install completes.
 if declare -F vlarch_ui_say >/dev/null 2>&1 && !((VLARCH_VERBOSE)); then
   clear || true
   vlarch_ui_print_logo || true
   printf '\n'
-  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Install complete."
-  printf '\n'
-  vlarch_ui_say "${VLARCH_NORD_DIM}" "Press Enter to reboot, or Ctrl-C to drop to a shell..."
+  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Install complete. Rebooting..."
 else
-  printf '\nInstall complete. Press Enter to reboot, or Ctrl-C to drop to a shell...\n'
+  printf '\n[vlarch] Install complete. Rebooting...\n'
 fi
-if read -r _; then
-  vlarch_partition_unmount
-  reboot
-else
-  printf '[vlarch] error: no interactive input; not rebooting automatically\n' >&2
-fi
+sleep 2
+vlarch_partition_unmount
+reboot

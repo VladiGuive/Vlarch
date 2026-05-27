@@ -69,7 +69,7 @@ _check_version_gate() {
     exit 0
   fi
 
-  _log "Update available: ${local_ver:-unknown} -> ${remote}"
+  printf '[vlarch] update available: %s -> %s\n' "${local_ver:-none}" "$remote"
 }
 
 _run_main() {
