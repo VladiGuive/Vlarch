@@ -73,9 +73,6 @@ vu() {
   curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash
 }
 
-vlarch() {
-  bash "$HOME/.local/bin/vlarch" "$@"
-}
 # Evals
 eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/conf.toml)"
 eval "$(fzf --zsh)"

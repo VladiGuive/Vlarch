@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 03 - dotfiles: non-destructive rsync from dotfiles/.
+# 03 - dotfiles: sync managed paths only (.zprofile, .config/, etc.).
 set -euo pipefail
 
 # shellcheck disable=SC1091
