@@ -17,6 +17,71 @@ _log()  { printf '[vlarch] %s\n' "$*"; }
 _warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
 _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
+_load_runtime_env() {
+  if [[ -f "$VLARCH_RUNTIME_ENV" ]]; then
+    # shellcheck disable=SC1090
+    source "$VLARCH_RUNTIME_ENV"
+  fi
+}
+
+_wifi_device() {
+  nmcli -t -f DEVICE,TYPE device status 2>/dev/null | awk -F: '$2=="wifi"{print $1; exit}'
+}
+
+_has_network() {
+  local connectivity
+  connectivity="$(nmcli -t -f CONNECTIVITY general 2>/dev/null | tr -d '[:space:]')"
+  if [[ "$connectivity" == "full" || "$connectivity" == "limited" ]]; then
+    return 0
+  fi
+  getent hosts archlinux.org >/dev/null 2>&1
+}
+
+_try_wifi_connect() {
+  [[ -n "${VLARCH_WIFI_SSID:-}" ]] || return 0
+  command -v nmcli >/dev/null 2>&1 || return 0
+
+  local dev
+  dev="$(_wifi_device)"
+  [[ -n "$dev" ]] || return 0
+
+  nmcli radio wifi on >/dev/null 2>&1 || true
+  nmcli device set "$dev" managed yes >/dev/null 2>&1 || true
+  nmcli device wifi rescan >/dev/null 2>&1 || true
+  sleep 2
+
+  if nmcli device wifi connect "$VLARCH_WIFI_SSID" \
+    ${VLARCH_WIFI_PASSWORD:+password "$VLARCH_WIFI_PASSWORD"} \
+    >/dev/null 2>&1; then
+    _log "Joined WiFi: $VLARCH_WIFI_SSID"
+    return 0
+  fi
+  return 1
+}
+
+_wait_for_network() {
+  local timeout="${VLARCH_NETWORK_TIMEOUT:-180}"
+  local elapsed=0 interval=3
+
+  _log "Waiting for network (up to ${timeout}s)..."
+  _try_wifi_connect || _warn "could not join ${VLARCH_WIFI_SSID:-WiFi} yet"
+
+  while ((elapsed < timeout)); do
+    if _has_network; then
+      _log "Network ready"
+      return 0
+    fi
+    if ((elapsed > 0 && elapsed % 15 == 0)); then
+      _log "Still waiting; retrying WiFi..."
+      _try_wifi_connect || true
+    fi
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+
+  _die "network not available after ${timeout}s"
+}
+
 # Vlarch targets wheel users with NOPASSWD sudo; re-exec once so every subcommand
 # runs as root (state under /var/lib/vlarch, systemctl, timeshift, etc.).
 VLARCH_SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || true)"
@@ -51,16 +116,8 @@ cmd_post_install() {
   systemctl enable --now NetworkManager.service >/dev/null 2>&1 \
     || _warn "could not enable NetworkManager"
 
-  if [[ -f "$VLARCH_RUNTIME_ENV" ]]; then
-    # shellcheck disable=SC1090
-    source "$VLARCH_RUNTIME_ENV"
-  fi
-  if [[ -n "${VLARCH_WIFI_SSID:-}" ]] && command -v nmcli >/dev/null 2>&1; then
-    _log "Joining WiFi: $VLARCH_WIFI_SSID"
-    nmcli device wifi connect "$VLARCH_WIFI_SSID" \
-      ${VLARCH_WIFI_PASSWORD:+password "$VLARCH_WIFI_PASSWORD"} \
-      || _warn "could not join $VLARCH_WIFI_SSID"
-  fi
+  _load_runtime_env
+  _wait_for_network
 
   install -d -m 0755 "$VLARCH_STATE_DIR"
   touch "$VLARCH_POST_INSTALL_MARKER"
@@ -93,6 +150,8 @@ cmd_version() {
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
+  _load_runtime_env
+  _wait_for_network
   _log "Fetching update bootstrap from ${url}"
   curl -fsSL "${url}" | bash -s -- "$@" || rc=$?
   if ((rc != 0)); then

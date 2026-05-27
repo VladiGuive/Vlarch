@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# start-hyprland - launch Hyprland on tty1 when not already in a Wayland session.
+set -euo pipefail
+
+if [[ -n "${WAYLAND_DISPLAY-}" ]]; then
+  exit 0
+fi
+
+if [[ ${XDG_VTNR:-0} -ne 1 ]]; then
+  exit 0
+fi
+
+if ! command -v Hyprland >/dev/null 2>&1; then
+  printf '[vlarch] Hyprland not installed; run: vlarch update\n' >&2
+  exit 1
+fi
+
+if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+  export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+fi
+
+exec Hyprland
