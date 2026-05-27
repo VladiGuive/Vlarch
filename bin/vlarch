@@ -17,11 +17,23 @@ _log()  { printf '[vlarch] %s\n' "$*"; }
 _warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
 _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
-_sudo() {
+# Vlarch targets wheel users with NOPASSWD sudo; re-exec once so every subcommand
+# runs as root (state under /var/lib/vlarch, systemctl, timeshift, etc.).
+_ensure_root() {
   if [[ "$(id -u)" -eq 0 ]]; then
-    "$@"
+    return 0
+  fi
+  exec sudo \
+    --preserve-env=VLARCH_INFO_FILE,VLARCH_STATE_DIR,VLARCH_FIRST_BOOT_MARKER,VLARCH_POST_INSTALL_MARKER,VLARCH_RUNTIME_ENV,VLARCH_CDN_BASE,VLARCH_VERBOSE \
+    "$0" "$@"
+}
+
+# Hyprland plugins belong to the login user, not root.
+_as_invoker() {
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    sudo -u "$SUDO_USER" -- "$@"
   else
-    sudo "$@"
+    "$@"
   fi
 }
 
@@ -41,7 +53,7 @@ cmd_post_install() {
   fi
 
   _log "Enabling and starting NetworkManager"
-  _sudo systemctl enable --now NetworkManager.service >/dev/null 2>&1 \
+  systemctl enable --now NetworkManager.service >/dev/null 2>&1 \
     || _warn "could not enable NetworkManager"
 
   if [[ -f "$VLARCH_RUNTIME_ENV" ]]; then
@@ -57,18 +69,18 @@ cmd_post_install() {
 
   if command -v timeshift >/dev/null 2>&1; then
     _log "Creating baseline timeshift snapshot"
-    _sudo timeshift --create --comments "vlarch baseline" --tags D \
+    timeshift --create --comments "vlarch baseline" --tags D \
       || _warn "timeshift snapshot failed"
   fi
 
   if command -v hyprpm >/dev/null 2>&1; then
     _log "Refreshing hyprpm plugins"
-    hyprpm update  || _warn "hyprpm update failed"
-    hyprpm reload  || _warn "hyprpm reload failed"
+    _as_invoker hyprpm update  || _warn "hyprpm update failed"
+    _as_invoker hyprpm reload || _warn "hyprpm reload failed"
   fi
 
-  _sudo install -d -m 0755 "$VLARCH_STATE_DIR"
-  _sudo touch "$VLARCH_POST_INSTALL_MARKER"
+  install -d -m 0755 "$VLARCH_STATE_DIR"
+  touch "$VLARCH_POST_INSTALL_MARKER"
   _log "post-install done"
 }
 
@@ -79,7 +91,7 @@ cmd_first_boot() {
   fi
   _log "First-boot bootstrap"
   cmd_post_install
-  _sudo rm -f "$VLARCH_FIRST_BOOT_MARKER"
+  rm -f "$VLARCH_FIRST_BOOT_MARKER"
 }
 
 # vlarch:summary=Print install metadata recorded at install time.
@@ -91,9 +103,13 @@ cmd_version() {
   fi
 }
 
-# vlarch:summary=Update Vlarch (not yet implemented; see roadmap).
+: "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
+
+# vlarch:summary=Update Vlarch from CDN (packages, dotfiles, hyprpm, CLI).
 cmd_update() {
-  _log "update flow not yet implemented; see roadmap"
+  local url="${VLARCH_CDN_BASE}/update.sh"
+  _log "Fetching update bootstrap from ${url}"
+  curl -fsSL "${url}" | bash -s -- "$@"
 }
 
 # vlarch:summary=Show this help.
@@ -129,6 +145,8 @@ _summary_for() {
 }
 
 main() {
+  _ensure_root
+
   if (($# == 0)); then
     cmd_help
     return 0

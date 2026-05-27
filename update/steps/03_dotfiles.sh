@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# 03 - dotfiles: non-destructive rsync from install/dotfiles/.
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/commons/lib/runtime.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/commons/lib/dotfiles.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
+
+vlarch_load_install_info "$VLARCH_INFO_FILE" \
+  || vlarch_die "could not load ${VLARCH_INFO_FILE}"
+
+[[ -d "$VLARCH_DOTFILES_DIR" ]] || vlarch_die "dotfiles dir missing: $VLARCH_DOTFILES_DIR"
+
+if ((VLARCH_DRY_RUN)); then
+  vlarch_update_note "dotfiles: dry-run (would rsync to /home/${VLARCH_USER})"
+  exit 0
+fi
+
+vlarch_run "deploy dotfiles" \
+  vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
+
+vlarch_update_note "dotfiles: ok"

@@ -34,16 +34,32 @@ The installer's preflight step also remounts cowspace to 75% automatically when 
 
 The installed system ships a `vlarch` CLI. Useful commands:
 
+- `vlarch update` — full system update: `pacman -Syu`, sync manifest packages, dotfiles, hyprpm, and refresh the CLI.
 - `vlarch post-install` — re-run idempotent finalization (NetworkManager, baseline snapshot, Hyprland plugins).
 - `vlarch version` — print install metadata.
 - `vlarch help` — list all subcommands.
+
+Update also works without the CLI:
+
+```sh
+curl -fsSL 'https://vlarch.vladi.tech/update.sh' | bash
+```
+
+The bootstrap compares your installed version against `https://vlarch.vladi.tech/version.txt` and skips when already up to date. Use `--force` to re-run anyway.
+
+Optional flags:
+
+```sh
+vlarch update --dry-run --verbose
+vlarch update --force
+```
 
 ## Philosophy
 
 - **Personal first.** Built for my machines. If you use it, you adopt my taste.
 - **Clean.** No bloat. Every package has a reason.
 - **Pure Arch.** Rolling Arch packages managed through `yay`.
-- **One door in.** A single `install.sh` from a live USB. A single `vlarch` CLI after.
+- **One door in.** A single `install.sh` from a live USB. A single `vlarch` CLI after — including `vlarch update`.
 
 ## License
 

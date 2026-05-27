@@ -14,19 +14,14 @@ vlarch_config_validate
 
 [[ -d "$VLARCH_DOTFILES_DIR" ]] || vlarch_die "dotfiles dir missing: $VLARCH_DOTFILES_DIR"
 
-rm -rf /mnt/root/vlarch-dotfiles
+rm -rf /mnt/root/vlarch-dotfiles /mnt/root/vlarch-commons
 cp -a "$VLARCH_DOTFILES_DIR" /mnt/root/vlarch-dotfiles
+cp -a "${VLARCH_SCRIPT_DIR}/commons/lib" /mnt/root/vlarch-commons
 
 vlarch_chroot_run '
 set -euo pipefail
-home="/home/${VLARCH_USER}"
-[[ -d "$home" ]] || { echo "$home missing" >&2; exit 1; }
-
-# Drop default skel files that we want to fully replace.
-rm -f "$home/.zshrc" "$home/.zprofile" "$home/.bashrc" "$home/.bash_profile"
-
-# rsync without --delete so re-running the installer is non-destructive.
-rsync -a /root/vlarch-dotfiles/ "$home/"
-chown -R "${VLARCH_USER}:${VLARCH_USER}" "$home"
-rm -rf /root/vlarch-dotfiles
+# shellcheck disable=SC1091
+source /root/vlarch-commons/dotfiles.sh
+vlarch_deploy_dotfiles "${VLARCH_USER}" /root/vlarch-dotfiles
+rm -rf /root/vlarch-dotfiles /root/vlarch-commons
 '
