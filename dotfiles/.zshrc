@@ -1,8 +1,8 @@
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="/usr/bin:$PATH"
 
-# tty1 autologin: agetty often starts interactive zsh without sourcing .zprofile.
-if [[ -z ${WAYLAND_DISPLAY-} && ${XDG_VTNR-0} -eq 1 ]] \
+# agetty autologin often skips .zprofile; only hook non-login interactive tty1.
+if [[ -z ${WAYLAND_DISPLAY-} && ${XDG_VTNR-0} -eq 1 && ! -o login ]] \
     && command -v vlarch-tty-login >/dev/null 2>&1; then
   exec vlarch-tty-login
 fi

@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
-# vlarch-tty-login - tty1 autologin hook: first-boot bootstrap, then Hyprland.
-set -euo pipefail
+# vlarch-tty-login - tty1 autologin: optional first-boot, then Hyprland.
+# Must never kill the tty session — fall through to the shell on any failure.
 
 if [[ -n "${WAYLAND_DISPLAY-}" ]] || [[ ${XDG_VTNR:-0} -ne 1 ]]; then
   exit 0
 fi
 
 if [[ -f /var/lib/vlarch/first-boot.pending ]] && command -v vlarch >/dev/null 2>&1; then
-  vlarch first-boot
+  vlarch first-boot || true
 fi
 
 if command -v start-hyprland >/dev/null 2>&1; then
   exec start-hyprland
 fi
 
-if command -v Hyprland >/dev/null 2>&1; then
-  exec Hyprland
-fi
-
-printf '[vlarch] Hyprland not installed; run: vlarch update\n' >&2
-exit 1
+exit 0
