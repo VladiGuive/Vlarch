@@ -29,7 +29,7 @@ grim
 slurp
 wl-clipboard
 gtk4-layer-shell
-# hyprpm plugin build deps (see wiki.hypr.land/Plugins/Using-Plugins/)
+microsoft-edge-stable-bin
 cmake
 cpio
 pkg-config
