@@ -8,10 +8,10 @@
     "clock"
   ],
   "modules-right": [
+    "tray",
     "pulseaudio",
     "backlight",
     "battery",
-    "tray",
     "hyprland/language",
     "custom/lock",
     "custom/power"
@@ -86,11 +86,11 @@
     },
     "on-click": "pavucontrol"
   },
-  "custom/lock": {
-    "tooltip": false,
-    "on-click": "loginctl lock-session",
-    "format": "󰌾"
-  },
+	"custom/lock": {
+		"tooltip": false,
+		"on-click": "reboot",
+		"format": "󰜉"
+	},
   "custom/power": {
     "tooltip": false,
     "on-click": "sudo systemctl poweroff",
