@@ -16,7 +16,7 @@
 }
 
 #workspaces {
-  border-radius: 5px;
+  border-radius: 0;
   margin: 5px;
   background-color: @surface0;
   margin-left: 2px;
@@ -24,18 +24,18 @@
 
 #workspaces button {
   color: @lavender;
-  border-radius: 5px;
+  border-radius: 0;
   padding: 0.4rem;
 }
 
 #workspaces button.active {
   color: @sky;
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 #workspaces button:hover {
   color: @sapphire;
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 button {
@@ -60,7 +60,7 @@ button {
 
 #clock {
   color: @blue;
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 #battery {
@@ -90,12 +90,12 @@ button {
 
 #pulseaudio {
   color: @maroon;
-  border-radius: 5px 0 0 5px;
+  border-radius: 0;
 }
 
 #cava {
   color: @pink;
-  border-radius: 5px 0 0 5px;
+  border-radius: 0;
   margin-left: 5px;
   margin-right: 0;
   padding-right: 0;
@@ -103,7 +103,7 @@ button {
 
 #custom-music {
   color: @mauve;
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 #language {
@@ -111,7 +111,7 @@ button {
 }
 
 #custom-vlarch-update {
-  border-radius: 5px 0 0 5px;
+  border-radius: 0;
   margin-left: 2px;
   margin-right: 0;
   padding: 0.5rem 0.85rem;
@@ -144,7 +144,7 @@ button {
 
 #custom-power {
   margin-right: 2px;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0;
   color: @red;
 }
 
