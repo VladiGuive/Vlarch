@@ -4,6 +4,8 @@
 _VLARCH_UPDATE_LIB="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck disable=SC1091
 source "${_VLARCH_UPDATE_LIB}/manifest.sh"
+# shellcheck disable=SC1091
+source "${_VLARCH_UPDATE_LIB}/pacman_repo.sh"
 
 vlarch_bootstrap_yay() {
   local user="$1"
@@ -78,8 +80,8 @@ vlarch_yay_install_manifests() {
   aur_pkgs="$(vlarch_manifest_to_space_list "$aur_manifest")"
 
   if [[ -n "$pac_pkgs" ]]; then
-    # shellcheck disable=SC2086
-    vlarch_yay_install_pkgs "$user" $pac_pkgs
+    read -r -a pac_arr <<<"$pac_pkgs"
+    vlarch_pacman_install_pkgs "${pac_arr[@]}"
   fi
   if [[ -n "$aur_pkgs" ]]; then
     read -r -a all_aur_pkgs <<< "$aur_pkgs"

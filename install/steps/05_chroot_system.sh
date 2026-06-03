@@ -14,6 +14,12 @@ vlarch_config_validate
 
 vlarch_chroot_run '
 set -euo pipefail
+
+# Steam and other 32-bit deps need multilib on the installed system.
+if [[ -f /etc/pacman.conf ]] && grep -qE "^#\[multilib\]" /etc/pacman.conf; then
+  sed -i "/^\[multilib\]/,/Include/ s/^#//" /etc/pacman.conf
+fi
+
 ln -sf "/usr/share/zoneinfo/${VLARCH_TIMEZONE}" /etc/localtime
 hwclock --systohc
 
