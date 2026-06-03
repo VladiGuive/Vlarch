@@ -60,7 +60,7 @@ vlarch_waybar_open() {
     exit 1
   }
   kitty --title 'vlarch update' -e bash -lc \
-    'sudo vlarch update; vlarch-waybar-update --refresh; read -r -p "Press Enter to close..." </dev/tty' &
+    'sudo vlarch update; vlarch-waybar-update --refresh; read -r </dev/tty' &
   sleep 0.3
   if command -v hyprctl >/dev/null 2>&1; then
     hyprctl dispatch focuswindow "title:vlarch update" 2>/dev/null || true
