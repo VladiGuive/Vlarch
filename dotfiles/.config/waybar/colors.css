@@ -1,0 +1,19 @@
+/* Nord palette — keep in sync with ~/.config/kitty/theme.conf */
+
+@define-color base #2E3440;
+@define-color surface0 #3B4252;
+@define-color surface1 #434C5E;
+@define-color surface2 #4C566A;
+@define-color text #D8DEE9;
+@define-color subtext1 #E5E9F0;
+@define-color subtext0 #ECEFF4;
+@define-color lavender #B48EAD;
+@define-color blue #81A1C1;
+@define-color sky #88C0D0;
+@define-color sapphire #5E81AC;
+@define-color green #A3BE8C;
+@define-color yellow #EBCB8B;
+@define-color red #BF616A;
+@define-color maroon #B48EAD;
+@define-color pink #B48EAD;
+@define-color mauve #B48EAD;
