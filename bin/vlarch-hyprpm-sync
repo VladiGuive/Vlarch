@@ -1,25 +1,88 @@
 #!/usr/bin/env bash
-# vlarch-hyprpm-sync - refresh hyprpm headers/plugins once Hyprland is ready.
+# vlarch-hyprpm-sync - refresh hyprpm headers/plugins once Hyprland IPC is ready.
+# Called from hyprland.conf exec-once; defers work to avoid boot race with hyprpm.
 
-set +e
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+
+_vlarch_installed_user() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_vlarch_log() {
+  local log="${XDG_CACHE_HOME:-${HOME:-/tmp}/.cache}/vlarch/hyprpm-sync.log"
+  mkdir -p "$(dirname "$log")"
+  printf '%s %s\n' "$(date -Iseconds)" "$*" >>"$log"
+}
+
+_vlarch_setup_env() {
+  local install_user uid home runtime sig
+
+  install_user="$(_vlarch_installed_user)" || install_user="${USER:-}"
+  [[ -n "$install_user" ]] || return 1
+
+  if [[ "$(id -un)" != "$install_user" ]] && id "$install_user" &>/dev/null 2>&1; then
+    exec runuser -u "$install_user" -- "$0" --no-bg
+  fi
+
+  uid="$(id -u)"
+  home="${HOME:-/home/${install_user}}"
+  runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+
+  export HOME="$home" USER="$install_user" XDG_RUNTIME_DIR="$runtime" PATH="/usr/local/bin:/usr/bin:${PATH:-/bin}"
+
+  sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
+  if [[ -z "$sig" && -d "${runtime}/hypr" ]]; then
+    sig="$(find "${runtime}/hypr" -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | head -1)"
+    [[ -n "$sig" ]] && export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+  fi
+}
+
+_vlarch_wait_hyprland() {
+  local i
+  for i in $(seq 1 60); do
+    _vlarch_setup_env || return 1
+    if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprctl >/dev/null 2>&1 \
+      && hyprctl version &>/dev/null; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
+
+_vlarch_hyprpm_sync() {
+  if hyprpm update -f; then
+    hyprpm reload -n
+    return 0
+  fi
+  hyprpm purge-cache 2>/dev/null || true
+  if hyprpm update -fv; then
+    hyprpm reload -n
+    return 0
+  fi
+  hyprpm reload -n 2>/dev/null || true
+  return 1
+}
+
+if [[ "${1:-}" != --no-bg ]]; then
+  (sleep 2; exec "$0" --no-bg) &
+  exit 0
+fi
 
 command -v hyprpm >/dev/null 2>&1 || exit 0
 
-for _ in $(seq 1 50); do
-  [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && break
-  sleep 0.1
-done
+if ! _vlarch_wait_hyprland; then
+  _vlarch_log "timeout: hyprland IPC not ready (sig=${HYPRLAND_INSTANCE_SIGNATURE:-unset})"
+  exit 1
+fi
 
-if hyprpm update -f; then
-  hyprpm reload -n
+if _vlarch_hyprpm_sync; then
+  _vlarch_log "ok (user=${USER:-?} sig=${HYPRLAND_INSTANCE_SIGNATURE:-?})"
   exit 0
 fi
 
-hyprpm purge-cache 2>/dev/null
-if hyprpm update -f; then
-  hyprpm reload -n
-  exit 0
-fi
-
-hyprpm reload -n 2>/dev/null
-exit 0
+_vlarch_log "failed: hyprpm update (user=${USER:-?} sig=${HYPRLAND_INSTANCE_SIGNATURE:-?})"
+exit 1
