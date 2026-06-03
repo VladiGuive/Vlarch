@@ -111,14 +111,26 @@ button {
 }
 
 #custom-vlarch-update {
-  color: @yellow;
-  border-radius: 5px;
+  border-radius: 5px 0 0 5px;
   margin-left: 2px;
+  margin-right: 0;
+  padding: 0.5rem 0.85rem;
 }
 
 #custom-vlarch-update.pending {
-  color: @sky;
+  color: @green;
+  background-color: @surface1;
   font-weight: bold;
+  animation: vlarch-update-pulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes vlarch-update-pulse {
+  from {
+    color: @green;
+  }
+  to {
+    color: @sky;
+  }
 }
 
 #custom-lock {
