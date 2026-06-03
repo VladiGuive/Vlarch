@@ -89,8 +89,7 @@ button {
 }
 
 #battery:not(.present),
-#battery.disconnected,
-#backlight:not(.present) {
+#battery.disconnected {
   opacity: 0;
   min-width: 0;
   min-height: 0;
