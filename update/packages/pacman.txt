@@ -1,4 +1,4 @@
-# Full Vlarch desktop set, synced on update via yay (-> pacman) as the user.
+# Official Arch packages (installed as root via pacman; steam needs multilib).
 hyprland
 hyprpaper
 waybar

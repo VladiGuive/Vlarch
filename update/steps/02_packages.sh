@@ -26,7 +26,11 @@ fi
 
 vlarch_run "pacman -Syu" pacman -Syu --noconfirm
 vlarch_bootstrap_yay "$VLARCH_USER"
-vlarch_run "yay manifest sync" \
+vlarch_run "pacman manifest sync" \
   vlarch_yay_install_manifests "$VLARCH_USER" "$pac_manifest" "$aur_manifest"
+
+if grep -qx 'steam' <(vlarch_read_manifest "$pac_manifest"); then
+  vlarch_run "install steam (multilib)" vlarch_pacman_install_steam
+fi
 
 vlarch_update_note "packages: ok"
