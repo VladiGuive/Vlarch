@@ -118,18 +118,23 @@ button {
 }
 
 #custom-vlarch-update.pending {
-  color: @green;
-  background-color: @surface1;
+  color: @subtext0;
+  background-color: @update_bg;
+  border: 1px solid @update_border;
   font-weight: bold;
   animation: vlarch-update-pulse 1.6s ease-in-out infinite alternate;
 }
 
 @keyframes vlarch-update-pulse {
   from {
-    color: @green;
+    color: @subtext0;
+    background-color: @update_bg;
+    border-color: @update_border;
   }
   to {
     color: @sky;
+    background-color: alpha(@sky, 0.38);
+    border-color: alpha(@sky, 0.7);
   }
 }
 

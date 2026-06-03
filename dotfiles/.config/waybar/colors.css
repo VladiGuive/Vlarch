@@ -17,3 +17,5 @@
 @define-color maroon #B48EAD;
 @define-color pink #B48EAD;
 @define-color mauve #B48EAD;
+@define-color update_bg alpha(@sapphire, 0.42);
+@define-color update_border alpha(@sky, 0.55);
