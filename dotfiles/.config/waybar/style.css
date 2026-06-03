@@ -118,6 +118,7 @@ button {
 
 #custom-vlarch-update.pending {
   color: @sky;
+  font-weight: bold;
 }
 
 #custom-lock {

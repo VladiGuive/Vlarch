@@ -191,5 +191,4 @@ vlarch_ui_show_complete() {
   vlarch_ui_draw_bar 100
   printf '  100%%\n\n'
   vlarch_ui_say "${VLARCH_NORD_GREEN}" "Press Enter to close..."
-  read -r
 }
