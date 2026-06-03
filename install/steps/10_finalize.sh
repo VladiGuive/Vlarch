@@ -18,6 +18,7 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 
 mountpoint -q /mnt || vlarch_die "/mnt not mounted; cannot finalize install"
 [[ -f "${VLARCH_ASSETS_DIR}/background.png" ]] || vlarch_die "missing wallpaper asset: ${VLARCH_ASSETS_DIR}/background.png"
@@ -27,6 +28,7 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch" /mnt/usr/local/bin/vlarch
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-tty-login" /mnt/usr/local/bin/vlarch-tty-login
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" /mnt/usr/local/bin/vlarch-hyprpm-sync
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker-services" /mnt/usr/local/bin/vlarch-walker-services
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /mnt/usr/local/bin/vlarch-waybar-update
 
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {

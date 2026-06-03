@@ -42,6 +42,7 @@ button {
   background: transparent;
 }
 
+#custom-vlarch-update,
 #custom-music,
 #tray,
 #backlight,
@@ -107,6 +108,16 @@ button {
 
 #language {
   color: @lavender;
+}
+
+#custom-vlarch-update {
+  color: @yellow;
+  border-radius: 5px;
+  margin-left: 2px;
+}
+
+#custom-vlarch-update.pending {
+  color: @sky;
 }
 
 #custom-lock {

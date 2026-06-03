@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Waybar: show V⤴ when CDN version is newer than installed; open update in Kitty on click.
+
+set -euo pipefail
+
+VLARCH_CDN_BASE="${VLARCH_CDN_BASE:-https://vlarch.vladi.tech}"
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+
+_vlarch_local_version() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^version=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_vlarch_remote_version() {
+  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+}
+
+_vlarch_update_available() {
+  local local_ver remote_ver newest
+  local_ver="$(_vlarch_local_version)" || return 1
+  remote_ver="$(_vlarch_remote_version)" || return 1
+  [[ -n "$local_ver" && -n "$remote_ver" ]] || return 1
+  [[ "$local_ver" == "$remote_ver" ]] && return 1
+  newest="$(printf '%s\n%s\n' "$local_ver" "$remote_ver" | sort -V | tail -1)"
+  [[ "$newest" == "$remote_ver" ]]
+}
+
+_vlarch_json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
+vlarch_waybar_status() {
+  local local_ver remote_ver
+  if ! _vlarch_update_available; then
+    printf '{"text":""}\n'
+    return 0
+  fi
+  local_ver="$(_vlarch_local_version)"
+  remote_ver="$(_vlarch_remote_version)"
+  printf '{"text":"V⤴","tooltip":"Vlarch %s → %s","class":"pending"}\n' \
+    "$(_vlarch_json_escape "$local_ver")" \
+    "$(_vlarch_json_escape "$remote_ver")"
+}
+
+vlarch_waybar_open() {
+  command -v kitty >/dev/null 2>&1 || {
+    printf 'kitty not found\n' >&2
+    exit 1
+  }
+  kitty --title 'vlarch update' -e bash -lc \
+    'sudo vlarch update; printf "\nPress Enter to close..."; read -r' &
+  sleep 0.3
+  if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl dispatch focuswindow "title:vlarch update" 2>/dev/null || true
+    hyprctl dispatch centerwindow 2>/dev/null || true
+  fi
+}
+
+case "${1:---status}" in
+  --status) vlarch_waybar_status ;;
+  --open)   vlarch_waybar_open ;;
+  -h|--help)
+    printf 'usage: %s [--status|--open]\n' "$(basename "$0")"
+    ;;
+  *)
+    printf 'unknown option: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac
