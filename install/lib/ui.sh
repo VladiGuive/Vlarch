@@ -27,7 +27,7 @@ declare -gA VLARCH_STEP_TITLES=(
   [06_chroot_users]="Create users"
   [07_chroot_boot]="Install bootloader"
   [08_chroot_aur]="Bootstrap yay"
-  [09_dotfiles]="Install first-boot hook"
+  [09_dotfiles]="Install tty1 first-boot hooks (.zprofile, .zshrc)"
   [10_finalize]="Finalize installation"
 )
 

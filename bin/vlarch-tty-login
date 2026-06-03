@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# vlarch-tty-login - tty1 autologin: optional first-boot, then Hyprland.
-# Must never kill the tty session — fall through to the shell on any failure.
+# vlarch-tty-login - tty1 autologin: first-boot (blocking), then Hyprland or login shell.
+# Must never leave tty1 with no process — always exec Hyprland or the user's shell.
+
+export PATH="/usr/local/bin:/usr/bin:${PATH:-/bin}"
 
 _vlarch_on_tty1() {
   [[ -n "${WAYLAND_DISPLAY-}" ]] && return 1
@@ -10,22 +12,39 @@ _vlarch_on_tty1() {
   [[ ${XDG_VTNR:-0} -eq 1 ]]
 }
 
+_vlarch_login_shell() {
+  local shell
+  shell="$(getent passwd "${USER:-root}" 2>/dev/null | cut -d: -f7-)"
+  [[ -n "$shell" && -x "$shell" ]] || shell=""
+  if [[ -z "$shell" ]]; then
+    command -v zsh >/dev/null 2>&1 && shell="$(command -v zsh)"
+  fi
+  [[ -n "$shell" && -x "$shell" ]] || shell="/bin/bash"
+  printf '%s' "$shell"
+}
+
 if ! _vlarch_on_tty1; then
   exit 0
 fi
 
 if [[ -f /var/lib/vlarch/first-boot.pending ]] && command -v vlarch >/dev/null 2>&1; then
-  (vlarch first-boot >>/var/log/vlarch-first-boot.log 2>&1) &
+  printf '\n[vlarch] First boot — enabling network and installing desktop...\n'
+  printf '[vlarch] Log: /var/log/vlarch-first-boot.log\n\n'
+  vlarch first-boot 2>&1 | tee -a /var/log/vlarch-first-boot.log
+  printf '\n'
 fi
 
-# Hyprland 0.53+ ships /usr/bin/start-hyprland; never shadow it under /usr/local/bin.
 _hyprland_launcher="/usr/bin/start-hyprland"
 if [[ -x "$_hyprland_launcher" ]]; then
   exec "$_hyprland_launcher"
 fi
 
 if command -v Hyprland >/dev/null 2>&1; then
-  printf '[vlarch] start-hyprland missing; run: vlarch update\n' >&2
+  printf '[vlarch] start-hyprland missing; run: sudo vlarch update\n' >&2
+elif [[ -f /var/lib/vlarch/first-boot.pending ]]; then
+  printf '[vlarch] first-boot did not finish; see /var/log/vlarch-first-boot.log\n' >&2
+else
+  printf '[vlarch] Hyprland not installed; run: sudo vlarch update\n' >&2
 fi
 
-exit 0
+exec -l "$(_vlarch_login_shell)"
