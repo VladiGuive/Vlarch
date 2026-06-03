@@ -185,7 +185,11 @@ vlarch_ui_show_complete() {
   if [[ -t 1 ]]; then
     clear || true
   fi
+  vlarch_ui_print_logo || true
   printf '\n'
+  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete (${VLARCH_VERSION:-})"
+  vlarch_ui_draw_bar 100
+  printf '  100%%\n\n'
   vlarch_ui_say "${VLARCH_NORD_YELLOW}" "Press Enter to close..."
   read -r
 }
