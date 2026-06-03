@@ -182,23 +182,10 @@ vlarch_ui_set_versions() {
 }
 
 vlarch_ui_show_complete() {
-  local line width
-  width=$(vlarch_ui_bar_width)
-
   if [[ -t 1 ]]; then
     clear || true
   fi
-  vlarch_ui_print_logo || true
   printf '\n'
-  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete (${VLARCH_VERSION:-})"
-  vlarch_ui_draw_bar 100
-  printf '  100%%\n\n'
-
-  if [[ -s "${VLARCH_UPDATE_SUMMARY_FILE:-}" ]]; then
-    while IFS= read -r line; do
-      printf '%b✓ %-*s%b\n' \
-        "${VLARCH_NORD_GREEN}" "$width" "$line" "${VLARCH_ESC_RESET}"
-    done <"${VLARCH_UPDATE_SUMMARY_FILE}"
-  fi
-  printf '\n'
+  vlarch_ui_say "${VLARCH_NORD_YELLOW}" "Press Enter to close..."
+  read -r
 }
