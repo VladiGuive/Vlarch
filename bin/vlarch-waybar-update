@@ -42,7 +42,7 @@ vlarch_waybar_status() {
   fi
   local_ver="$(_vlarch_local_version)"
   remote_ver="$(_vlarch_remote_version)"
-  printf '{"text":"󰚰","tooltip":"Vlarch update available: %s → %s","class":"pending"}\n' \
+  printf '{"text":"V󰚰","tooltip":"↑ %s → %s","class":"pending"}\n' \
     "$(_vlarch_json_escape "$local_ver")" \
     "$(_vlarch_json_escape "$remote_ver")"
 }
