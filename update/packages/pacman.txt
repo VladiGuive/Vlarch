@@ -26,6 +26,7 @@ pipewire-alsa
 pipewire-pulse
 wireplumber
 pavucontrol
+papirus-icon-theme
 steam
 noto-fonts
 noto-fonts-emoji

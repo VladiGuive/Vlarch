@@ -1,0 +1,33 @@
+/* Vlarch GTK3 overrides — Nord + square corners; sync with kitty/theme.conf */
+/* VLARCH_BG_OPACITY=0.85 */
+
+* {
+  border-radius: 0;
+}
+
+window,
+.background,
+headerbar,
+.titlebar,
+button,
+entry,
+combobox,
+popover,
+menu,
+menubar,
+toolbar,
+notebook,
+tab,
+treeview,
+list,
+row,
+frame,
+scrolledwindow,
+progressbar,
+scale,
+check,
+radio,
+switch,
+separator {
+  border-radius: 0;
+}

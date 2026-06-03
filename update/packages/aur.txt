@@ -1,6 +1,7 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 # steam is in pacman.txt (multilib), not here.
 oh-my-posh-bin
+nordic-theme-git
 # Walker + elephant stack — source packages only, one yay transaction (never mix with *-bin).
 walker
 elephant

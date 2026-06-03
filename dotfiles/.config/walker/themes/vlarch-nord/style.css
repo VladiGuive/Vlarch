@@ -1,6 +1,8 @@
 /* Nord palette — keep in sync with ~/.config/kitty/theme.conf */
+/* VLARCH_BG_OPACITY=0.85 — keep in sync with kitty.conf background_opacity */
 
 @define-color window_bg_color #2E3440;
+@define-color window_bg_alpha alpha(@window_bg_color, 0.85);
 @define-color accent_bg_color #434C5E;
 @define-color theme_fg_color #D8DEE9;
 @define-color theme_fg_bright #ECEFF4;
@@ -18,8 +20,12 @@
   font-size: 16px;
 }
 
+.window {
+  background: transparent;
+}
+
 popover {
-  background: @window_bg_color;
+  background: @window_bg_alpha;
   border: 1px solid @border_color;
   border-radius: 0;
   padding: 10px;
@@ -38,10 +44,8 @@ scrollbar {
 }
 
 .box-wrapper {
-  box-shadow:
-    0 19px 38px rgba(0, 0, 0, 0.3),
-    0 15px 12px rgba(0, 0, 0, 0.22);
-  background: @window_bg_color;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: @window_bg_alpha;
   padding: 20px;
   border-radius: 0;
   border: 1px solid @border_color;
@@ -68,7 +72,7 @@ scrollbar {
 
 .input {
   caret-color: @accent_color;
-  background: @input_bg_color;
+  background: alpha(@input_bg_color, 0.85);
   padding: 10px;
   color: @theme_fg_bright;
   border-radius: 0;
