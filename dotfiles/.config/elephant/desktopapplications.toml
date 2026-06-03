@@ -1,0 +1,6 @@
+# Hide Avahi UI launchers from Walker (desktopapplications provider).
+blacklist = [
+  "^avahi-",
+  "^bssh$",
+  "^bvnc$",
+]
