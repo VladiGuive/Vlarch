@@ -36,6 +36,8 @@ grim
 slurp
 wl-clipboard
 gtk4-layer-shell
+gnome-keyring
+libsecret
 cmake
 cpio
 pkg-config

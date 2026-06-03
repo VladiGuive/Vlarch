@@ -8,6 +8,8 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/log.sh"
 source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/keyring.sh"
 
 vlarch_load_install_info "$VLARCH_INFO_FILE" \
   || vlarch_die "could not load ${VLARCH_INFO_FILE}"
@@ -28,5 +30,6 @@ ExecStart=-/sbin/agetty --autologin ${VLARCH_USER} --noclear %I \$TERM
 UNIT
 
 vlarch_run "reload systemd" systemctl daemon-reload
+vlarch_run "configure gnome-keyring PAM" vlarch_configure_gnome_keyring_pam
 
 vlarch_update_note "getty: ok"
