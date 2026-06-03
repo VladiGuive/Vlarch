@@ -145,13 +145,26 @@ cmd_post_install() {
 
 # vlarch:summary=One-shot first-login bootstrap; post-install then update from CDN.
 cmd_first_boot() {
+  local force=0
+  while (($#)); do
+    case "$1" in
+      --force) force=1; shift ;;
+      *) _die "unknown option: $1" ;;
+    esac
+  done
+
   if [[ ! -f "$VLARCH_FIRST_BOOT_MARKER" ]]; then
-    return 0
+    ((force)) || return 0
   fi
+
   _log "First-boot bootstrap"
-  cmd_post_install
-  cmd_update --force
-  rm -f "$VLARCH_FIRST_BOOT_MARKER"
+  if ((force)); then
+    cmd_post_install --force
+  else
+    cmd_post_install
+  fi
+  cmd_update --force --verbose
+  rm -f "$VLARCH_FIRST_BOOT_MARKER" /run/vlarch/first-boot.attempted 2>/dev/null || true
 }
 
 # vlarch:summary=Print install metadata recorded at install time.

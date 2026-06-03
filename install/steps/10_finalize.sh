@@ -37,6 +37,9 @@ mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
   printf 'disk=%s\n'         "${VLARCH_DISK}"
   printf 'timezone=%s\n'     "${VLARCH_TIMEZONE}"
   printf 'locale=%s\n'       "${VLARCH_LOCALE}"
+  if [[ -f "${VLARCH_SCRIPT_DIR}/version.txt" ]]; then
+    printf 'version=%s\n' "$(tr -d '[:space:]' <"${VLARCH_SCRIPT_DIR}/version.txt")"
+  fi
 } >/mnt/etc/vlarch/install-info
 
 # Persist non-secret runtime hints for `vlarch post-install` (WiFi join, etc).

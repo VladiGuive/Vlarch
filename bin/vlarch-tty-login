@@ -3,6 +3,7 @@
 # Must never leave tty1 with no process — always exec Hyprland or the user's shell.
 
 export PATH="/usr/local/bin:/usr/bin:${PATH:-/bin}"
+export VLARCH_TTY_LOGIN=1
 
 _vlarch_on_tty1() {
   [[ -n "${WAYLAND_DISPLAY-}" ]] && return 1
@@ -23,15 +24,36 @@ _vlarch_login_shell() {
   printf '%s' "$shell"
 }
 
+_vlarch_first_boot_log() {
+  local dir="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch"
+  mkdir -p "$dir"
+  printf '%s/first-boot.log' "$dir"
+}
+
 if ! _vlarch_on_tty1; then
   exit 0
 fi
 
-if [[ -f /var/lib/vlarch/first-boot.pending ]] && command -v vlarch >/dev/null 2>&1; then
+_first_log="$(_vlarch_first_boot_log)"
+_pending=/var/lib/vlarch/first-boot.pending
+_attempted=/run/vlarch/first-boot.attempted
+
+if [[ -f "$_pending" ]] && [[ ! -f "$_attempted" ]] && command -v vlarch >/dev/null 2>&1; then
+  mkdir -p /run/vlarch 2>/dev/null || sudo mkdir -p /run/vlarch
+  if ! touch "$_attempted" 2>/dev/null; then
+    sudo touch "$_attempted"
+  fi
   printf '\n[vlarch] First boot — enabling network and installing desktop...\n'
-  printf '[vlarch] Log: /var/log/vlarch-first-boot.log\n\n'
-  vlarch first-boot 2>&1 | tee -a /var/log/vlarch-first-boot.log
-  printf '\n'
+  printf '[vlarch] Log: %s\n\n' "$_first_log"
+  if vlarch first-boot 2>&1 | tee -a "$_first_log"; then
+    :
+  else
+    printf '\n[vlarch] first-boot failed; log: %s\n' "$_first_log" >&2
+    printf '[vlarch] Fix network, then run: sudo vlarch first-boot --force\n\n' >&2
+  fi
+elif [[ -f "$_pending" ]] && [[ -f "$_attempted" ]]; then
+  printf '\n[vlarch] first-boot already tried this boot; see %s\n' "$_first_log" >&2
+  printf '[vlarch] Retry: sudo vlarch first-boot --force\n\n' >&2
 fi
 
 _hyprland_launcher="/usr/bin/start-hyprland"
@@ -41,8 +63,8 @@ fi
 
 if command -v Hyprland >/dev/null 2>&1; then
   printf '[vlarch] start-hyprland missing; run: sudo vlarch update\n' >&2
-elif [[ -f /var/lib/vlarch/first-boot.pending ]]; then
-  printf '[vlarch] first-boot did not finish; see /var/log/vlarch-first-boot.log\n' >&2
+elif [[ -f "$_pending" ]]; then
+  printf '[vlarch] first-boot did not finish; see %s\n' "$_first_log" >&2
 else
   printf '[vlarch] Hyprland not installed; run: sudo vlarch update\n' >&2
 fi
