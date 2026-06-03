@@ -72,12 +72,27 @@ vlarch_ensure_tpm() {
   home="$(vlarch_user_home "$user")"
   tpm_dir="${home}/.tmux/plugins/tpm"
 
-  [[ -x "${tpm_dir}/bin/install_plugins" ]] && return 0
+  if [[ -x "${tpm_dir}/bin/install_plugins" ]]; then
+    return 0
+  fi
 
-  command -v git >/dev/null 2>&1 || return 1
+  command -v git >/dev/null 2>&1 \
+    || vlarch_die "tmux TPM: git is required to install tmux-plugins/tpm"
+
+  # Remove a broken or partial checkout from a previous failed run.
+  if [[ -e "$tpm_dir" ]]; then
+    vlarch_run_user "$user" "tmux tpm reset" "rm -rf '${tpm_dir}'" \
+      || vlarch_die "tmux TPM: could not reset ${tpm_dir}"
+  fi
 
   vlarch_run_user "$user" "tmux tpm clone" \
-    "mkdir -p '${home}/.tmux/plugins' && git clone --depth 1 https://github.com/tmux-plugins/tpm.git '${tpm_dir}'"
+    "mkdir -p '${home}/.tmux/plugins' && git clone --depth 1 https://github.com/tmux-plugins/tpm.git '${tpm_dir}'" \
+    || vlarch_die "tmux TPM: git clone https://github.com/tmux-plugins/tpm.git failed"
+
+  [[ -x "${tpm_dir}/bin/install_plugins" ]] \
+    || vlarch_die "tmux TPM: ${tpm_dir}/bin/install_plugins missing after clone"
+
+  return 0
 }
 
 vlarch_sync_tmux_plugins() {
@@ -89,8 +104,7 @@ vlarch_sync_tmux_plugins() {
   plugins_dir="${home}/.tmux/plugins"
   tpm_install="${plugins_dir}/tpm/bin/install_plugins"
 
-  vlarch_ensure_tpm "$user" || return 1
-  [[ -x "$tpm_install" ]] || return 1
+  vlarch_ensure_tpm "$user"
 
   # TPM install_plugins does not require a running tmux server (see tpm bin/install_plugins).
   vlarch_run_user "$user" "tmux install plugins" \
@@ -116,8 +130,7 @@ vlarch_verify_desktop_readiness() {
   command -v waybar >/dev/null 2>&1 \
     || vlarch_die "desktop readiness: waybar not installed"
 
-  [[ -x "${home}/.tmux/plugins/tpm/bin/install_plugins" ]] \
-    || vlarch_die "desktop readiness: TPM not installed for ${user}"
+  vlarch_ensure_tpm "$user"
 
   plugin_count="$(find "${home}/.tmux/plugins" -mindepth 1 -maxdepth 1 -type d ! -name tpm 2>/dev/null | wc -l)"
   ((plugin_count > 0)) \
