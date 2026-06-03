@@ -36,11 +36,21 @@ _die() {
 }
 
 _ui_print_logo() {
+  local compact_url="${VLARCH_CDN_BASE}/install/assets/update-logo.txt"
   local logo_url="${VLARCH_CDN_BASE}/install/assets/logo.txt"
 
+  if curl -fsSL "$compact_url" 2>/dev/null; then
+    printf '\n'
+    return 0
+  fi
   printf '%b' "${_VLARCH_NORD_CYAN}"
   if curl -fsSL "$logo_url" 2>/dev/null; then
     printf '%b\n' "${_VLARCH_ESC_RESET}"
+    return 0
+  fi
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/update-logo.txt" ]]; then
+    cat "${VLARCH_SCRIPT_DIR}/install/assets/update-logo.txt"
+    printf '\n'
     return 0
   fi
   if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/assets/logo.txt" ]]; then
@@ -48,6 +58,7 @@ _ui_print_logo() {
     printf '%b\n' "${_VLARCH_ESC_RESET}"
     return 0
   fi
+  printf '%b' "${_VLARCH_NORD_CYAN}"
   cat <<'LOGO'
  _   ____             __
 | | / / /__ _________/ /

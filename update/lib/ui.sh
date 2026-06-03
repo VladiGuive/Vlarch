@@ -5,6 +5,7 @@ VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
 
 VLARCH_ESC_RESET=$'\033[0m'
+VLARCH_NORD_BG=$'\033[48;5;236m'
 VLARCH_NORD_FG=$'\033[38;5;253m'
 VLARCH_NORD_DIM=$'\033[38;5;245m'
 VLARCH_NORD_RED=$'\033[38;5;174m'
@@ -75,8 +76,21 @@ vlarch_ui_init() {
 
 vlarch_ui_print_logo() {
   local assets="${VLARCH_ASSETS_DIR:-${VLARCH_SCRIPT_DIR}/install/assets}"
+  local compact="${assets}/update-logo.txt"
+  local ansi="${assets}/ansi_logo.txt"
   local plain="${assets}/logo.txt"
 
+  if [[ -f "$compact" ]]; then
+    cat "$compact"
+    printf '\n'
+    return 0
+  fi
+  if [[ -f "$ansi" ]] && ((COLUMNS >= 100)); then
+    printf '%b' "${VLARCH_NORD_BG}"
+    cat "$ansi"
+    printf '%b\n' "${VLARCH_ESC_RESET}"
+    return 0
+  fi
   if [[ -f "$plain" ]]; then
     printf '%b' "${VLARCH_NORD_CYAN}"
     cat "$plain"
