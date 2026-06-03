@@ -29,7 +29,6 @@ grim
 slurp
 wl-clipboard
 gtk4-layer-shell
-microsoft-edge-stable-bin
 cmake
 cpio
 pkg-config
