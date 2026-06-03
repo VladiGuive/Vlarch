@@ -13,5 +13,4 @@ elephant-websearch
 elephant-clipboard
 timeshift-autosnap
 microsoft-edge-stable-bin
-steam-native-runtime
 obsidian
