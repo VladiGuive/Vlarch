@@ -52,13 +52,32 @@ vlarch_waybar_refresh() {
     || true
 }
 
+vlarch_waybar_session() {
+  local key
+
+  sudo vlarch update || true
+  vlarch_waybar_refresh
+
+  while true; do
+    printf '\n\e[38;5;150mEnter\e[0m run update again · \e[38;5;150mEsc\e[0m close\n'
+    IFS= read -rsn1 key </dev/tty 2>/dev/null || break
+    if [[ "$key" == $'\e' ]]; then
+      read -rsn2 -t 0.01 _ </dev/tty 2>/dev/null || true
+      break
+    fi
+    if [[ -z "$key" || "$key" == $'\n' || "$key" == $'\r' ]]; then
+      sudo vlarch update || true
+      vlarch_waybar_refresh
+    fi
+  done
+}
+
 vlarch_waybar_open() {
   command -v kitty >/dev/null 2>&1 || {
     printf 'kitty not found\n' >&2
     exit 1
   }
-  kitty --title 'vlarch update' -e bash -lc \
-    'sudo vlarch update; vlarch-waybar-update --refresh; read -r </dev/tty' &
+  kitty --title 'vlarch update' -e vlarch-waybar-update --session &
   sleep 0.3
   if command -v hyprctl >/dev/null 2>&1; then
     hyprctl dispatch focuswindow "title:vlarch update" 2>/dev/null || true
@@ -69,9 +88,10 @@ vlarch_waybar_open() {
 case "${1:---status}" in
   --status)  vlarch_waybar_status ;;
   --open)    vlarch_waybar_open ;;
+  --session) vlarch_waybar_session ;;
   --refresh) vlarch_waybar_refresh ;;
   -h|--help)
-    printf 'usage: %s [--status|--open|--refresh]\n' "$(basename "$0")"
+    printf 'usage: %s [--status|--open|--session|--refresh]\n' "$(basename "$0")"
     ;;
   *)
     printf 'unknown option: %s\n' "$1" >&2
