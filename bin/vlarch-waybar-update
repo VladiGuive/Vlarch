@@ -5,6 +5,8 @@ set -euo pipefail
 
 VLARCH_CDN_BASE="${VLARCH_CDN_BASE:-https://vlarch.vladi.tech}"
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+# Must match "signal" on custom/vlarch-update in waybar config.jsonc.
+VLARCH_WAYBAR_UPDATE_SIGNAL="${VLARCH_WAYBAR_UPDATE_SIGNAL:-1}"
 
 _vlarch_local_version() {
   [[ -f "$VLARCH_INFO_FILE" ]] || return 1
@@ -45,13 +47,20 @@ vlarch_waybar_status() {
     "$(_vlarch_json_escape "$remote_ver")"
 }
 
+vlarch_waybar_refresh() {
+  pgrep -x waybar >/dev/null 2>&1 || return 0
+  pkill "-SIGRTMIN+${VLARCH_WAYBAR_UPDATE_SIGNAL}" waybar 2>/dev/null \
+    || killall -SIGUSR2 waybar 2>/dev/null \
+    || true
+}
+
 vlarch_waybar_open() {
   command -v kitty >/dev/null 2>&1 || {
     printf 'kitty not found\n' >&2
     exit 1
   }
   kitty --title 'vlarch update' -e bash -lc \
-    'sudo vlarch update; printf "\nPress Enter to close..."; read -r' &
+    'sudo vlarch update; vlarch-waybar-update --refresh; printf "\nPress Enter to close..."; read -r' &
   sleep 0.3
   if command -v hyprctl >/dev/null 2>&1; then
     hyprctl dispatch focuswindow "title:vlarch update" 2>/dev/null || true
@@ -60,10 +69,11 @@ vlarch_waybar_open() {
 }
 
 case "${1:---status}" in
-  --status) vlarch_waybar_status ;;
-  --open)   vlarch_waybar_open ;;
+  --status)  vlarch_waybar_status ;;
+  --open)    vlarch_waybar_open ;;
+  --refresh) vlarch_waybar_refresh ;;
   -h|--help)
-    printf 'usage: %s [--status|--open]\n' "$(basename "$0")"
+    printf 'usage: %s [--status|--open|--refresh]\n' "$(basename "$0")"
     ;;
   *)
     printf 'unknown option: %s\n' "$1" >&2

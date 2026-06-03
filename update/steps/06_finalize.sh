@@ -59,4 +59,12 @@ fi
 vlarch_write_install_info_version "$VLARCH_VERSION" \
   || vlarch_die "could not update ${VLARCH_INFO_FILE}"
 
+if command -v vlarch-waybar-update >/dev/null 2>&1 && [[ -n "${VLARCH_USER:-}" ]]; then
+  if command -v runuser >/dev/null 2>&1; then
+    runuser -u "$VLARCH_USER" -- vlarch-waybar-update --refresh 2>/dev/null || true
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo -u "$VLARCH_USER" vlarch-waybar-update --refresh 2>/dev/null || true
+  fi
+fi
+
 vlarch_update_note "finalize: ok (version ${VLARCH_VERSION})"

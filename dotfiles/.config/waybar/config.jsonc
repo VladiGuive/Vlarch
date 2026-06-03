@@ -22,6 +22,7 @@
     "return-type": "json",
     "exec": "vlarch-waybar-update --status",
     "interval": 600,
+    "signal": 1,
     "hide-empty-text": true,
     "tooltip": true,
     "on-click": "vlarch-waybar-update --open"
