@@ -3,6 +3,13 @@ selection_wrap = true
 theme = "vlarch-nord"
 additional_theme_location = "~/.config/walker/themes"
 hide_action_hints = true
+hide_quick_activation = true
+
+[keybinds]
+close = ["Escape"]
+next = ["Down"]
+previous = ["Up"]
+quick_activate = []
 
 [placeholders]
 "default" = { input = "Search...", list = "No Results" }

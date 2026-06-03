@@ -1,6 +1,9 @@
-# Hide Avahi UI launchers from Walker (desktopapplications provider).
+# Hide non-launcher / utility .desktop entries from Walker.
 blacklist = [
   "^avahi-",
   "^bssh$",
   "^bvnc$",
+  "^cmake-gui$",
+  "^xgps$",
+  "^xgpsspeed$",
 ]
