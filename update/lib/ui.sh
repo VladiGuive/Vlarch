@@ -20,8 +20,9 @@ declare -gA VLARCH_STEP_TITLES=(
   [02_packages]="Package sync"
   [03_dotfiles]="Dotfiles and tmux"
   [04_hyprpm]="Hyprland plugins"
-  [05_finalize]="Finalize update"
-  [06_getty_login]="Configure tty1 autologin"
+  [05_grub_snapshots]="GRUB snapshot menu"
+  [06_finalize]="Finalize update"
+  [07_getty_login]="Configure tty1 autologin"
 )
 
 vlarch_ui_enabled() {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 05 - finalize: reinstall vlarch CLI and bump install-info version.
+# 06 - finalize: reinstall vlarch CLI and bump install-info version.
 set -euo pipefail
 
 # shellcheck disable=SC1091

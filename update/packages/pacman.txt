@@ -19,6 +19,8 @@ amd-ucode
 openssh
 rsync
 timeshift
+grub-btrfs
+inotify-tools
 pipewire
 pipewire-alsa
 pipewire-pulse
