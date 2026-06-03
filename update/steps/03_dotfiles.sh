@@ -32,8 +32,6 @@ vlarch_run "install wallpaper" \
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
-if vlarch_sync_tmux_plugins "$VLARCH_USER"; then
-  vlarch_update_note "dotfiles: ok (tmux plugins installed)"
-else
-  vlarch_update_note "dotfiles: ok"
-fi
+vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
+
+vlarch_update_note "dotfiles: ok (tmux plugins installed)"

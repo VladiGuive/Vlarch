@@ -67,20 +67,61 @@ vlarch_tmux_conf_for_user() {
   fi
 }
 
+vlarch_ensure_tpm() {
+  local user="$1" home tpm_dir
+  home="$(vlarch_user_home "$user")"
+  tpm_dir="${home}/.tmux/plugins/tpm"
+
+  [[ -x "${tpm_dir}/bin/install_plugins" ]] && return 0
+
+  command -v git >/dev/null 2>&1 || return 1
+
+  vlarch_run_user "$user" "tmux tpm clone" \
+    "mkdir -p '${home}/.tmux/plugins' && git clone --depth 1 https://github.com/tmux-plugins/tpm.git '${tpm_dir}'"
+}
+
 vlarch_sync_tmux_plugins() {
-  local user="$1" conf home tpm_install
+  local user="$1" conf home tpm_install plugins_dir
 
   command -v tmux >/dev/null 2>&1 || return 1
   conf="$(vlarch_tmux_conf_for_user "$user")" || return 1
   home="$(vlarch_user_home "$user")"
-  tpm_install="${home}/.tmux/plugins/tpm/bin/install_plugins"
+  plugins_dir="${home}/.tmux/plugins"
+  tpm_install="${plugins_dir}/tpm/bin/install_plugins"
 
+  vlarch_ensure_tpm "$user" || return 1
   [[ -x "$tpm_install" ]] || return 1
-  runuser -u "$user" -- bash -lc \
-    "export HOME='${home}'; tmux list-sessions >/dev/null 2>&1" || return 1
 
-  vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || return 1
-  vlarch_run_user "$user" "tmux install plugins" "'${tpm_install}'"
+  # TPM install_plugins does not require a running tmux server (see tpm bin/install_plugins).
+  vlarch_run_user "$user" "tmux install plugins" \
+    "export TMUX_PLUGIN_MANAGER_PATH='${plugins_dir}'; '${tpm_install}'" || return 1
+
+  if runuser -u "$user" -- bash -lc "export HOME='${home}'; tmux list-sessions >/dev/null 2>&1"; then
+    vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || true
+  fi
+
+  return 0
+}
+
+vlarch_verify_desktop_readiness() {
+  local user="$1" home plugin_count
+  home="$(vlarch_user_home "$user")"
+
+  command -v Hyprland >/dev/null 2>&1 \
+    || vlarch_die "desktop readiness: Hyprland not installed"
+  command -v tmux >/dev/null 2>&1 \
+    || vlarch_die "desktop readiness: tmux not installed"
+  command -v kitty >/dev/null 2>&1 \
+    || vlarch_die "desktop readiness: kitty not installed"
+  command -v waybar >/dev/null 2>&1 \
+    || vlarch_die "desktop readiness: waybar not installed"
+
+  [[ -x "${home}/.tmux/plugins/tpm/bin/install_plugins" ]] \
+    || vlarch_die "desktop readiness: TPM not installed for ${user}"
+
+  plugin_count="$(find "${home}/.tmux/plugins" -mindepth 1 -maxdepth 1 -type d ! -name tpm 2>/dev/null | wc -l)"
+  ((plugin_count > 0)) \
+    || vlarch_die "desktop readiness: no tmux plugins under ${home}/.tmux/plugins"
 }
 
 vlarch_hyprpm_user_env() {

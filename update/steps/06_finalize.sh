@@ -8,6 +8,8 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/log.sh"
 source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/summary.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/session.sh"
 
 vlarch_load_install_info "$VLARCH_INFO_FILE" \
   || vlarch_die "could not load ${VLARCH_INFO_FILE}"
@@ -58,6 +60,9 @@ fi
 
 vlarch_write_install_info_version "$VLARCH_VERSION" \
   || vlarch_die "could not update ${VLARCH_INFO_FILE}"
+
+vlarch_run "verify desktop readiness" \
+  vlarch_verify_desktop_readiness "$VLARCH_USER"
 
 if command -v vlarch-waybar-update >/dev/null 2>&1 && [[ -n "${VLARCH_USER:-}" ]]; then
   if command -v runuser >/dev/null 2>&1; then
