@@ -8,6 +8,8 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
 source "${VLARCH_SCRIPT_DIR}/install/lib/config.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/install/lib/chroot.sh"
+# shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/wallpapers.sh"
 
 vlarch_config_load "$VLARCH_CONFIG_FILE"
 vlarch_config_validate
@@ -16,6 +18,10 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
+
+mountpoint -q /mnt || vlarch_die "/mnt not mounted; cannot finalize install"
+[[ -f "${VLARCH_ASSETS_DIR}/background.png" ]] || vlarch_die "missing wallpaper asset: ${VLARCH_ASSETS_DIR}/background.png"
+vlarch_install_wallpaper "${VLARCH_ASSETS_DIR}" /mnt
 
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch" /mnt/usr/local/bin/vlarch
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-tty-login" /mnt/usr/local/bin/vlarch-tty-login

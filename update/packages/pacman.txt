@@ -1,5 +1,6 @@
 # Full Vlarch desktop set, synced on update via yay (-> pacman) as the user.
 hyprland
+hyprpaper
 kitty
 fzf
 neovim
