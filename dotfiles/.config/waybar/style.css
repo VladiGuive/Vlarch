@@ -68,7 +68,7 @@ button {
 }
 
 #battery.charging {
-  color: @green;
+  color: @sky;
 }
 
 #battery.warning:not(.charging) {

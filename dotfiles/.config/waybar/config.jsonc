@@ -72,17 +72,14 @@
       "critical": 15
     },
     "format": "{icon}",
-    "format-charging": "󰂄",
-    "format-plugged": "",
+    "format-charging": "{icon}",
+    "format-plugged": "󰚥",
     "format-alt": "{capacity}%",
     "tooltip-format": "{capacity}% — {time}",
-    "format-icons": [
-      "",
-      "",
-      "",
-      "",
-      ""
-    ]
+    "format-icons": {
+      "default": ["", "", "", "", ""],
+      "charging": ["󰂎", "󰂍", "󰂌", "󰂋", "󰂆"]
+    }
   },
   "pulseaudio": {
     "format": "{icon} {volume}%",
