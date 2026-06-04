@@ -107,8 +107,16 @@ vlarch_run_pacman_syu() {
     pacman_cmd=(stdbuf -oL -eL pacman -Syu --noconfirm)
   fi
 
-  while IFS= read -r line; do
-    printf '%s\n' "$line" >>"$log"
+  # PIPESTATUS after "while read" is from read (1 at EOF), not pacman. Tee to the
+  # log and parse from a pipe so PIPESTATUS[0] is pacman's exit (needs pipefail).
+  local _pipefail_was=0
+  if [[ -o pipefail ]]; then
+    _pipefail_was=1
+  else
+    set -o pipefail
+  fi
+
+  "${pacman_cmd[@]}" 2>&1 | tee -a "$log" | while IFS= read -r line; do
     if [[ "$line" =~ ^\(([0-9]+)/([0-9]+)\)[[:space:]]+(installing|upgrading|reinstalling|removing|downgrading)[[:space:]]+([^[:space:]]+) ]]; then
       cur="${BASH_REMATCH[1]}"
       tot="${BASH_REMATCH[2]}"
@@ -116,8 +124,12 @@ vlarch_run_pacman_syu() {
       [[ "$pkg" == *... ]] && pkg="${pkg%...}"
       vlarch_ui_set_op_label "$(vlarch_ui_pacman_syu_label "$pkg" "$cur" "$tot")"
     fi
-  done < <("${pacman_cmd[@]}" 2>&1)
+  done
   rc=${PIPESTATUS[0]:-0}
+
+  if ((!_pipefail_was)); then
+    set +o pipefail
+  fi
 
   if ((rc != 0)); then
     VLARCH_LAST_LOG="$log"
