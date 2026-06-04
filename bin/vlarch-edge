@@ -10,6 +10,28 @@ if [[ -z "${HOME:-}" ]]; then
   export HOME
 fi
 
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+export XDG_RUNTIME_DIR
+
+if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+  for _sock in "${XDG_RUNTIME_DIR}"/wayland-*; do
+    [[ -S "$_sock" ]] || continue
+    WAYLAND_DISPLAY="${_sock##*/}"
+    break
+  done
+  [[ -n "${WAYLAND_DISPLAY:-}" ]] && export WAYLAND_DISPLAY
+fi
+
+: "${XDG_CURRENT_DESKTOP:=Hyprland}"
+export XDG_CURRENT_DESKTOP
+
+: "${XDG_SESSION_TYPE:=wayland}"
+export XDG_SESSION_TYPE
+
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -S "${XDG_RUNTIME_DIR}/bus" ]]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+fi
+
 EDGE="/opt/microsoft/msedge/microsoft-edge"
 FLAGS="${XDG_CONFIG_HOME:-${HOME}/.config}/microsoft-edge-stable-flags.conf"
 
@@ -22,8 +44,8 @@ flag_args=()
 if [[ -f "$FLAGS" ]]; then
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%%#*}"
-    line="${line#"${line%%[![:space:]]*}"}}"
-    line="${line%"${line##*[![:space:]]}"}}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
     [[ -n "$line" ]] && flag_args+=("$line")
   done <"$FLAGS"
 fi

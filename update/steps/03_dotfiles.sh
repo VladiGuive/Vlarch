@@ -33,9 +33,19 @@ vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
 _user_apps="/home/${VLARCH_USER}/.local/share/applications"
+_stale_edge="${_user_apps}/microsoft-edge.desktop"
+if [[ -f "$_stale_edge" ]]; then
+  vlarch_run "remove stale Edge desktop entry" rm -f "$_stale_edge"
+fi
+
 if command -v update-desktop-database >/dev/null 2>&1 && [[ -d "$_user_apps" ]]; then
   vlarch_run "refresh desktop database" \
     runuser -u "$VLARCH_USER" -- update-desktop-database "$_user_apps"
+fi
+
+if runuser -u "$VLARCH_USER" -- systemctl --user is-active --quiet elephant.service 2>/dev/null; then
+  vlarch_run "restart elephant app index" \
+    runuser -u "$VLARCH_USER" -- systemctl --user restart elephant.service
 fi
 
 vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
