@@ -25,6 +25,9 @@ pipewire
 pipewire-alsa
 pipewire-pulse
 wireplumber
+xdg-desktop-portal
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
 pavucontrol
 papirus-icon-theme
 steam
