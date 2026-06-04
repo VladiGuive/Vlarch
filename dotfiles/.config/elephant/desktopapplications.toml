@@ -12,4 +12,6 @@ blacklist = [
   "^qt",
   "^org\\.qt",
   "^qdbus",
+  "^qv4l2$",
+  "^qvidcap$",
 ]
