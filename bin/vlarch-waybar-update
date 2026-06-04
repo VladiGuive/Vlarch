@@ -59,6 +59,7 @@ vlarch_waybar_session() {
   vlarch_waybar_refresh
 
   # Prompts are drawn by vlarch_ui_show_complete; only read keys here.
+  stty -echo -icanon time 0 min 0 2>/dev/null || true
   while true; do
     IFS= read -rsn1 key </dev/tty 2>/dev/null || break
     if [[ "$key" == $'\e' ]]; then
@@ -66,9 +67,13 @@ vlarch_waybar_session() {
       break
     fi
     if [[ -z "$key" || "$key" == $'\n' || "$key" == $'\r' ]]; then
+      stty sane 2>/dev/null || true
+      printf '%b' '\033[?25h'
       sudo systemctl reboot
     fi
   done
+  stty sane 2>/dev/null || true
+  printf '%b' '\033[?25h'
 }
 
 _vlarch_hypr_active_workspace() {
@@ -119,6 +124,7 @@ vlarch_waybar_open() {
     -o initial_window_height=10c \
     -o window_padding_width=0 \
     -o window_margin_width=0 \
+    -o cursor_trail=0 \
     -e vlarch-waybar-update --session &
   sleep 0.3
 

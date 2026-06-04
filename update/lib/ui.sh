@@ -25,6 +25,8 @@ VLARCH_TERM_MAGENTA=$'\033[35m'
 VLARCH_TERM_GREEN=$'\033[32m'
 VLARCH_TERM_BRIGHT_GREEN=$'\033[92m'
 VLARCH_TERM_BRIGHT_BLACK=$'\033[90m'
+VLARCH_ESC_HIDE_CURSOR=$'\033[?25l'
+VLARCH_ESC_SHOW_CURSOR=$'\033[?25h'
 
 declare -gA VLARCH_STEP_TITLES=(
   [01_preflight]="Preflight checks"
@@ -57,6 +59,38 @@ vlarch_ui_format_ratio() {
   printf '%*d/%d' "${#tot}" "$cur" "$tot"
 }
 
+# Width of the "cur/tot" field (e.g. " 4/7" or "11/33").
+vlarch_ui_frac_field_width() {
+  local tot="$1"
+  printf '%s' $(( ${#tot} * 2 + 1 ))
+}
+
+# Suffix width for step/substep rows ("Step " + cur/tot field).
+vlarch_ui_suffix_width() {
+  local run_total="$1" step_total="$2"
+  local fw_run fw_step fw
+  fw_run=$(vlarch_ui_frac_field_width "$run_total")
+  fw_step=$(vlarch_ui_frac_field_width "$step_total")
+  fw=$fw_run
+  ((fw_step > fw)) && fw=$fw_step
+  printf '%s' $((5 + fw))
+}
+
+vlarch_ui_step_suffix() {
+  local step_idx="$1" step_total="$2" frac_w="$3"
+  local frac
+  frac="$(vlarch_ui_format_ratio "$step_idx" "$step_total")"
+  printf 'Step %*s' "$frac_w" "$frac"
+}
+
+vlarch_ui_run_suffix() {
+  local current="$1" run_total="$2" frac_w="$3"
+  local frac
+  frac="$(vlarch_ui_format_ratio "$current" "$run_total")"
+  # Five spaces under "Step "; %5s '' does not pad in bash.
+  printf '%*s%*s' 5 '' "$frac_w" "$frac"
+}
+
 vlarch_ui_state_write() {
   local key="$1" val="$2"
   local tmp="${VLARCH_UI_STATE}.$$"
@@ -87,6 +121,8 @@ vlarch_ui_init() {
   ((total < 1)) && total=1
   vlarch_ui_tty_resize
   rm -f "$VLARCH_UI_STATE"
+  vlarch_ui_state_write frac_field_width "$(vlarch_ui_frac_field_width "$total")"
+  vlarch_ui_state_write suffix_width "$(vlarch_ui_suffix_width "$total" "$steps")"
   vlarch_ui_state_write total "$total"
   vlarch_ui_state_write current 0
   vlarch_ui_state_write step_index 0
@@ -137,15 +173,37 @@ vlarch_ui_truncate() {
   printf '%s...' "${s:0:max-3}"
 }
 
-# Left text padded so right suffix ends at column width (both sides colored).
+# Left text + right suffix in a fixed-width right column (both sides colored).
 vlarch_ui_row_lr() {
   local left="$1" right="$2" width="$3" color="$4"
-  local pad=$((width - ${#right}))
-  ((pad < 1)) && pad=1
-  if ((${#left} > pad)); then
-    left="$(vlarch_ui_truncate "$left" "$pad")"
+  local suffix_w="${5:-$(vlarch_ui_state_read suffix_width 8)}"
+  local left_w right_pad
+  left_w=$((width - suffix_w))
+  ((left_w < 1)) && left_w=1
+  if ((${#left} > left_w)); then
+    left="$(vlarch_ui_truncate "$left" "$left_w")"
   fi
-  printf '%b%-*s%s%b\n' "$color" "$pad" "$left" "$right" "${VLARCH_ESC_RESET}"
+  printf -v right_pad '%*s' "$suffix_w" "$right"
+  printf '%b%-*s%s%b\n' "$color" "$left_w" "$left" "$right_pad" "${VLARCH_ESC_RESET}"
+}
+
+# Substep row: ▸ is one terminal column but three bytes — add two pad spaces for 50 cols.
+vlarch_ui_row_lr_sub() {
+  local left="$1" right="$2" width="$3" color="$4" suffix_w="$5"
+  local left_w right_pad
+  left_w=$((width - suffix_w + 2))
+  ((left_w < 1)) && left_w=1
+  if ((${#left} > left_w)); then
+    left="$(vlarch_ui_truncate "$left" "$left_w")"
+  fi
+  printf -v right_pad '%*s' "$suffix_w" "$right"
+  printf '%b%-*s%s%b\n' "$color" "$left_w" "$left" "$right_pad" "${VLARCH_ESC_RESET}"
+}
+
+# End of 10-line frame: hide cursor on last line (no extra row below).
+vlarch_ui_finish_frame() {
+  [[ -t 1 ]] || return 0
+  printf '%b\033[%d;1H' "${VLARCH_ESC_HIDE_CURSOR}" "$VLARCH_UI_LINES"
 }
 
 vlarch_ui_draw_bar() {
@@ -205,11 +263,14 @@ vlarch_ui_render_frame() {
   printf '\n'
 
   # Line 7: step
-  vlarch_ui_row_lr "$title" "Step $(vlarch_ui_format_ratio "$step_idx" "$step_total")" "$width" "${VLARCH_TERM_GREEN}"
+  local frac_w suffix_w
+  frac_w=$(vlarch_ui_state_read frac_field_width 5)
+  suffix_w=$(vlarch_ui_state_read suffix_width 8)
+  vlarch_ui_row_lr "$title" "$(vlarch_ui_step_suffix "$step_idx" "$step_total" "$frac_w")" "$width" "${VLARCH_TERM_GREEN}" "$suffix_w"
 
-  # Line 8: substep (blank when no op_label)
+  # Line 8: substep (blank when no op_label); cur/tot aligns under step fraction
   if [[ -n "$op_label" ]]; then
-    vlarch_ui_row_lr "▸ ${op_label}" "$(vlarch_ui_format_ratio "$current" "$total")" "$width" "${VLARCH_TERM_BRIGHT_GREEN}"
+    vlarch_ui_row_lr_sub "▸ ${op_label}" "$(vlarch_ui_run_suffix "$current" "$total" "$frac_w")" "$width" "${VLARCH_TERM_BRIGHT_GREEN}" "$suffix_w"
   else
     printf '\n'
   fi
@@ -221,9 +282,9 @@ vlarch_ui_render_frame() {
     printf '\n'
   fi
 
-  # Line 10: progress bar (no trailing newline; frame ends at 50 cols)
+  # Line 10: progress bar (exactly 50 cols; cursor hidden on this line)
   vlarch_ui_draw_bar "$macro_pct"
-  printf '\n'
+  vlarch_ui_finish_frame
 }
 
 vlarch_ui_rerender() {
@@ -295,6 +356,6 @@ vlarch_ui_show_complete() {
   printf '%bEnter%b → reboot.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
   printf '%bEsc%b → close.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
   vlarch_ui_draw_bar 100
-  printf '\n'
+  vlarch_ui_finish_frame
 }
 
