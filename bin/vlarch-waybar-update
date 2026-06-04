@@ -120,7 +120,7 @@ vlarch_waybar_open() {
 
   kitty --title 'vlarch update' \
     -o remember_window_size=no \
-    -o initial_window_width=50c \
+    -o initial_window_width=64c \
     -o initial_window_height=10c \
     -o window_padding_width=0 \
     -o window_margin_width=0 \
