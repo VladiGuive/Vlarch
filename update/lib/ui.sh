@@ -187,7 +187,7 @@ vlarch_ui_row_lr() {
   printf '%b%-*s%s%b\n' "$color" "$left_w" "$left" "$right_pad" "${VLARCH_ESC_RESET}"
 }
 
-# Substep row: ▸ is one terminal column but three bytes — add two pad spaces for 50 cols.
+# Substep row: ▸ is one terminal column but three bytes — add two pad spaces for full width.
 vlarch_ui_row_lr_sub() {
   local left="$1" right="$2" width="$3" color="$4" suffix_w="$5"
   local left_w right_pad
@@ -282,7 +282,7 @@ vlarch_ui_render_frame() {
     printf '\n'
   fi
 
-  # Line 10: progress bar (exactly 50 cols; cursor hidden on this line)
+  # Line 10: progress bar (full width; cursor hidden on this line)
   vlarch_ui_draw_bar "$macro_pct"
   vlarch_ui_finish_frame
 }
