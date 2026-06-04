@@ -41,8 +41,6 @@ vlarch_run "install vlarch-hyprpm-sync" \
 vlarch_run "install vlarch-walker-services" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker-services" /usr/local/bin/vlarch-walker-services
 
-vlarch_refresh_walker_services "$VLARCH_USER"
-
 vlarch_run "install vlarch-waybar-update" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /usr/local/bin/vlarch-waybar-update
 

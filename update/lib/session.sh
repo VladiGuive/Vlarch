@@ -117,13 +117,6 @@ vlarch_sync_tmux_plugins() {
   return 0
 }
 
-# Restart elephant + walker after dotfiles or bin changes (non-fatal if user session is offline).
-vlarch_refresh_walker_services() {
-  local user="$1"
-  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
-  vlarch_run_user "$user" "walker services" "vlarch-walker-services" || true
-}
-
 vlarch_verify_desktop_readiness() {
   local user="$1" home plugin_count
   home="$(vlarch_user_home "$user")"

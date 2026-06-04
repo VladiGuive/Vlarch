@@ -26,10 +26,7 @@ start_elephant() {
   }
 
   if systemctl --user is-active --quiet elephant.service 2>/dev/null; then
-    systemctl --user restart elephant.service >>"$LOG" 2>&1 \
-      || systemctl --user start elephant.service >>"$LOG" 2>&1 \
-      || true
-    log 'restarted elephant.service'
+    log 'elephant.service already active'
   else
     elephant service enable >>"$LOG" 2>&1 || true
     if ! systemctl --user start elephant.service >>"$LOG" 2>&1; then

@@ -44,7 +44,10 @@ if command -v update-desktop-database >/dev/null 2>&1 && [[ -d "$_user_apps" ]];
     runuser -u "$VLARCH_USER" -- update-desktop-database "$_user_apps"
 fi
 
-vlarch_refresh_walker_services "$VLARCH_USER"
+if runuser -u "$VLARCH_USER" -- systemctl --user is-active --quiet elephant.service 2>/dev/null; then
+  vlarch_run "restart elephant app index" \
+    runuser -u "$VLARCH_USER" -- systemctl --user restart elephant.service
+fi
 
 vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
 
