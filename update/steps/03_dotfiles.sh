@@ -33,7 +33,7 @@ vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
 _user_apps="/home/${VLARCH_USER}/.local/share/applications"
-for _stale in microsoft-edge.desktop microsoft-edge-stable.desktop; do
+for _stale in microsoft-edge-stable.desktop vlarch-edge.desktop; do
   if [[ -f "${_user_apps}/${_stale}" ]]; then
     vlarch_run "remove stale Edge desktop entry (${_stale})" rm -f "${_user_apps}/${_stale}"
   fi
