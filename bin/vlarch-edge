@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # vlarch-edge - launch Microsoft Edge with flags.conf (bypass AUR wrapper x11 override).
 
-set -euo pipefail
+set -eo pipefail
+
+export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+
+if [[ -z "${HOME:-}" ]]; then
+  HOME="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f6)" || HOME="/tmp"
+  export HOME
+fi
 
 EDGE="/opt/microsoft/msedge/microsoft-edge"
 FLAGS="${XDG_CONFIG_HOME:-${HOME}/.config}/microsoft-edge-stable-flags.conf"
 
-[[ -x "$EDGE" ]] || {
+if [[ ! -x "$EDGE" ]]; then
   printf 'vlarch-edge: %s not found\n' "$EDGE" >&2
   exit 1
-}
+fi
 
 flag_args=()
 if [[ -f "$FLAGS" ]]; then
@@ -21,4 +28,8 @@ if [[ -f "$FLAGS" ]]; then
   done <"$FLAGS"
 fi
 
-exec "$EDGE" "${flag_args[@]}" "$@"
+if ((${#flag_args[@]})); then
+  exec "$EDGE" "${flag_args[@]}" "$@"
+else
+  exec "$EDGE" "$@"
+fi

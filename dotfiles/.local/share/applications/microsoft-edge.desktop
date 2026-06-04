@@ -4,7 +4,8 @@ Name=Microsoft Edge
 GenericName=Web Browser
 Comment=Access the Internet
 StartupWMClass=msedge
-Exec=vlarch-edge %U
+TryExec=/usr/local/bin/vlarch-edge
+Exec=/usr/local/bin/vlarch-edge %U
 Terminal=false
 Type=Application
 Categories=Network;WebBrowser;
@@ -14,8 +15,8 @@ Actions=new-window;new-private-window;
 
 [Desktop Action new-window]
 Name=New Window
-Exec=vlarch-edge
+Exec=/usr/local/bin/vlarch-edge
 
 [Desktop Action new-private-window]
 Name=New InPrivate Window
-Exec=vlarch-edge --inprivate
+Exec=/usr/local/bin/vlarch-edge --inprivate
