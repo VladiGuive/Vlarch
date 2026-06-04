@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Nord-themed TTY UI for the Vlarch updater (256-color SGR, pure bash).
-# Fixed quiet-mode frame: 10 lines x 64 columns.
+# Fixed quiet-mode frame: 10 lines x 50 columns.
 
 VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
-VLARCH_UI_WIDTH=64
+VLARCH_UI_WIDTH=50
 VLARCH_UI_LINES=10
 
 VLARCH_ESC_RESET=$'\033[0m'
@@ -46,7 +46,7 @@ vlarch_ui_bar_width() {
   printf '%s' "$VLARCH_UI_WIDTH"
 }
 
-# Resize TTY / terminal window to the fixed UI grid (64 cols x 10 rows).
+# Resize TTY / terminal window to the fixed UI grid (50 cols x 10 rows).
 vlarch_ui_tty_resize() {
   [[ -t 1 ]] || return 0
   stty cols "$VLARCH_UI_WIDTH" rows "$VLARCH_UI_LINES" 2>/dev/null || true
