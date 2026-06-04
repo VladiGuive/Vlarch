@@ -32,9 +32,10 @@ vlarch_run "install wallpaper" \
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
-if command -v update-desktop-database >/dev/null 2>&1; then
+_user_apps="/home/${VLARCH_USER}/.local/share/applications"
+if command -v update-desktop-database >/dev/null 2>&1 && [[ -d "$_user_apps" ]]; then
   vlarch_run "refresh desktop database" \
-    runuser -u "$VLARCH_USER" -- update-desktop-database "${VLARCH_DOTFILES_DIR}/.local/share/applications"
+    runuser -u "$VLARCH_USER" -- update-desktop-database "$_user_apps"
 fi
 
 vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
