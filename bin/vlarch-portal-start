@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# vlarch-portal-start - ordered PipeWire + xdg-desktop-portal startup for screen share.
+
+set -uo pipefail
+
+_vlarch_sig() {
+  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    printf '%s' "$HYPRLAND_INSTANCE_SIGNATURE"
+    return 0
+  fi
+  local runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  if [[ -d "${runtime}/hypr" ]]; then
+    find "${runtime}/hypr" -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | head -1
+  fi
+}
+
+sig="$(_vlarch_sig)"
+if [[ -n "$sig" ]]; then
+  export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user enable pipewire.service wireplumber.service pipewire-pulse.service \
+    >/dev/null 2>&1 || true
+  systemctl --user start pipewire.service wireplumber.service pipewire-pulse.service \
+    >/dev/null 2>&1 || true
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user import-environment \
+    WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE \
+    >/dev/null 2>&1 || true
+fi
+
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  dbus-update-activation-environment --systemd \
+    WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE \
+    >/dev/null 2>&1 || true
+fi
+
+sleep 0.3
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user restart xdg-desktop-portal-hyprland.service >/dev/null 2>&1 \
+    || systemctl --user start xdg-desktop-portal-hyprland.service >/dev/null 2>&1 \
+    || true
+  sleep 0.5
+  systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 \
+    || systemctl --user start xdg-desktop-portal.service >/dev/null 2>&1 \
+    || true
+fi

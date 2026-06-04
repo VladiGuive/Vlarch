@@ -28,6 +28,7 @@ wireplumber
 xdg-desktop-portal
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
+qt6-wayland
 pavucontrol
 papirus-icon-theme
 steam

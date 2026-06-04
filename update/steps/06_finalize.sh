@@ -21,6 +21,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" ]] || vlarch_die "missing bin/vlarch-keyring-unlock"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-workspace" ]] || vlarch_die "missing bin/vlarch-workspace"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-portal-start" ]] || vlarch_die "missing bin/vlarch-portal-start"
 
 if ((VLARCH_DRY_RUN)); then
   vlarch_update_note "finalize: dry-run (would install bin scripts and bump version to ${VLARCH_VERSION})"
@@ -47,6 +48,9 @@ vlarch_run "install vlarch-keyring-unlock" \
 
 vlarch_run "install vlarch-workspace" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-workspace" /usr/local/bin/vlarch-workspace
+
+vlarch_run "install vlarch-portal-start" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /usr/local/bin/vlarch-portal-start
 
 if [[ -e /usr/local/bin/vlarch-elephant-start ]]; then
   rm -f /usr/local/bin/vlarch-elephant-start
