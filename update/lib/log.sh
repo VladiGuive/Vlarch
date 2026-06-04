@@ -82,61 +82,60 @@ vlarch_run_pacman_syu() {
   local label="pacman -Syu"
 
   if ((VLARCH_VERBOSE)); then
-    pacman -Syu --noconfirm --noprogressbar
+    pacman -Syu --noconfirm
     return $?
   fi
 
   if ! declare -F vlarch_ui_set_op_label >/dev/null 2>&1 || ! vlarch_ui_enabled; then
-    vlarch_run "$label" pacman -Syu --noconfirm --noprogressbar
+    vlarch_run "$label" pacman -Syu --noconfirm
     return $?
   fi
 
-  local log rc=0 line pkg cur tot fifo pacman_pid
+  local log rc=0 line pkg cur tot
   log="$(vlarch_log_path step)"
   mkdir -p "$(dirname "$log")"
   : >>"$log"
   {
     printf '\n--- vlarch_run: %s ---\n' "$label"
-    printf 'cmd: pacman -Syu --noconfirm --noprogressbar\n'
+    printf 'cmd: pacman -Syu --noconfirm\n'
   } >>"$log"
 
-  # One tick for this run so the right counter advances while pacman is active.
-  vlarch_ui_tick "$label"
+  vlarch_ui_set_op_label "$label"
 
-  local -a pacman_cmd=(pacman -Syu --noconfirm --noprogressbar)
+  local -a pacman_cmd=(pacman -Syu --noconfirm)
   if command -v stdbuf >/dev/null 2>&1; then
-    pacman_cmd=(stdbuf -oL -eL pacman -Syu --noconfirm --noprogressbar)
+    pacman_cmd=(stdbuf -oL -eL pacman -Syu --noconfirm)
   fi
 
-  # "cmd | while read" runs the loop in a subshell; UI redraws never hit the TTY.
-  fifo=$(mktemp -u "${VLARCH_LOG_DIR:-/tmp}/vlarch-pacman.XXXXXX")
-  mkfifo "$fifo"
-  "${pacman_cmd[@]}" > >(
-    tee -a "$log" >"$fifo"
-  ) 2>&1 &
-  pacman_pid=$!
+  # PIPESTATUS after "while read" is from read (1 at EOF), not pacman. Tee to the
+  # log and parse from a pipe so PIPESTATUS[0] is pacman's exit (needs pipefail).
+  local _pipefail_was=0
+  if [[ -o pipefail ]]; then
+    _pipefail_was=1
+  else
+    set -o pipefail
+  fi
 
-  while IFS= read -r line <"$fifo"; do
-    line="${line#"${line%%[![:space:]]*}"}"
-    [[ -n "$line" ]] || continue
+  "${pacman_cmd[@]}" 2>&1 | tee -a "$log" | while IFS= read -r line; do
     if [[ "$line" =~ ^\(([0-9]+)/([0-9]+)\)[[:space:]]+(installing|upgrading|reinstalling|removing|downgrading)[[:space:]]+([^[:space:]]+) ]]; then
       cur="${BASH_REMATCH[1]}"
       tot="${BASH_REMATCH[2]}"
       pkg="${BASH_REMATCH[4]}"
-      pkg="${pkg%%\[*}"
       [[ "$pkg" == *... ]] && pkg="${pkg%...}"
       vlarch_ui_set_op_label "$(vlarch_ui_pacman_syu_label "$pkg" "$cur" "$tot")"
     fi
   done
+  rc=${PIPESTATUS[0]:-0}
 
-  wait "$pacman_pid" || rc=$?
-  rm -f "$fifo"
+  if ((!_pipefail_was)); then
+    set +o pipefail
+  fi
 
   if ((rc != 0)); then
     VLARCH_LAST_LOG="$log"
     vlarch_die "${label} failed (exit ${rc})"
   fi
-  vlarch_ui_set_op_label "$label"
+  vlarch_ui_tick "$label"
   return 0
 }
 
