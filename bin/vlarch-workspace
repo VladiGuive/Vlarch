@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# vlarch-workspace - 10 workspaces per monitor (blocks 1-10, 11-20, … by x-sorted monitor).
+
+set -euo pipefail
+
+BLOCK=10
+
+_vlarch_require_hypr() {
+  command -v hyprctl >/dev/null 2>&1 || {
+    printf 'vlarch-workspace: hyprctl not found\n' >&2
+    exit 1
+  }
+  command -v python3 >/dev/null 2>&1 || {
+    printf 'vlarch-workspace: python3 not found\n' >&2
+    exit 1
+  }
+}
+
+_vlarch_dispatch() {
+  hyprctl dispatch "$@" >/dev/null 2>&1
+}
+
+_vlarch_workspace_for_slot() {
+  local slot="$1"
+  python3 - "$BLOCK" "$slot" <<'PY'
+import json
+import subprocess
+import sys
+
+block = int(sys.argv[1])
+slot = int(sys.argv[2])
+
+mons = sorted(
+    json.loads(subprocess.check_output(["hyprctl", "monitors", "-j"], text=True)),
+    key=lambda m: m.get("x", 0),
+)
+idx = next((i for i, m in enumerate(mons) if m.get("focused")), 0)
+print(idx * block + slot)
+PY
+}
+
+_vlarch_cycle() {
+  local direction="$1"
+  python3 - "$BLOCK" "$direction" <<'PY'
+import json
+import subprocess
+import sys
+
+block = int(sys.argv[1])
+direction = sys.argv[2]
+
+mons = sorted(
+    json.loads(subprocess.check_output(["hyprctl", "monitors", "-j"], text=True)),
+    key=lambda m: m.get("x", 0),
+)
+idx = next((i for i, m in enumerate(mons) if m.get("focused")), 0)
+base = idx * block + 1
+end = idx * block + block
+
+active = json.loads(
+    subprocess.check_output(["hyprctl", "activeworkspace", "-j"], text=True)
+)
+current = int(active["id"])
+
+if base <= current <= end:
+    target = current + 1 if direction == "next" else current - 1
+    if target > end:
+        target = base
+    elif target < base:
+        target = end
+else:
+    target = base
+
+print(target)
+PY
+}
+
+_vlarch_init() {
+  sleep 0.5
+  python3 - "$BLOCK" <<'PY'
+import json
+import subprocess
+import sys
+
+block = int(sys.argv[1])
+mons = sorted(
+    json.loads(subprocess.check_output(["hyprctl", "monitors", "-j"], text=True)),
+    key=lambda m: m.get("x", 0),
+)
+
+for i, mon in enumerate(mons):
+    name = mon["name"]
+    for slot in range(1, block + 1):
+        ws = i * block + slot
+        subprocess.run(
+            ["hyprctl", "dispatch", "moveworkspacetomonitor", f"{ws} {name}"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+PY
+}
+
+main() {
+  _vlarch_require_hypr
+
+  if [[ "${1:-}" == --init ]]; then
+    _vlarch_init
+    exit 0
+  fi
+
+  local cmd="${1:-}"
+  shift || true
+
+  case "$cmd" in
+    goto)
+      [[ "${1:-}" =~ ^[1-9]$|^10$ ]] || exit 1
+      _vlarch_dispatch workspace "$(_vlarch_workspace_for_slot "$1")"
+      ;;
+    move)
+      [[ "${1:-}" =~ ^[1-9]$|^10$ ]] || exit 1
+      _vlarch_dispatch movetoworkspace "$(_vlarch_workspace_for_slot "$1")"
+      ;;
+    next)
+      _vlarch_dispatch workspace "$(_vlarch_cycle next)"
+      ;;
+    prev)
+      _vlarch_dispatch workspace "$(_vlarch_cycle prev)"
+      ;;
+    *)
+      printf 'usage: vlarch-workspace [--init|goto N|move N|next|prev]\n' >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
