@@ -58,8 +58,8 @@ vlarch_waybar_session() {
   sudo vlarch update || true
   vlarch_waybar_refresh
 
+  printf '\n\e[38;5;150mEnter\e[0m reboot · \e[38;5;150mEsc\e[0m close\n'
   while true; do
-    printf '\n\e[38;5;150mEnter\e[0m reboot · \e[38;5;150mEsc\e[0m close\n'
     IFS= read -rsn1 key </dev/tty 2>/dev/null || break
     if [[ "$key" == $'\e' ]]; then
       read -rsn2 -t 0.01 _ </dev/tty 2>/dev/null || true
