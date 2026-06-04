@@ -33,10 +33,11 @@ vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
 _user_apps="/home/${VLARCH_USER}/.local/share/applications"
-_stale_edge="${_user_apps}/microsoft-edge.desktop"
-if [[ -f "$_stale_edge" ]]; then
-  vlarch_run "remove stale Edge desktop entry" rm -f "$_stale_edge"
-fi
+for _stale in microsoft-edge.desktop microsoft-edge-stable.desktop; do
+  if [[ -f "${_user_apps}/${_stale}" ]]; then
+    vlarch_run "remove stale Edge desktop entry (${_stale})" rm -f "${_user_apps}/${_stale}"
+  fi
+done
 
 if command -v update-desktop-database >/dev/null 2>&1 && [[ -d "$_user_apps" ]]; then
   vlarch_run "refresh desktop database" \

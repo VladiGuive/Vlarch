@@ -6,4 +6,6 @@ blacklist = [
   "^cmake-gui$",
   "^xgps$",
   "^xgpsspeed$",
+  # AUR microsoft-edge-stable-bin wrappers (vlarch-edge.desktop is the launcher).
+  "^microsoft-edge",
 ]
