@@ -14,5 +14,6 @@ elephant-symbols
 elephant-websearch
 elephant-clipboard
 timeshift-autosnap
+xwaylandvideobridge
 microsoft-edge-stable-bin
 obsidian

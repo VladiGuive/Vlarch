@@ -6,6 +6,4 @@ blacklist = [
   "^cmake-gui$",
   "^xgps$",
   "^xgpsspeed$",
-  # AUR wrapper only; microsoft-edge.desktop launches via vlarch-edge.
-  "^microsoft-edge-stable$",
 ]

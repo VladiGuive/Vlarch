@@ -51,7 +51,7 @@ if [[ -f "$FLAGS" ]]; then
 fi
 
 if ((${#flag_args[@]})); then
-  exec "$EDGE" "${flag_args[@]}" "$@"
+  exec "$EDGE" "${flag_args[@]}" "$@" --ozone-platform=x11
 else
-  exec "$EDGE" "$@"
+  exec "$EDGE" "$@" --ozone-platform=x11
 fi
