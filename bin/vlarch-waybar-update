@@ -71,16 +71,54 @@ vlarch_waybar_session() {
   done
 }
 
+_vlarch_hypr_active_workspace() {
+  hyprctl activeworkspace -j 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])'
+}
+
+_vlarch_hypr_update_window_addr() {
+  hyprctl clients -j 2>/dev/null | python3 -c '
+import json, sys
+for c in json.load(sys.stdin):
+    if c.get("title") == "vlarch update":
+        print(c["address"])
+        break
+'
+}
+
+_vlarch_hypr_focus_update_window() {
+  local ws="$1"
+  local addr="$2"
+
+  [[ -n "$ws" && -n "$addr" ]] || return 0
+  hyprctl dispatch movetoworkspacesilent "${ws},address:${addr}" 2>/dev/null || true
+  hyprctl dispatch focuswindow "address:${addr}" 2>/dev/null || true
+  hyprctl dispatch centerwindow 2>/dev/null || true
+}
+
 vlarch_waybar_open() {
+  local ws addr
+
   command -v kitty >/dev/null 2>&1 || {
     printf 'kitty not found\n' >&2
     exit 1
   }
+
+  ws=""
+  if command -v hyprctl >/dev/null 2>&1; then
+    ws="$(_vlarch_hypr_active_workspace 2>/dev/null || true)"
+    addr="$(_vlarch_hypr_update_window_addr 2>/dev/null || true)"
+    if [[ -n "$addr" ]]; then
+      _vlarch_hypr_focus_update_window "$ws" "$addr"
+      return 0
+    fi
+  fi
+
   kitty --title 'vlarch update' -e vlarch-waybar-update --session &
   sleep 0.3
+
   if command -v hyprctl >/dev/null 2>&1; then
-    hyprctl dispatch focuswindow "title:vlarch update" 2>/dev/null || true
-    hyprctl dispatch centerwindow 2>/dev/null || true
+    addr="$(_vlarch_hypr_update_window_addr 2>/dev/null || true)"
+    _vlarch_hypr_focus_update_window "$ws" "$addr"
   fi
 }
 
