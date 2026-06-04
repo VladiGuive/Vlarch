@@ -17,6 +17,8 @@ VLARCH_NORD_BLUE=$'\033[38;5;109m'
 VLARCH_NORD_CYAN=$'\033[38;5;109m'
 VLARCH_NORD_MAGENTA=$'\033[38;5;176m'
 VLARCH_NORD_WHITE=$'\033[38;5;255m'
+VLARCH_NORD_PCT_FILL=$'\033[38;5;236;48;5;109m'
+VLARCH_NORD_PCT_EMPTY=$'\033[38;5;253;48;5;236m'
 
 declare -gA VLARCH_STEP_TITLES=(
   [01_preflight]="Live environment checks"
@@ -101,17 +103,42 @@ vlarch_ui_say() {
   printf '%b%b%b\n' "$color" "$*" "${VLARCH_ESC_RESET}"
 }
 
+vlarch_ui_row_lr() {
+  local left="$1" right="$2" width="$3" color="$4"
+  local pad=$((width - ${#right}))
+  ((pad < 1)) && pad=1
+  printf '%b%-*s%b%s\n' "$color" "$pad" "$left" "${VLARCH_ESC_RESET}" "$right"
+}
+
 vlarch_ui_draw_bar() {
-  local pct="$1" width filled empty i
+  local pct="$1"
+  local width pct_str pct_len track filled i j c pos
   width=$(vlarch_ui_bar_width)
+  pct_str=$(printf '%d%%' "$pct")
+  pct_len=${#pct_str}
+  track=$((width - pct_len))
+  ((track < 1)) && track=1
   filled=$((pct * width / 100))
   ((filled > width)) && filled=$width
-  empty=$((width - filled))
-  printf '%b' "${VLARCH_NORD_CYAN}"
-  for ((i = 0; i < filled; i++)); do printf '█'; done
-  printf '%b' "${VLARCH_NORD_DIM}"
-  for ((i = 0; i < empty; i++)); do printf '░'; done
-  printf '%b' "${VLARCH_ESC_RESET}"
+
+  for ((i = 0; i < track; i++)); do
+    if ((i < filled)); then
+      printf '%b█' "${VLARCH_NORD_CYAN}"
+    else
+      printf '%b░' "${VLARCH_NORD_DIM}"
+    fi
+  done
+
+  for ((j = 0; j < pct_len; j++)); do
+    c="${pct_str:j:1}"
+    pos=$((track + j))
+    if ((pos < filled)); then
+      printf '%b%b%c' "${VLARCH_NORD_PCT_FILL}" "${VLARCH_ESC_RESET}" "$c"
+    else
+      printf '%b%b%c' "${VLARCH_NORD_PCT_EMPTY}" "${VLARCH_ESC_RESET}" "$c"
+    fi
+  done
+  printf '%b\n' "${VLARCH_ESC_RESET}"
 }
 
 vlarch_ui_render_frame() {
@@ -128,16 +155,11 @@ vlarch_ui_render_frame() {
   vlarch_ui_print_logo || true
   printf '\n'
   vlarch_ui_say "${VLARCH_NORD_FG}" "Vlarch ${VLARCH_VERSION:-}"
-  printf '%b%-*s%b Step %s/%s\n' \
-    "${VLARCH_NORD_FG}" "$((width - 12))" "$title" "${VLARCH_ESC_RESET}" \
-    "$step_idx" "$step_total"
+  vlarch_ui_row_lr "$title" "Step ${step_idx}/${step_total}" "$width" "${VLARCH_NORD_FG}"
   vlarch_ui_draw_bar "$macro_pct"
-  printf '  %3s%%\n' "$macro_pct"
   printf '\n'
   if [[ -n "$op_label" ]]; then
-    printf '%b▸ %-*s%b %s/%s\n' \
-      "${VLARCH_NORD_GREEN}" "$((width - 8))" "$op_label" "${VLARCH_ESC_RESET}" \
-      "$current" "$total"
+    vlarch_ui_row_lr "▸ ${op_label}" "${current}/${total}" "$width" "${VLARCH_NORD_GREEN}"
   fi
 }
 

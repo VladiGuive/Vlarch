@@ -5,7 +5,10 @@ VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
 
 VLARCH_ESC_RESET=$'\033[0m'
+VLARCH_NORD_BG=$'\033[48;5;236m'
 VLARCH_NORD_FG=$'\033[38;5;253m'
+VLARCH_NORD_PCT_FILL=$'\033[38;5;236;48;5;109m'
+VLARCH_NORD_PCT_EMPTY=$'\033[38;5;253;48;5;236m'
 VLARCH_NORD_DIM=$'\033[38;5;245m'
 VLARCH_NORD_RED=$'\033[38;5;174m'
 VLARCH_NORD_GREEN=$'\033[38;5;150m'
@@ -100,17 +103,43 @@ vlarch_ui_say() {
   printf '%b%b%b\n' "$color" "$*" "${VLARCH_ESC_RESET}"
 }
 
+# Left text padded so right suffix ends at column width.
+vlarch_ui_row_lr() {
+  local left="$1" right="$2" width="$3" color="$4"
+  local pad=$((width - ${#right}))
+  ((pad < 1)) && pad=1
+  printf '%b%-*s%b%s\n' "$color" "$pad" "$left" "${VLARCH_ESC_RESET}" "$right"
+}
+
 vlarch_ui_draw_bar() {
-  local pct="$1" width filled empty i
+  local pct="$1"
+  local width pct_str pct_len track filled i j c pos
   width=$(vlarch_ui_bar_width)
+  pct_str=$(printf '%d%%' "$pct")
+  pct_len=${#pct_str}
+  track=$((width - pct_len))
+  ((track < 1)) && track=1
   filled=$((pct * width / 100))
   ((filled > width)) && filled=$width
-  empty=$((width - filled))
-  printf '%b' "${VLARCH_NORD_CYAN}"
-  for ((i = 0; i < filled; i++)); do printf '█'; done
-  printf '%b' "${VLARCH_NORD_DIM}"
-  for ((i = 0; i < empty; i++)); do printf '░'; done
-  printf '%b' "${VLARCH_ESC_RESET}"
+
+  for ((i = 0; i < track; i++)); do
+    if ((i < filled)); then
+      printf '%b█' "${VLARCH_NORD_CYAN}"
+    else
+      printf '%b░' "${VLARCH_NORD_DIM}"
+    fi
+  done
+
+  for ((j = 0; j < pct_len; j++)); do
+    c="${pct_str:j:1}"
+    pos=$((track + j))
+    if ((pos < filled)); then
+      printf '%b%b%c' "${VLARCH_NORD_PCT_FILL}" "${VLARCH_ESC_RESET}" "$c"
+    else
+      printf '%b%b%c' "${VLARCH_NORD_PCT_EMPTY}" "${VLARCH_ESC_RESET}" "$c"
+    fi
+  done
+  printf '%b\n' "${VLARCH_ESC_RESET}"
 }
 
 vlarch_ui_render_frame() {
@@ -133,16 +162,11 @@ vlarch_ui_render_frame() {
   else
     vlarch_ui_say "${VLARCH_NORD_FG}" "Vlarch ${VLARCH_VERSION:-update}"
   fi
-  printf '%b%-*s%b Step %s/%s\n' \
-    "${VLARCH_NORD_FG}" "$((width - 12))" "$title" "${VLARCH_ESC_RESET}" \
-    "$step_idx" "$step_total"
+  vlarch_ui_row_lr "$title" "Step ${step_idx}/${step_total}" "$width" "${VLARCH_NORD_FG}"
   vlarch_ui_draw_bar "$macro_pct"
-  printf '  %3s%%\n' "$macro_pct"
   printf '\n'
   if [[ -n "$op_label" ]]; then
-    printf '%b▸ %-*s%b %s/%s\n' \
-      "${VLARCH_NORD_GREEN}" "$((width - 8))" "$op_label" "${VLARCH_ESC_RESET}" \
-      "$current" "$total"
+    vlarch_ui_row_lr "▸ ${op_label}" "${current}/${total}" "$width" "${VLARCH_NORD_GREEN}"
   fi
 }
 
@@ -171,14 +195,18 @@ vlarch_ui_set_op_label() {
   vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
 }
 
-# "pacman -Syu [pkgname     cur/tot]" sized to the op_label field (width - 8).
+# "pacman -Syu [pkgname     cur/tot]" sized to match the op row right counter.
 vlarch_ui_pacman_syu_label() {
   local pkg="$1" cur="$2" tot="$3"
-  local width op_w prefix inner prog prog_w pkg_w pkg_disp
+  local width run_cur run_total counter op_max prefix inner prog prog_w pkg_w pkg_disp
   width=$(vlarch_ui_bar_width)
-  op_w=$((width - 8))
+  run_cur=$(vlarch_ui_state_read current 0)
+  run_total=$(vlarch_ui_state_read total 1)
+  counter="${run_cur}/${run_total}"
+  op_max=$((width - ${#counter} - 2))
+  ((op_max < 12)) && op_max=12
   prefix='pacman -Syu '
-  inner=$((op_w - ${#prefix} - 2))
+  inner=$((op_max - ${#prefix} - 2))
   prog="${cur}/${tot}"
   prog_w=${#prog}
   ((prog_w < 7)) && prog_w=7
@@ -223,5 +251,5 @@ vlarch_ui_show_complete() {
   printf '\n'
   vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete (${VLARCH_VERSION:-})"
   vlarch_ui_draw_bar 100
-  printf '  100%%\n\n'
+  printf '\n'
 }
