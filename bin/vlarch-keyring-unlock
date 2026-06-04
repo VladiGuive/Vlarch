@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# vlarch-keyring-unlock - start gnome-keyring, unlock for autologin, export to session.
+# Called from hyprland.conf exec-once before xdg-desktop-portal and browser apps.
+
+set -uo pipefail
+
+MARKER="${XDG_CONFIG_HOME:-${HOME}/.config}/vlarch/keyring-autologin.ok"
+INIT_ONLY=0
+
+while (($#)); do
+  case "$1" in
+    --initialize) INIT_ONLY=1; shift ;;
+    *) shift ;;
+  esac
+done
+
+command -v gnome-keyring-daemon >/dev/null 2>&1 || exit 0
+
+eval "$(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh 2>/dev/null)" || true
+
+printf '' | gnome-keyring-daemon --unlock >/dev/null 2>&1 || true
+
+if [[ ! -f "$MARKER" ]] || ((INIT_ONLY)); then
+  if printf '\n\n' | gnome-keyring-daemon --change-password >/dev/null 2>&1; then
+    mkdir -p "$(dirname "$MARKER")"
+    touch "$MARKER"
+  elif [[ ! -f "$MARKER" ]]; then
+    printf '' | gnome-keyring-daemon --unlock >/dev/null 2>&1 || true
+    if secret-tool lookup service vlarch-keyring-probe x vlarch >/dev/null 2>&1 \
+      || secret-tool store --label='vlarch keyring probe' service vlarch-keyring-probe x vlarch >/dev/null 2>&1; then
+      mkdir -p "$(dirname "$MARKER")"
+      touch "$MARKER"
+    fi
+  fi
+fi
+
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  dbus-update-activation-environment --systemd \
+    GNOME_KEYRING_CONTROL SSH_AUTH_SOCK >/dev/null 2>&1 || true
+fi

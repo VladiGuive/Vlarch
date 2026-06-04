@@ -19,6 +19,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" ]] || vlarch_die "missing bin/vlarch-keyring-unlock"
 
 if ((VLARCH_DRY_RUN)); then
   vlarch_update_note "finalize: dry-run (would install bin scripts and bump version to ${VLARCH_VERSION})"
@@ -39,6 +40,9 @@ vlarch_run "install vlarch-walker-services" \
 
 vlarch_run "install vlarch-waybar-update" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /usr/local/bin/vlarch-waybar-update
+
+vlarch_run "install vlarch-keyring-unlock" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" /usr/local/bin/vlarch-keyring-unlock
 
 if [[ -e /usr/local/bin/vlarch-elephant-start ]]; then
   rm -f /usr/local/bin/vlarch-elephant-start

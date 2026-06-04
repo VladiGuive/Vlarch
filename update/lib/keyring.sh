@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
-# gnome-keyring PAM hooks for tty login (Edge, NetworkManager secrets, etc.).
+# gnome-keyring PAM hooks for tty autologin (Edge, NetworkManager secrets, etc.).
 
-vlarch_configure_gnome_keyring_pam() {
-  local f
+_vlarch_configure_gnome_keyring_pam_file() {
+  local f="$1"
 
-  command -v pacman >/dev/null 2>&1 \
-    && pacman -Q gnome-keyring >/dev/null 2>&1 \
-    || return 0
+  [[ -f "$f" ]] || return 0
+  grep -q 'pam_gnome_keyring\.so' "$f" && return 0
 
-  for f in /etc/pam.d/login; do
-    [[ -f "$f" ]] || continue
-    grep -q 'pam_gnome_keyring\.so' "$f" && continue
-    cat >>"$f" <<'PAM'
+  cat >>"$f" <<'PAM'
 
 # Vlarch: gnome-keyring for Chromium/Edge and org.freedesktop.secrets
 auth       optional     pam_gnome_keyring.so
 session    optional     pam_gnome_keyring.so auto_start
 PAM
-  done
+}
+
+vlarch_configure_gnome_keyring_pam() {
+  command -v pacman >/dev/null 2>&1 \
+    && pacman -Q gnome-keyring >/dev/null 2>&1 \
+    || return 0
+
+  _vlarch_configure_gnome_keyring_pam_file /etc/pam.d/login
+  _vlarch_configure_gnome_keyring_pam_file /etc/pam.d/system-login
 }
