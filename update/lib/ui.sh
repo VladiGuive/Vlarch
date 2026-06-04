@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Nord-themed TTY UI for the Vlarch updater (256-color SGR, pure bash).
+# Fixed quiet-mode frame: 10 lines x 50 columns.
 
 VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
+VLARCH_UI_WIDTH=50
 
 VLARCH_ESC_RESET=$'\033[0m'
 VLARCH_NORD_BG=$'\033[48;5;236m'
@@ -17,6 +19,11 @@ VLARCH_NORD_BLUE=$'\033[38;5;109m'
 VLARCH_NORD_CYAN=$'\033[38;5;109m'
 VLARCH_NORD_MAGENTA=$'\033[38;5;176m'
 VLARCH_NORD_WHITE=$'\033[38;5;255m'
+
+VLARCH_TERM_MAGENTA=$'\033[35m'
+VLARCH_TERM_GREEN=$'\033[32m'
+VLARCH_TERM_BRIGHT_GREEN=$'\033[92m'
+VLARCH_TERM_BRIGHT_BLACK=$'\033[90m'
 
 declare -gA VLARCH_STEP_TITLES=(
   [01_preflight]="Preflight checks"
@@ -33,10 +40,7 @@ vlarch_ui_enabled() {
 }
 
 vlarch_ui_bar_width() {
-  local w="${COLUMNS:-80}"
-  ((w > 52)) && w=48
-  ((w < 24)) && w=24
-  printf '%s' "$w"
+  printf '%s' "$VLARCH_UI_WIDTH"
 }
 
 vlarch_ui_state_write() {
@@ -74,6 +78,7 @@ vlarch_ui_init() {
   vlarch_ui_state_write step_total "$steps"
   vlarch_ui_state_write step_title ""
   vlarch_ui_state_write op_label ""
+  vlarch_ui_state_write last_log_line ""
 }
 
 vlarch_ui_print_logo() {
@@ -83,7 +88,7 @@ vlarch_ui_print_logo() {
   if [[ -f "$plain" ]]; then
     printf '%b' "${VLARCH_NORD_CYAN}"
     cat "$plain"
-    printf '%b\n' "${VLARCH_ESC_RESET}"
+    printf '%b' "${VLARCH_ESC_RESET}"
     return 0
   fi
 
@@ -94,7 +99,7 @@ vlarch_ui_print_logo() {
 | |/ / / _ `/ __/ __/ _ \
 |___/_/\_,_/_/  \__/_//_/
 LOGO
-  printf '%b\n' "${VLARCH_ESC_RESET}"
+  printf '%b' "${VLARCH_ESC_RESET}"
   return 0
 }
 
@@ -103,12 +108,29 @@ vlarch_ui_say() {
   printf '%b%b%b\n' "$color" "$*" "${VLARCH_ESC_RESET}"
 }
 
-# Left text padded so right suffix ends at column width.
+# Truncate string to max visible characters (ellipsis if shortened).
+vlarch_ui_truncate() {
+  local s="$1" max="$2"
+  if ((${#s} <= max)); then
+    printf '%s' "$s"
+    return 0
+  fi
+  if ((max < 4)); then
+    printf '%s' "${s:0:max}"
+    return 0
+  fi
+  printf '%s...' "${s:0:max-3}"
+}
+
+# Left text padded so right suffix ends at column width (both sides colored).
 vlarch_ui_row_lr() {
   local left="$1" right="$2" width="$3" color="$4"
   local pad=$((width - ${#right}))
   ((pad < 1)) && pad=1
-  printf '%b%-*s%b%s\n' "$color" "$pad" "$left" "${VLARCH_ESC_RESET}" "$right"
+  if ((${#left} > pad)); then
+    left="$(vlarch_ui_truncate "$left" "$pad")"
+  fi
+  printf '%b%-*s%s%b\n' "$color" "$pad" "$left" "$right" "${VLARCH_ESC_RESET}"
 }
 
 vlarch_ui_draw_bar() {
@@ -139,35 +161,63 @@ vlarch_ui_draw_bar() {
       printf '%b%b%c' "${VLARCH_NORD_PCT_EMPTY}" "${VLARCH_ESC_RESET}" "$c"
     fi
   done
-  printf '%b\n' "${VLARCH_ESC_RESET}"
+  printf '%b' "${VLARCH_ESC_RESET}"
 }
 
 vlarch_ui_render_frame() {
   local step_idx="$1" step_total="$2" title="$3" macro_pct="$4"
-  local current total op_label width from_ver to_ver
+  local current total op_label width to_ver last_log ver_line
   current=$(vlarch_ui_state_read current 0)
   total=$(vlarch_ui_state_read total 1)
   op_label=$(vlarch_ui_state_read op_label "")
-  from_ver=$(vlarch_ui_state_read from_version "")
   to_ver=$(vlarch_ui_state_read to_version "${VLARCH_VERSION:-}")
-  width=$(vlarch_ui_bar_width)
+  last_log=$(vlarch_ui_state_read last_log_line "")
+  width=$VLARCH_UI_WIDTH
 
   if [[ -t 1 ]]; then
     clear || true
   fi
+
+  # Lines 1-4: logo
   vlarch_ui_print_logo || true
+
+  # Line 5: target version
+  ver_line=" → ${to_ver:-${VLARCH_VERSION:-update}}"
+  vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
+
+  # Line 6: blank
   printf '\n'
-  if [[ -n "$from_ver" && -n "$to_ver" ]]; then
-    vlarch_ui_say "${VLARCH_NORD_FG}" "Updating ${from_ver} → ${to_ver}"
+
+  # Line 7: step
+  vlarch_ui_row_lr "$title" "Step ${step_idx}/${step_total}" "$width" "${VLARCH_TERM_GREEN}"
+
+  # Line 8: substep (blank when no op_label)
+  if [[ -n "$op_label" ]]; then
+    vlarch_ui_row_lr "▸ ${op_label}" "${current}/${total}" "$width" "${VLARCH_TERM_BRIGHT_GREEN}"
   else
-    vlarch_ui_say "${VLARCH_NORD_FG}" "Vlarch ${VLARCH_VERSION:-update}"
+    printf '\n'
   fi
-  vlarch_ui_row_lr "$title" "Step ${step_idx}/${step_total}" "$width" "${VLARCH_NORD_FG}"
+
+  # Line 9: last log line
+  if [[ -n "$last_log" ]]; then
+    vlarch_ui_say "${VLARCH_TERM_BRIGHT_BLACK}" "$(vlarch_ui_truncate "$last_log" "$width")"
+  else
+    printf '\n'
+  fi
+
+  # Line 10: progress bar (no trailing newline; frame ends at 50 cols)
   vlarch_ui_draw_bar "$macro_pct"
   printf '\n'
-  if [[ -n "$op_label" ]]; then
-    vlarch_ui_row_lr "▸ ${op_label}" "${current}/${total}" "$width" "${VLARCH_NORD_GREEN}"
-  fi
+}
+
+vlarch_ui_rerender() {
+  local step_idx step_total title macro_pct
+  step_idx=$(vlarch_ui_state_read step_index 1)
+  step_total=$(vlarch_ui_state_read step_total 1)
+  title=$(vlarch_ui_state_read step_title "Working")
+  macro_pct=$((step_idx * 100 / step_total))
+  ((macro_pct > 100)) && macro_pct=100
+  vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
 }
 
 vlarch_ui_begin_step() {
@@ -179,62 +229,34 @@ vlarch_ui_begin_step() {
   vlarch_ui_state_write step_total "$step_total"
   vlarch_ui_state_write step_title "$title"
   vlarch_ui_state_write op_label ""
+  vlarch_ui_state_write last_log_line ""
   vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
 }
 
 vlarch_ui_set_op_label() {
   local label="$1"
-  local step_idx step_total title macro_pct
   vlarch_ui_enabled || return 0
   vlarch_ui_state_write op_label "$label"
-  step_idx=$(vlarch_ui_state_read step_index 1)
-  step_total=$(vlarch_ui_state_read step_total 1)
-  title=$(vlarch_ui_state_read step_title "Working")
-  macro_pct=$((step_idx * 100 / step_total))
-  ((macro_pct > 100)) && macro_pct=100
-  vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
+  vlarch_ui_rerender
 }
 
-# "pacman -Syu [pkgname     cur/tot]" sized to match the op row right counter.
-vlarch_ui_pacman_syu_label() {
-  local pkg="$1" cur="$2" tot="$3"
-  local width run_cur run_total counter op_max prefix inner prog prog_w pkg_w pkg_disp
-  width=$(vlarch_ui_bar_width)
-  run_cur=$(vlarch_ui_state_read current 0)
-  run_total=$(vlarch_ui_state_read total 1)
-  counter="${run_cur}/${run_total}"
-  op_max=$((width - ${#counter} - 2))
-  ((op_max < 12)) && op_max=12
-  prefix='pacman -Syu '
-  inner=$((op_max - ${#prefix} - 2))
-  prog="${cur}/${tot}"
-  prog_w=${#prog}
-  ((prog_w < 7)) && prog_w=7
-  pkg_w=$((inner - 1 - prog_w))
-  ((pkg_w < 4)) && pkg_w=4
-  if ((${#pkg} > pkg_w)); then
-    pkg_disp="${pkg:0:pkg_w-3}..."
-  else
-    pkg_disp="$pkg"
-  fi
-  printf 'pacman -Syu [%-*s %*s]' "$pkg_w" "$pkg_disp" "$prog_w" "$prog"
+vlarch_ui_set_last_log() {
+  local line="$1"
+  vlarch_ui_enabled || return 0
+  [[ -n "$line" ]] || return 0
+  vlarch_ui_state_write last_log_line "$line"
+  vlarch_ui_rerender
 }
 
 vlarch_ui_tick() {
   local label="$1"
-  local current total step_idx step_total title macro_pct
+  local current
   vlarch_ui_enabled || return 0
   current=$(vlarch_ui_state_read current 0)
   current=$((current + 1))
   vlarch_ui_state_write current "$current"
   vlarch_ui_state_write op_label "$label"
-  total=$(vlarch_ui_state_read total 1)
-  step_idx=$(vlarch_ui_state_read step_index 1)
-  step_total=$(vlarch_ui_state_read step_total 1)
-  title=$(vlarch_ui_state_read step_title "Working")
-  macro_pct=$((step_idx * 100 / step_total))
-  ((macro_pct > 100)) && macro_pct=100
-  vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
+  vlarch_ui_rerender
 }
 
 vlarch_ui_set_versions() {
@@ -244,12 +266,17 @@ vlarch_ui_set_versions() {
 }
 
 vlarch_ui_show_complete() {
+  local ver_line
   if [[ -t 1 ]]; then
     clear || true
   fi
   vlarch_ui_print_logo || true
+  ver_line=" → ${VLARCH_VERSION:-}"
+  vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
   printf '\n'
-  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete (${VLARCH_VERSION:-})"
+  vlarch_ui_say "${VLARCH_TERM_GREEN}" "Update complete"
+  printf '\n'
+  printf '\n'
   vlarch_ui_draw_bar 100
   printf '\n'
 }

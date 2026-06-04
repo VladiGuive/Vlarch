@@ -91,7 +91,7 @@ vlarch_run_pacman_syu() {
     return $?
   fi
 
-  local log rc=0 line pkg cur tot
+  local log rc=0 line
   log="$(vlarch_log_path step)"
   mkdir -p "$(dirname "$log")"
   : >>"$log"
@@ -117,13 +117,7 @@ vlarch_run_pacman_syu() {
   fi
 
   "${pacman_cmd[@]}" 2>&1 | tee -a "$log" | while IFS= read -r line; do
-    if [[ "$line" =~ ^\(([0-9]+)/([0-9]+)\)[[:space:]]+(installing|upgrading|reinstalling|removing|downgrading)[[:space:]]+([^[:space:]]+) ]]; then
-      cur="${BASH_REMATCH[1]}"
-      tot="${BASH_REMATCH[2]}"
-      pkg="${BASH_REMATCH[4]}"
-      [[ "$pkg" == *... ]] && pkg="${pkg%...}"
-      vlarch_ui_set_op_label "$(vlarch_ui_pacman_syu_label "$pkg" "$cur" "$tot")"
-    fi
+    vlarch_ui_set_last_log "$line"
   done
   rc=${PIPESTATUS[0]:-0}
 
