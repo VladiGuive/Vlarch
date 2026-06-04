@@ -5,6 +5,7 @@
 VLARCH_UI="${VLARCH_UI:-0}"
 VLARCH_UI_STATE="${VLARCH_UI_STATE:-/tmp/vlarch-update-ui.state}"
 VLARCH_UI_WIDTH=50
+VLARCH_UI_LINES=10
 
 VLARCH_ESC_RESET=$'\033[0m'
 VLARCH_NORD_BG=$'\033[48;5;236m'
@@ -43,6 +44,19 @@ vlarch_ui_bar_width() {
   printf '%s' "$VLARCH_UI_WIDTH"
 }
 
+# Resize TTY / terminal window to the fixed UI grid (50 cols x 10 rows).
+vlarch_ui_tty_resize() {
+  [[ -t 1 ]] || return 0
+  stty cols "$VLARCH_UI_WIDTH" rows "$VLARCH_UI_LINES" 2>/dev/null || true
+  printf '\033[8;%d;%dt' "$VLARCH_UI_LINES" "$VLARCH_UI_WIDTH"
+}
+
+# Right-aligned counter (e.g. " 4/33") with stable width for the step digits.
+vlarch_ui_format_ratio() {
+  local cur="$1" tot="$2"
+  printf '%*d/%d' "${#tot}" "$cur" "$tot"
+}
+
 vlarch_ui_state_write() {
   local key="$1" val="$2"
   local tmp="${VLARCH_UI_STATE}.$$"
@@ -71,6 +85,7 @@ vlarch_ui_init() {
   ((steps < 1)) && steps=5
   total=$((runs + steps))
   ((total < 1)) && total=1
+  vlarch_ui_tty_resize
   rm -f "$VLARCH_UI_STATE"
   vlarch_ui_state_write total "$total"
   vlarch_ui_state_write current 0
@@ -175,6 +190,7 @@ vlarch_ui_render_frame() {
   width=$VLARCH_UI_WIDTH
 
   if [[ -t 1 ]]; then
+    vlarch_ui_tty_resize
     clear || true
   fi
 
@@ -189,11 +205,11 @@ vlarch_ui_render_frame() {
   printf '\n'
 
   # Line 7: step
-  vlarch_ui_row_lr "$title" "Step ${step_idx}/${step_total}" "$width" "${VLARCH_TERM_GREEN}"
+  vlarch_ui_row_lr "$title" "Step $(vlarch_ui_format_ratio "$step_idx" "$step_total")" "$width" "${VLARCH_TERM_GREEN}"
 
   # Line 8: substep (blank when no op_label)
   if [[ -n "$op_label" ]]; then
-    vlarch_ui_row_lr "▸ ${op_label}" "${current}/${total}" "$width" "${VLARCH_TERM_BRIGHT_GREEN}"
+    vlarch_ui_row_lr "▸ ${op_label}" "$(vlarch_ui_format_ratio "$current" "$total")" "$width" "${VLARCH_TERM_BRIGHT_GREEN}"
   else
     printf '\n'
   fi
@@ -268,6 +284,7 @@ vlarch_ui_set_versions() {
 vlarch_ui_show_complete() {
   local ver_line
   if [[ -t 1 ]]; then
+    vlarch_ui_tty_resize
     clear || true
   fi
   vlarch_ui_print_logo || true
@@ -275,8 +292,9 @@ vlarch_ui_show_complete() {
   vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
   printf '\n'
   vlarch_ui_say "${VLARCH_TERM_GREEN}" "Update complete"
-  printf '\n'
-  printf '\n'
+  printf '%bEnter%b → reboot.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
+  printf '%bEsc%b → close.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
   vlarch_ui_draw_bar 100
   printf '\n'
 }
+
