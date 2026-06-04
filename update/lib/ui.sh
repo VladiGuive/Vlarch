@@ -158,6 +158,40 @@ vlarch_ui_begin_step() {
   vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
 }
 
+vlarch_ui_set_op_label() {
+  local label="$1"
+  local step_idx step_total title macro_pct
+  vlarch_ui_enabled || return 0
+  vlarch_ui_state_write op_label "$label"
+  step_idx=$(vlarch_ui_state_read step_index 1)
+  step_total=$(vlarch_ui_state_read step_total 1)
+  title=$(vlarch_ui_state_read step_title "Working")
+  macro_pct=$((step_idx * 100 / step_total))
+  ((macro_pct > 100)) && macro_pct=100
+  vlarch_ui_render_frame "$step_idx" "$step_total" "$title" "$macro_pct"
+}
+
+# "pacman -Syu [pkgname     cur/tot]" sized to the op_label field (width - 8).
+vlarch_ui_pacman_syu_label() {
+  local pkg="$1" cur="$2" tot="$3"
+  local width op_w prefix inner prog prog_w pkg_w pkg_disp
+  width=$(vlarch_ui_bar_width)
+  op_w=$((width - 8))
+  prefix='pacman -Syu '
+  inner=$((op_w - ${#prefix} - 2))
+  prog="${cur}/${tot}"
+  prog_w=${#prog}
+  ((prog_w < 7)) && prog_w=7
+  pkg_w=$((inner - 1 - prog_w))
+  ((pkg_w < 4)) && pkg_w=4
+  if ((${#pkg} > pkg_w)); then
+    pkg_disp="${pkg:0:pkg_w-3}..."
+  else
+    pkg_disp="$pkg"
+  fi
+  printf 'pacman -Syu [%-*s %*s]' "$pkg_w" "$pkg_disp" "$prog_w" "$prog"
+}
+
 vlarch_ui_tick() {
   local label="$1"
   local current total step_idx step_total title macro_pct

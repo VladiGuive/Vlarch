@@ -24,7 +24,7 @@ if ((VLARCH_DRY_RUN)); then
   exit 0
 fi
 
-vlarch_run "pacman -Syu" pacman -Syu --noconfirm
+vlarch_run_pacman_syu
 vlarch_bootstrap_yay "$VLARCH_USER"
 vlarch_run "pacman manifest sync" \
   vlarch_yay_install_manifests "$VLARCH_USER" "$pac_manifest" "$aur_manifest"

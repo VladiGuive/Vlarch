@@ -77,6 +77,56 @@ vlarch_run() {
   return 0
 }
 
+# pacman -Syu with live package name in the TTY UI (quiet mode only).
+vlarch_run_pacman_syu() {
+  local label="pacman -Syu"
+
+  if ((VLARCH_VERBOSE)); then
+    pacman -Syu --noconfirm
+    return $?
+  fi
+
+  if ! declare -F vlarch_ui_set_op_label >/dev/null 2>&1 || ! vlarch_ui_enabled; then
+    vlarch_run "$label" pacman -Syu --noconfirm
+    return $?
+  fi
+
+  local log rc=0 line pkg cur tot
+  log="$(vlarch_log_path step)"
+  mkdir -p "$(dirname "$log")"
+  : >>"$log"
+  {
+    printf '\n--- vlarch_run: %s ---\n' "$label"
+    printf 'cmd: pacman -Syu --noconfirm\n'
+  } >>"$log"
+
+  vlarch_ui_set_op_label "$label"
+
+  local -a pacman_cmd=(pacman -Syu --noconfirm)
+  if command -v stdbuf >/dev/null 2>&1; then
+    pacman_cmd=(stdbuf -oL -eL pacman -Syu --noconfirm)
+  fi
+
+  while IFS= read -r line; do
+    printf '%s\n' "$line" >>"$log"
+    if [[ "$line" =~ ^\(([0-9]+)/([0-9]+)\)[[:space:]]+(installing|upgrading|reinstalling|removing|downgrading)[[:space:]]+([^[:space:]]+) ]]; then
+      cur="${BASH_REMATCH[1]}"
+      tot="${BASH_REMATCH[2]}"
+      pkg="${BASH_REMATCH[4]}"
+      [[ "$pkg" == *... ]] && pkg="${pkg%...}"
+      vlarch_ui_set_op_label "$(vlarch_ui_pacman_syu_label "$pkg" "$cur" "$tot")"
+    fi
+  done < <("${pacman_cmd[@]}" 2>&1)
+  rc=${PIPESTATUS[0]:-0}
+
+  if ((rc != 0)); then
+    VLARCH_LAST_LOG="$log"
+    vlarch_die "${label} failed (exit ${rc})"
+  fi
+  vlarch_ui_tick "$label"
+  return 0
+}
+
 if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/lib/ui.sh" ]]; then
   # shellcheck disable=SC1091
   source "${VLARCH_SCRIPT_DIR}/update/lib/ui.sh"
