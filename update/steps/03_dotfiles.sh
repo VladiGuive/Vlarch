@@ -32,6 +32,11 @@ vlarch_run "install wallpaper" \
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
 
+if command -v update-desktop-database >/dev/null 2>&1; then
+  vlarch_run "refresh desktop database" \
+    runuser -u "$VLARCH_USER" -- update-desktop-database "${VLARCH_DOTFILES_DIR}/.local/share/applications"
+fi
+
 vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
 
 vlarch_update_note "dotfiles: ok (tmux plugins installed)"
