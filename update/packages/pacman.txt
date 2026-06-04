@@ -9,6 +9,7 @@ neovim
 tmux
 zoxide
 yazi
+7zip
 btop
 fastfetch
 ttf-jetbrains-mono-nerd
