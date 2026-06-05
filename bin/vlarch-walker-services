@@ -14,7 +14,7 @@ _elephant_ready() {
 }
 
 _elephant_has_menus() {
-  elephant l 2>/dev/null | grep -qx menus
+  elephant l 2>/dev/null | grep -q '^menus:'
 }
 
 _elephant_has_apps() {
@@ -40,17 +40,18 @@ start_elephant() {
   fi
 
   local i
-  for i in $(seq 1 80); do
-    if _elephant_ready && _elephant_has_apps; then
-      if _elephant_has_menus; then
-        log "elephant ready with apps and menus (${i} checks)"
-      else
-        log "elephant ready with apps (${i} checks); menus provider not loaded (install elephant-menus)"
-      fi
+  for i in $(seq 1 120); do
+    if _elephant_ready && _elephant_has_apps && _elephant_has_menus; then
+      log "elephant ready with apps and menus (${i} checks)"
       return 0
     fi
     sleep 0.25
   done
+
+  if _elephant_ready && _elephant_has_apps; then
+    log "elephant ready but menus missing: $(elephant l 2>&1 | tr '\n' ' ')"
+    return 1
+  fi
 
   if _elephant_ready; then
     log "elephant providers loaded but desktop query empty: $(elephant query 'desktopapplications;;5;false' 2>&1 | tr '\n' ' ')"

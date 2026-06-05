@@ -53,6 +53,11 @@ fi
 if runuser -u "$VLARCH_USER" -- systemctl --user is-active --quiet elephant.service 2>/dev/null; then
   vlarch_run "restart elephant app index" \
     runuser -u "$VLARCH_USER" -- systemctl --user restart elephant.service
+  if command -v vlarch-walker-services >/dev/null 2>&1 \
+    && runuser -u "$VLARCH_USER" -- bash -lc '[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" || -d "${XDG_RUNTIME_DIR:-}/hypr" ]]' 2>/dev/null; then
+    vlarch_run "restart walker service" \
+      runuser -u "$VLARCH_USER" -- vlarch-walker-services
+  fi
 fi
 
 vlarch_run "tmux plugins (TPM)" vlarch_sync_tmux_plugins "$VLARCH_USER"
