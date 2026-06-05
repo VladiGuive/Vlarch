@@ -2,7 +2,6 @@
 Name = "wifi"
 NamePretty = "WiFi"
 Icon = "network-wireless"
-SearchName = true
 FixedOrder = true
 Action = "lua:Activate"
 
@@ -119,6 +118,7 @@ function GetEntries()
 			Subtext = "Disable the wireless radio",
 			Value = "__toggle_radio__",
 			Icon = "network-wireless-disabled",
+			Keywords = "wifi radio off disable",
 		})
 	else
 		table.insert(entries, {
@@ -126,6 +126,7 @@ function GetEntries()
 			Subtext = "Enable the wireless radio",
 			Value = "__toggle_radio__",
 			Icon = "network-wireless",
+			Keywords = "wifi radio on enable",
 		})
 		return entries
 	end
@@ -137,6 +138,7 @@ function GetEntries()
 			Subtext = connected.ssid .. " (" .. tostring(connected.signal or 0) .. "%)",
 			Value = "__disconnect__",
 			Icon = "network-wireless-connected",
+			Keywords = "wifi disconnect leave " .. connected.ssid,
 		})
 	end
 
@@ -145,6 +147,7 @@ function GetEntries()
 		Subtext = "Refresh nearby access points",
 		Value = "__rescan__",
 		Icon = "view-refresh",
+		Keywords = "wifi rescan refresh scan",
 	})
 
 	local seen = {}

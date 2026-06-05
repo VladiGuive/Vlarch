@@ -108,6 +108,7 @@ vlarch_wifi_connect_value() {
     __rescan__)
       vlarch_wifi_rescan
       vlarch_wifi_waybar_refresh
+      vlarch_wifi_notify -t 2500 WiFi "Scan complete — reopen the menu to refresh"
       return 0
       ;;
     __toggle_radio__)
@@ -255,7 +256,14 @@ PY
 }
 
 vlarch_wifi_list_json() {
-  local dev json
+  local dev json rescan=0
+
+  while (($#)); do
+    case "$1" in
+      --rescan) rescan=1; shift ;;
+      *) shift ;;
+    esac
+  done
 
   if ! vlarch_wifi_has_device; then
     printf '{"available":false}\n'
@@ -263,7 +271,9 @@ vlarch_wifi_list_json() {
   fi
 
   dev="$(vlarch_wifi_device)"
-  vlarch_wifi_rescan >/dev/null 2>&1 || true
+  if ((rescan)); then
+    vlarch_wifi_rescan >/dev/null 2>&1 || true
+  fi
 
   json="$(
     VLARCH_WIFI_DEVICE="$dev" python3 - <<'PY' 2>/dev/null || true
@@ -343,7 +353,7 @@ vlarch_wifi_open_walker() {
     printf 'walker not found\n' >&2
     exit 1
   }
-  walker -m menus:wifi -p "WiFi..."
+  walker -m menus:wifi -p "Search networks..."
 }
 
 case "${1:---help}" in
@@ -351,7 +361,8 @@ case "${1:---help}" in
     vlarch_wifi_has_device
     ;;
   --list-json|list-json)
-    vlarch_wifi_list_json
+    shift
+    vlarch_wifi_list_json "$@"
     ;;
   --status-json|status-json)
     vlarch_wifi_status_json
