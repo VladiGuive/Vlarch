@@ -16,8 +16,21 @@ _vlarch_json_escape() {
 }
 
 vlarch_wifi_device() {
-  nmcli -t -f DEVICE,TYPE device status 2>/dev/null \
-    | awk -F: '$2=="wifi"{print $1; exit}'
+  local dev
+  dev="$(nmcli -t -f DEVICE,TYPE device status 2>/dev/null \
+    | awk -F: '$2=="wifi"{print $1; exit}')"
+  [[ -n "$dev" ]] && {
+    printf '%s' "$dev"
+    return 0
+  }
+  # Some drivers report type "wifi-ptp" or list the iface before NM type is populated.
+  for dev in /sys/class/net/wl* /sys/class/net/wlan*; do
+    [[ -e "$dev" ]] || continue
+    dev="${dev##*/}"
+    printf '%s' "$dev"
+    return 0
+  done
+  return 1
 }
 
 vlarch_wifi_has_device() {
@@ -101,7 +114,7 @@ vlarch_wifi_connect_value() {
       vlarch_wifi_toggle_radio
       return 0
       ;;
-    "")
+    __info:*|"")
       return 0
       ;;
   esac
@@ -242,7 +255,7 @@ PY
 }
 
 vlarch_wifi_list_json() {
-  local dev
+  local dev json
 
   if ! vlarch_wifi_has_device; then
     printf '{"available":false}\n'
@@ -252,7 +265,8 @@ vlarch_wifi_list_json() {
   dev="$(vlarch_wifi_device)"
   vlarch_wifi_rescan >/dev/null 2>&1 || true
 
-  VLARCH_WIFI_DEVICE="$dev" python3 - <<'PY'
+  json="$(
+    VLARCH_WIFI_DEVICE="$dev" python3 - <<'PY' 2>/dev/null || true
 import json
 import os
 import subprocess
@@ -313,6 +327,15 @@ print(json.dumps({
     "networks": networks,
 }))
 PY
+  )"
+
+  if [[ -n "$json" ]]; then
+    printf '%s\n' "$json"
+    return 0
+  fi
+
+  printf '{"available":true,"device":"%s","radio":false,"connected":null,"networks":[]}\n' \
+    "$(_vlarch_json_escape "$dev")"
 }
 
 vlarch_wifi_open_walker() {
