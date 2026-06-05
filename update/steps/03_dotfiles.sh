@@ -9,6 +9,8 @@ source "${VLARCH_SCRIPT_DIR}/update/lib/runtime.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/dotfiles.sh"
 # shellcheck disable=SC1091
+source "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh"
+# shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/wallpapers.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/session.sh"
@@ -22,6 +24,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 
 if ((VLARCH_DRY_RUN)); then
   vlarch_update_note "dotfiles: dry-run (would rsync to /home/${VLARCH_USER})"
+  vlarch_update_note "overrides: dry-run (would apply ~/.overrides after dotfiles)"
   vlarch_update_note "wallpaper: dry-run (would install to /usr/share/vlarch/background.png)"
   exit 0
 fi
@@ -31,6 +34,9 @@ vlarch_run "install wallpaper" \
 
 vlarch_run "deploy dotfiles" \
   vlarch_deploy_dotfiles "$VLARCH_USER" "$VLARCH_DOTFILES_DIR"
+
+vlarch_run "apply dotfile overrides" \
+  vlarch_apply_overrides "$VLARCH_USER"
 
 _user_apps="/home/${VLARCH_USER}/.local/share/applications"
 for _stale in microsoft-edge-stable.desktop vlarch-edge.desktop; do
