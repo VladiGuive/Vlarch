@@ -56,3 +56,7 @@ provider = "clipboard"
 [[providers.prefixes]]
 prefix = ","
 provider = "menus:keybinds"
+
+[[providers.prefixes]]
+prefix = "~"
+provider = "menus:wifi"

@@ -1,0 +1,361 @@
+#!/usr/bin/env bash
+# WiFi helpers for Walker (elephant menus:wifi) and vlarch-waybar-wifi.
+
+set -euo pipefail
+
+VLARCH_WAYBAR_WIFI_SIGNAL="${VLARCH_WAYBAR_WIFI_SIGNAL:-2}"
+
+_vlarch_json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+vlarch_wifi_device() {
+  nmcli -t -f DEVICE,TYPE device status 2>/dev/null \
+    | awk -F: '$2=="wifi"{print $1; exit}'
+}
+
+vlarch_wifi_has_device() {
+  [[ -n "$(vlarch_wifi_device)" ]]
+}
+
+vlarch_wifi_radio_on() {
+  [[ "$(nmcli -t -f WIFI general 2>/dev/null | tr -d '[:space:]')" == "enabled" ]]
+}
+
+vlarch_wifi_ensure_ready() {
+  local dev
+  dev="$(vlarch_wifi_device)" || return 1
+  nmcli radio wifi on >/dev/null 2>&1 || true
+  nmcli device set "$dev" managed yes >/dev/null 2>&1 || true
+}
+
+vlarch_wifi_rescan() {
+  vlarch_wifi_ensure_ready || return 1
+  nmcli device wifi rescan >/dev/null 2>&1 || true
+  sleep 1
+}
+
+vlarch_wifi_connected_ssid() {
+  nmcli -t -f NAME,TYPE connection show --active 2>/dev/null \
+    | awk -F: '$2=="802-11-wireless"{print $1; exit}'
+}
+
+vlarch_wifi_connected_bssid() {
+  local dev
+  dev="$(vlarch_wifi_device)" || return 0
+  nmcli -t -f ACTIVE,SSID,BSSID device wifi 2>/dev/null \
+    | awk -F: '$1=="yes"{print $3; exit}'
+}
+
+vlarch_wifi_connected_signal() {
+  local dev ssid
+  dev="$(vlarch_wifi_device)" || return 0
+  ssid="$(vlarch_wifi_connected_ssid)" || return 0
+  [[ -n "$ssid" ]] || return 0
+  nmcli -t -f SSID,SIGNAL device wifi list ifname "$dev" 2>/dev/null \
+    | awk -F: -v ssid="$ssid" '$1==ssid{print $2; exit}'
+}
+
+vlarch_wifi_notify() {
+  command -v notify-send >/dev/null 2>&1 || return 0
+  notify-send "$@"
+}
+
+vlarch_wifi_waybar_refresh() {
+  command -v vlarch-waybar-wifi >/dev/null 2>&1 \
+    && vlarch-waybar-wifi --refresh 2>/dev/null || true
+}
+
+vlarch_wifi_prompt_password() {
+  local ssid="$1"
+  local pass=""
+
+  command -v walker >/dev/null 2>&1 || return 1
+  pass="$(walker --password --dmenu -p "WiFi password for ${ssid}" 2>/dev/null || true)"
+  [[ -n "$pass" ]] || return 1
+  printf '%s' "$pass"
+}
+
+vlarch_wifi_connect_value() {
+  local value="$1"
+  local ssid="" bssid="" security=""
+  local -a args=()
+
+  case "$value" in
+    __disconnect__)
+      vlarch_wifi_disconnect
+      return 0
+      ;;
+    __rescan__)
+      vlarch_wifi_rescan
+      vlarch_wifi_waybar_refresh
+      return 0
+      ;;
+    __toggle_radio__)
+      vlarch_wifi_toggle_radio
+      return 0
+      ;;
+    "")
+      return 0
+      ;;
+  esac
+
+  IFS=$'\x1f' read -r ssid bssid security <<<"$value"
+  [[ -n "$ssid" ]] || {
+    vlarch_wifi_notify -u critical WiFi "Missing network name"
+    return 1
+  }
+
+  vlarch_wifi_ensure_ready || {
+    vlarch_wifi_notify -u critical WiFi "No WiFi device"
+    return 1
+  }
+
+  if [[ -n "$bssid" && "$bssid" != "--" ]]; then
+    args+=(bssid "$bssid")
+  else
+    args+=("$ssid")
+  fi
+
+  if nmcli device wifi connect "${args[@]}" >/dev/null 2>&1; then
+    vlarch_wifi_notify -t 3000 WiFi "Connected to ${ssid}"
+    vlarch_wifi_waybar_refresh
+    return 0
+  fi
+
+  if [[ -z "$security" || "$security" == "--" ]]; then
+    vlarch_wifi_notify -u critical WiFi "Could not connect to ${ssid}"
+    return 1
+  fi
+
+  local pass
+  pass="$(vlarch_wifi_prompt_password "$ssid")" || return 1
+
+  if nmcli device wifi connect "${args[@]}" password "$pass" >/dev/null 2>&1; then
+    vlarch_wifi_notify -t 3000 WiFi "Connected to ${ssid}"
+    vlarch_wifi_waybar_refresh
+    return 0
+  fi
+
+  vlarch_wifi_notify -u critical WiFi "Could not connect to ${ssid}"
+  return 1
+}
+
+vlarch_wifi_disconnect() {
+  local ssid
+  ssid="$(vlarch_wifi_connected_ssid)" || true
+  [[ -n "$ssid" ]] || return 0
+  nmcli connection down "$ssid" >/dev/null 2>&1 \
+    || nmcli device disconnect "$(vlarch_wifi_device)" >/dev/null 2>&1 \
+    || true
+  vlarch_wifi_notify -t 2500 WiFi "Disconnected"
+  vlarch_wifi_waybar_refresh
+}
+
+vlarch_wifi_toggle_radio() {
+  if vlarch_wifi_radio_on; then
+    nmcli radio wifi off >/dev/null 2>&1 || return 1
+    vlarch_wifi_notify -t 2500 WiFi "WiFi disabled"
+  else
+    nmcli radio wifi on >/dev/null 2>&1 || return 1
+    vlarch_wifi_notify -t 2500 WiFi "WiFi enabled"
+  fi
+  vlarch_wifi_waybar_refresh
+}
+
+vlarch_wifi_signal_icon() {
+  local signal="${1:-0}"
+  if ((!signal)); then
+    printf '󰤯'
+  elif ((signal < 25)); then
+    printf '󰤯'
+  elif ((signal < 50)); then
+    printf '󰤟'
+  elif ((signal < 75)); then
+    printf '󰤢'
+  else
+    printf '󰤨'
+  fi
+}
+
+vlarch_wifi_status_json() {
+  local dev
+
+  if ! vlarch_wifi_has_device; then
+    printf '{"available":false}\n'
+    return 0
+  fi
+
+  dev="$(vlarch_wifi_device)"
+
+  VLARCH_WIFI_DEVICE="$dev" python3 - <<'PY'
+import json
+import os
+import subprocess
+
+dev = os.environ["VLARCH_WIFI_DEVICE"]
+
+def nm(*args):
+    try:
+        out = subprocess.check_output(["nmcli", *args], text=True, stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+    return out.strip()
+
+radio = nm("-t", "-f", "WIFI", "general") == "enabled"
+connected = None
+active_ssid = ""
+for line in nm("-t", "-f", "NAME,TYPE", "connection", "show", "--active").splitlines():
+    name, typ = (line.split(":", 1) + [""])[:2]
+    if typ == "802-11-wireless":
+        active_ssid = name
+        break
+
+if active_ssid:
+    for line in nm("-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID", "device", "wifi", "list", "ifname", dev).splitlines():
+        parts = [p.replace("\\:", ":") for p in __import__("re").split(r"(?<!\\):", line)]
+        if len(parts) < 3:
+            continue
+        in_use, ssid, signal = parts[0], parts[1], parts[2]
+        if ssid == active_ssid or in_use == "*":
+            connected = {
+                "ssid": ssid,
+                "signal": int(signal) if signal.isdigit() else 0,
+            }
+            break
+    if connected is None:
+        connected = {"ssid": active_ssid, "signal": 0}
+
+print(json.dumps({
+    "available": True,
+    "device": dev,
+    "radio": radio,
+    "connected": connected,
+}))
+PY
+}
+
+vlarch_wifi_list_json() {
+  local dev
+
+  if ! vlarch_wifi_has_device; then
+    printf '{"available":false}\n'
+    return 0
+  fi
+
+  dev="$(vlarch_wifi_device)"
+  vlarch_wifi_rescan >/dev/null 2>&1 || true
+
+  VLARCH_WIFI_DEVICE="$dev" python3 - <<'PY'
+import json
+import os
+import subprocess
+
+dev = os.environ["VLARCH_WIFI_DEVICE"]
+
+def nm(*args):
+    try:
+        out = subprocess.check_output(["nmcli", *args], text=True, stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+    return out.strip()
+
+radio = nm("-t", "-f", "WIFI", "general") == "enabled"
+connected = None
+active_ssid = ""
+for line in nm("-t", "-f", "NAME,TYPE", "connection", "show", "--active").splitlines():
+    name, typ = (line.split(":", 1) + [""])[:2]
+    if typ == "802-11-wireless":
+        active_ssid = name
+        break
+
+networks = []
+seen = set()
+list_out = nm("-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID", "device", "wifi", "list", "ifname", dev)
+for line in list_out.splitlines():
+    parts = [p.replace("\\:", ":") for p in __import__("re").split(r"(?<!\\):", line)]
+    if len(parts) < 4:
+        continue
+    in_use, ssid, signal = parts[0], parts[1], parts[2]
+    security = parts[3] if len(parts) > 3 else ""
+    bssid = parts[4] if len(parts) > 4 else ""
+    if not ssid or ssid in seen:
+        continue
+    seen.add(ssid)
+    entry = {
+        "ssid": ssid,
+        "bssid": bssid,
+        "signal": int(signal) if signal.isdigit() else 0,
+        "security": security,
+        "in_use": in_use == "*",
+    }
+    networks.append(entry)
+    if in_use == "*" or ssid == active_ssid:
+        connected = {
+            "ssid": ssid,
+            "bssid": bssid,
+            "signal": entry["signal"],
+        }
+
+networks.sort(key=lambda n: n["signal"], reverse=True)
+
+print(json.dumps({
+    "available": True,
+    "device": dev,
+    "radio": radio,
+    "connected": connected,
+    "networks": networks,
+}))
+PY
+}
+
+vlarch_wifi_open_walker() {
+  command -v walker >/dev/null 2>&1 || {
+    printf 'walker not found\n' >&2
+    exit 1
+  }
+  walker -m menus:wifi -p "WiFi..."
+}
+
+case "${1:---help}" in
+  --has-device|has-device)
+    vlarch_wifi_has_device
+    ;;
+  --list-json|list-json)
+    vlarch_wifi_list_json
+    ;;
+  --status-json|status-json)
+    vlarch_wifi_status_json
+    ;;
+  --connect|connect)
+    shift
+    vlarch_wifi_connect_value "${1:-}"
+    ;;
+  --disconnect|disconnect)
+    vlarch_wifi_disconnect
+    ;;
+  --rescan|rescan)
+    vlarch_wifi_rescan
+    vlarch_wifi_waybar_refresh
+    ;;
+  --toggle-radio|toggle-radio)
+    vlarch_wifi_toggle_radio
+    ;;
+  --open|open)
+    vlarch_wifi_open_walker
+    ;;
+  -h|--help)
+    printf 'usage: %s [--has-device|--list-json|--status-json|--connect VALUE|--disconnect|--rescan|--toggle-radio|--open]\n' \
+      "$(basename "$0")"
+    ;;
+  *)
+    printf 'unknown option: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac

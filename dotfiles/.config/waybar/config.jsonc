@@ -11,6 +11,7 @@
   "modules-right": [
     "tray",
     "pulseaudio",
+    "custom/vlarch-wifi",
     "backlight",
     "battery",
     "hyprland/language",
@@ -87,6 +88,16 @@
       ]
     },
     "on-click": "pavucontrol"
+  },
+  "custom/vlarch-wifi": {
+    "format": "{}",
+    "return-type": "json",
+    "exec": "vlarch-waybar-wifi --status",
+    "interval": 5,
+    "signal": 2,
+    "hide-empty-text": true,
+    "tooltip": true,
+    "on-click": "vlarch-waybar-wifi --open"
   },
 	"custom/lock": {
 		"tooltip": false,

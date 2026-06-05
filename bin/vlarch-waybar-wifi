@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Waybar: WiFi status icon (hidden when no WiFi hardware); opens Walker WiFi menu on click.
+
+set -euo pipefail
+
+VLARCH_WAYBAR_WIFI_SIGNAL="${VLARCH_WAYBAR_WIFI_SIGNAL:-2}"
+
+_vlarch_json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
+vlarch_waybar_wifi_refresh() {
+  pgrep -x waybar >/dev/null 2>&1 || return 0
+  pkill "-SIGRTMIN+${VLARCH_WAYBAR_WIFI_SIGNAL}" waybar 2>/dev/null \
+    || killall -SIGUSR2 waybar 2>/dev/null \
+    || true
+}
+
+vlarch_waybar_wifi_status() {
+  local json radio ssid signal icon tooltip
+
+  if ! command -v vlarch-wifi >/dev/null 2>&1 || ! vlarch-wifi --has-device; then
+    printf '{"text":""}\n'
+    return 0
+  fi
+
+  json="$(vlarch-wifi --status-json 2>/dev/null || printf '{"available":false}')"
+
+  radio="$(printf '%s' "$json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("true" if d.get("radio") else "false")' 2>/dev/null || printf false)"
+  ssid="$(printf '%s' "$json" | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("connected"); print(c.get("ssid","") if c else "")' 2>/dev/null || true)"
+  signal="$(printf '%s' "$json" | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("connected"); print(c.get("signal",0) if c else 0)' 2>/dev/null || printf 0)"
+
+  if [[ "$radio" != "true" ]]; then
+    icon='󰤮'
+    tooltip='WiFi off'
+  elif [[ -n "$ssid" ]]; then
+    case "$signal" in
+      ''|0) icon='󰤯' ;;
+      [1-9]|1[0-9]|2[0-4]) icon='󰤯' ;;
+      2[5-9]|3[0-9]|4[0-9]) icon='󰤟' ;;
+      5[0-9]|6[0-9]|7[0-4]) icon='󰤢' ;;
+      *) icon='󰤨' ;;
+    esac
+    tooltip="${ssid} (${signal}%)"
+  else
+    icon='󰤭'
+    tooltip='Not connected'
+  fi
+
+  printf '{"text":"%s","tooltip":"%s"}\n' \
+    "$(_vlarch_json_escape "$icon")" \
+    "$(_vlarch_json_escape "$tooltip")"
+}
+
+vlarch_waybar_wifi_open() {
+  vlarch-wifi --open
+}
+
+case "${1:---status}" in
+  --status)  vlarch_waybar_wifi_status ;;
+  --open)    vlarch_waybar_wifi_open ;;
+  --refresh) vlarch_waybar_wifi_refresh ;;
+  -h|--help)
+    printf 'usage: %s [--status|--open|--refresh]\n' "$(basename "$0")"
+    ;;
+  *)
+    printf 'unknown option: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac

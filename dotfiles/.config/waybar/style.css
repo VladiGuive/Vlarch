@@ -43,6 +43,7 @@ button {
 }
 
 #custom-vlarch-update,
+#custom-vlarch-wifi,
 #custom-music,
 #tray,
 #backlight,
@@ -101,6 +102,11 @@ button {
 
 #pulseaudio {
   color: @maroon;
+  border-radius: 0;
+}
+
+#custom-vlarch-wifi {
+  color: @blue;
   border-radius: 0;
 }
 
