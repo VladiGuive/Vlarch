@@ -95,6 +95,14 @@ vlarch_wifi_prompt_password() {
   printf '%s' "$pass"
 }
 
+vlarch_wifi_network_security() {
+  local ssid="$1"
+  local dev
+  dev="$(vlarch_wifi_device)" || return 0
+  nmcli -t -f SSID,SECURITY device wifi list ifname "$dev" 2>/dev/null \
+    | awk -F: -v ssid="$ssid" '$1==ssid{print $2; exit}'
+}
+
 vlarch_wifi_connect_value() {
   local value="$1"
   local ssid="" bssid="" security=""
@@ -120,7 +128,12 @@ vlarch_wifi_connect_value() {
       ;;
   esac
 
-  IFS=$'\x1f' read -r ssid bssid security <<<"$value"
+  if [[ "$value" == *$'\x1f'* ]]; then
+    IFS=$'\x1f' read -r ssid bssid security <<<"$value"
+  else
+    ssid="$value"
+    security="$(vlarch_wifi_network_security "$ssid")"
+  fi
   [[ -n "$ssid" ]] || {
     vlarch_wifi_notify -u critical WiFi "Missing network name"
     return 1

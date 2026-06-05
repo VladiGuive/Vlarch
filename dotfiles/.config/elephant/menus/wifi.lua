@@ -58,8 +58,8 @@ local function signal_icon(signal)
 	return "network-wireless-signal-excellent"
 end
 
-local function network_value(ssid, bssid, security)
-	return ssid .. string.char(31) .. (bssid or "") .. string.char(31) .. (security or "")
+local function network_value(ssid)
+	return ssid
 end
 
 function Activate(value, args, query)
@@ -73,6 +73,23 @@ function Activate(value, args, query)
 end
 
 function GetEntries()
+	local ok, result = pcall(function()
+		return build_entries()
+	end)
+	if ok and type(result) == "table" then
+		return result
+	end
+	return {
+		info_entry(
+			"WiFi menu error",
+			tostring(result),
+			"__info:error__",
+			"dialog-error"
+		),
+	}
+end
+
+function build_entries()
 	local entries = {}
 	local data, err = read_wifi_data()
 
@@ -168,7 +185,7 @@ function GetEntries()
 				table.insert(entries, {
 					Text = ssid,
 					Subtext = subtext,
-					Value = network_value(ssid, net.bssid, net.security),
+					Value = network_value(ssid),
 					Icon = signal_icon(net.signal),
 					Keywords = "wifi network wlan " .. ssid,
 				})
