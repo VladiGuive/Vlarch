@@ -5,14 +5,53 @@
 VLARCH_OVERRIDE_APPEND_BEGIN='# vlarch:overrides:append'
 VLARCH_OVERRIDE_APPEND_END='# vlarch:overrides:end'
 
+vlarch_override_normalize_line() {
+  local line="$1"
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
+  printf '%s' "$line"
+}
+
 vlarch_override_line_key() {
   local line="$1" key
-  line="${line#"${line%%[![:space:]]*}"}"
+  line="$(vlarch_override_normalize_line "$line")"
   [[ "$line" == *"="* ]] || return 1
   key="${line%%=*}"
   key="${key%"${key##*[![:space:]]}"}"
   [[ -n "$key" ]] || return 1
   printf '%s' "$key"
+}
+
+# Returns 0 for explicit "old -> new" rules; 1 for key-only rules.
+vlarch_override_parse_replace_rule() {
+  local line="$1"
+  local -n _old="$2"
+  local -n _new="$3"
+  local normalized
+
+  normalized="$(vlarch_override_normalize_line "$line")"
+  if [[ "$normalized" == *" -> "* ]]; then
+    _old="${normalized%% -> *}"
+    _old="${_old%"${_old##*[![:space:]]}"}"
+    _new="${normalized#* -> }"
+    _new="${_new#"${_new%%[![:space:]]*}"}"
+    return 0
+  fi
+
+  _old=""
+  _new="$line"
+  return 1
+}
+
+vlarch_override_count_key_matches() {
+  local target="$1" key="$2"
+  local count=0 line k
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    k="$(vlarch_override_line_key "$line")" || continue
+    [[ "$k" == "$key" ]] && count=$((count + 1))
+  done <"$target"
+  printf '%s' "$count"
 }
 
 vlarch_override_bootstrap_dir() {
@@ -36,14 +75,22 @@ Files here patch managed dotfiles after each `vlarch update`. Paths mirror your 
 
 ## Sections
 
-**`!!!` — replace** lines by key (text before `=`):
+**`!!!` — replace** lines in the target file.
+
+Unique keys (text before `=`) can be replaced directly:
 
 ```
 !!!
     kb_layout = latam
 ```
 
-Replaces `kb_layout = us` (or any `kb_layout = …`) in the target file.
+When several lines share the same key (e.g. many `bindd = …`), use an explicit
+`old -> new` rule so only the intended line changes:
+
+```
+!!!
+    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot full screen, exec, grim - | wl-copy
+```
 
 **`@@@` — append** lines at the end inside a managed block (safe across updates):
 
@@ -108,36 +155,65 @@ vlarch_override_parse_sections() {
 vlarch_override_apply_replace() {
   local target="$1"
   local -n _lines="$2"
-  local -A replacements=()
-  local line key tmp
+  local -A key_replacements=()
+  local -a explicit_old=() explicit_new=()
+  local line old new key tmp normalized count matched
 
   (( ${#_lines[@]} > 0 )) || return 0
 
   for line in "${_lines[@]}"; do
+    if vlarch_override_parse_replace_rule "$line" old new; then
+      explicit_old+=("$old")
+      explicit_new+=("$new")
+      continue
+    fi
     key="$(vlarch_override_line_key "$line")" || continue
-    replacements["$key"]="$line"
+    count="$(vlarch_override_count_key_matches "$target" "$key")"
+    if ((count == 1)); then
+      key_replacements["$key"]="$new"
+    elif declare -F vlarch_warn >/dev/null 2>&1; then
+      if ((count == 0)); then
+        vlarch_warn "override replace: no match for key '${key}' in ${target}"
+      else
+        vlarch_warn "override replace: key '${key}' is ambiguous in ${target}; use 'old -> new'"
+      fi
+    fi
   done
-
-  (( ${#replacements[@]} > 0 )) || return 0
 
   tmp="$(mktemp)"
   while IFS= read -r line || [[ -n "$line" ]]; do
+    normalized="$(vlarch_override_normalize_line "$line")"
+    matched=0
+
+    for i in "${!explicit_old[@]}"; do
+      [[ "${explicit_old[$i]}" == "$normalized" ]] || continue
+      printf '%s\n' "${explicit_new[$i]}" >>"$tmp"
+      unset 'explicit_old[$i]'
+      matched=1
+      break
+    done
+    ((matched)) && continue
+
     key="$(vlarch_override_line_key "$line")" || {
       printf '%s\n' "$line" >>"$tmp"
       continue
     }
-    if [[ -n "${replacements[$key]+x}" ]]; then
-      printf '%s\n' "${replacements[$key]}" >>"$tmp"
-      unset 'replacements[$key]'
+    if [[ -n "${key_replacements[$key]+x}" ]]; then
+      printf '%s\n' "${key_replacements[$key]}" >>"$tmp"
+      unset 'key_replacements[$key]'
     else
       printf '%s\n' "$line" >>"$tmp"
     fi
   done <"$target"
   mv -f "$tmp" "$target"
 
-  if ((${#replacements[@]} > 0)) && declare -F vlarch_warn >/dev/null 2>&1; then
-    for key in "${!replacements[@]}"; do
-      vlarch_warn "override replace: no match for key '${key}' in ${target}"
+  if declare -F vlarch_warn >/dev/null 2>&1; then
+    for key in "${!key_replacements[@]}"; do
+      vlarch_warn "override replace: key '${key}' not applied in ${target}"
+    done
+    for i in "${!explicit_old[@]}"; do
+      [[ -n "${explicit_old[$i]+x}" ]] \
+        && vlarch_warn "override replace: no exact match for '${explicit_old[$i]}' in ${target}"
     done
   fi
 }
