@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Waybar: battery status (auto-detects sysfs Battery devices; hidden on desktops).
+
+set -euo pipefail
+
+VLARCH_WAYBAR_BATTERY_SIGNAL="${VLARCH_WAYBAR_BATTERY_SIGNAL:-3}"
+
+_vlarch_json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
+vlarch_waybar_battery_refresh() {
+  pgrep -x waybar >/dev/null 2>&1 || return 0
+  pkill "-SIGRTMIN+${VLARCH_WAYBAR_BATTERY_SIGNAL}" waybar 2>/dev/null \
+    || killall -SIGUSR2 waybar 2>/dev/null \
+    || true
+}
+
+vlarch_waybar_battery_list() {
+  local d type
+  for d in /sys/class/power_supply/*; do
+    [[ -d "$d" && -f "$d/type" ]] || continue
+    type=$(<"$d/type" 2>/dev/null) || continue
+    [[ "$type" == "Battery" ]] || continue
+    basename "$d"
+  done
+}
+
+vlarch_waybar_battery_has() {
+  vlarch_waybar_battery_list | grep -q .
+}
+
+vlarch_waybar_battery_plugged() {
+  local d type online
+  for d in /sys/class/power_supply/*; do
+    [[ -d "$d" && -f "$d/type" ]] || continue
+    type=$(<"$d/type" 2>/dev/null) || continue
+    [[ "$type" == "Mains" || "$type" == "USB" ]] || continue
+    [[ -f "$d/online" ]] || continue
+    online=$(<"$d/online" 2>/dev/null) || continue
+    [[ "$online" == "1" ]] && return 0
+  done
+  return 1
+}
+
+vlarch_waybar_battery_icon() {
+  local capacity="$1" charging="$2" plugged="$3"
+  local -a icons_discharging=('' '' '' '' '')
+  local -a icons_charging=('󰂎' '󰂍' '󰂌' '󰂋' '󰂆')
+
+  if [[ "$plugged" == "1" && "$charging" != "1" && "$capacity" -ge 99 ]]; then
+    printf '󰚥'
+    return 0
+  fi
+
+  local idx=0
+  if ((capacity >= 80)); then idx=4
+  elif ((capacity >= 60)); then idx=3
+  elif ((capacity >= 40)); then idx=2
+  elif ((capacity >= 20)); then idx=1
+  else idx=0
+  fi
+
+  if [[ "$charging" == "1" ]]; then
+    printf '%s' "${icons_charging[$idx]}"
+  else
+    printf '%s' "${icons_discharging[$idx]}"
+  fi
+}
+
+vlarch_waybar_battery_status() {
+  local bat capacity status charging=0 plugged=0
+  local -a capacities=()
+  local -a statuses=()
+  local sum=0 count=0 icon tooltip classes="" class
+
+  if ! vlarch_waybar_battery_has; then
+    printf '{"text":""}\n'
+    return 0
+  fi
+
+  if vlarch_waybar_battery_plugged; then
+    plugged=1
+  fi
+
+  while IFS= read -r bat; do
+    [[ -n "$bat" ]] || continue
+    [[ -f "/sys/class/power_supply/$bat/capacity" ]] || continue
+    capacity=$(<"/sys/class/power_supply/$bat/capacity" 2>/dev/null) || continue
+    [[ "$capacity" =~ ^[0-9]+$ ]] || continue
+    capacities+=("$capacity")
+    sum=$((sum + capacity))
+    count=$((count + 1))
+
+    if [[ -f "/sys/class/power_supply/$bat/status" ]]; then
+      status=$(<"/sys/class/power_supply/$bat/status" 2>/dev/null) || status=""
+      statuses+=("$status")
+      [[ "$status" == "Charging" ]] && charging=1
+    fi
+  done < <(vlarch_waybar_battery_list)
+
+  if ((count == 0)); then
+    printf '{"text":""}\n'
+    return 0
+  fi
+
+  capacity=$((sum / count))
+
+  if [[ "$charging" == "1" ]]; then
+    classes="charging"
+  fi
+  if ((capacity <= 15)); then
+    classes="${classes:+$classes }critical"
+  elif ((capacity <= 30)); then
+    classes="${classes:+$classes }warning"
+  fi
+
+  icon="$(vlarch_waybar_battery_icon "$capacity" "$charging" "$plugged")"
+
+  if [[ "$charging" == "1" ]]; then
+    tooltip="${capacity}% — Charging"
+  elif [[ "$plugged" == "1" ]]; then
+    tooltip="${capacity}% — Plugged in"
+  else
+    tooltip="${capacity}% — Discharging"
+  fi
+
+  if [[ -n "$classes" ]]; then
+    class=$(_vlarch_json_escape "$classes")
+    printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
+      "$(_vlarch_json_escape "$icon")" \
+      "$(_vlarch_json_escape "$tooltip")" \
+      "$class"
+  else
+    printf '{"text":"%s","tooltip":"%s"}\n' \
+      "$(_vlarch_json_escape "$icon")" \
+      "$(_vlarch_json_escape "$tooltip")"
+  fi
+}
+
+case "${1:---status}" in
+  --status)  vlarch_waybar_battery_status ;;
+  --has)     vlarch_waybar_battery_has && exit 0 || exit 1 ;;
+  --refresh) vlarch_waybar_battery_refresh ;;
+  -h|--help)
+    printf 'usage: %s [--status|--has|--refresh]\n' "$(basename "$0")"
+    ;;
+  *)
+    printf 'unknown option: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac

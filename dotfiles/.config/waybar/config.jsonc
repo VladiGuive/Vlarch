@@ -13,7 +13,7 @@
     "pulseaudio",
     "custom/vlarch-wifi",
     "backlight",
-    "battery",
+    "custom/vlarch-battery",
     "hyprland/language",
     "custom/lock",
     "custom/power"
@@ -62,20 +62,14 @@
       "󰃠"
     ]
   },
-  "battery": {
-    "states": {
-      "warning": 30,
-      "critical": 15
-    },
-    "format": "{icon}",
-    "format-charging": "{icon}",
-    "format-plugged": "󰚥",
-    "format-alt": "{capacity}%",
-    "tooltip-format": "{capacity}% — {time}",
-    "format-icons": {
-      "default": ["", "", "", "", ""],
-      "charging": ["󰂎", "󰂍", "󰂌", "󰂋", "󰂆"]
-    }
+  "custom/vlarch-battery": {
+    "format": "{}",
+    "return-type": "json",
+    "exec": "vlarch-waybar-battery --status",
+    "interval": 60,
+    "signal": 3,
+    "hide-empty-text": true,
+    "tooltip": true
   },
   "pulseaudio": {
     "format": "{icon} {volume}%",

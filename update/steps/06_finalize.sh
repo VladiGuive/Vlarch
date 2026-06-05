@@ -20,6 +20,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" ]] || vlarch_die "missing bin/vlarch-waybar-wifi"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-battery" ]] || vlarch_die "missing bin/vlarch-waybar-battery"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-wifi" ]] || vlarch_die "missing bin/vlarch-wifi"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" ]] || vlarch_die "missing bin/vlarch-keyring-unlock"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-workspace" ]] || vlarch_die "missing bin/vlarch-workspace"
@@ -48,6 +49,9 @@ vlarch_run "install vlarch-waybar-update" \
 
 vlarch_run "install vlarch-waybar-wifi" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" /usr/local/bin/vlarch-waybar-wifi
+
+vlarch_run "install vlarch-waybar-battery" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-battery" /usr/local/bin/vlarch-waybar-battery
 
 vlarch_run "install vlarch-wifi" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-wifi" /usr/local/bin/vlarch-wifi

@@ -48,7 +48,7 @@ button {
 #tray,
 #backlight,
 #clock,
-#battery,
+#custom-vlarch-battery,
 #pulseaudio,
 #custom-lock,
 #language,
@@ -64,19 +64,19 @@ button {
   border-radius: 0;
 }
 
-#battery {
+#custom-vlarch-battery {
   color: @green;
 }
 
-#battery.charging {
+#custom-vlarch-battery.charging {
   color: @sky;
 }
 
-#battery.warning:not(.charging) {
+#custom-vlarch-battery.warning:not(.charging) {
   color: @red;
 }
 
-#battery.critical:not(.charging) {
+#custom-vlarch-battery.critical:not(.charging) {
   color: @red;
 }
 
@@ -85,19 +85,8 @@ button {
 }
 
 #backlight,
-#battery {
+#custom-vlarch-battery {
   border-radius: 0;
-}
-
-#battery:not(.present),
-#battery.disconnected {
-  opacity: 0;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: none;
 }
 
 #pulseaudio {

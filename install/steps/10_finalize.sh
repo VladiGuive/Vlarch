@@ -20,6 +20,7 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" ]] || vlarch_die "missing bin/vlarch-waybar-wifi"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-battery" ]] || vlarch_die "missing bin/vlarch-waybar-battery"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-wifi" ]] || vlarch_die "missing bin/vlarch-wifi"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" ]] || vlarch_die "missing bin/vlarch-keyring-unlock"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-workspace" ]] || vlarch_die "missing bin/vlarch-workspace"
@@ -36,6 +37,7 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" /mnt/usr/local/bin/vlarch
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker-services" /mnt/usr/local/bin/vlarch-walker-services
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /mnt/usr/local/bin/vlarch-waybar-update
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" /mnt/usr/local/bin/vlarch-waybar-wifi
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-battery" /mnt/usr/local/bin/vlarch-waybar-battery
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-wifi" /mnt/usr/local/bin/vlarch-wifi
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-keyring-unlock" /mnt/usr/local/bin/vlarch-keyring-unlock
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-workspace" /mnt/usr/local/bin/vlarch-workspace
