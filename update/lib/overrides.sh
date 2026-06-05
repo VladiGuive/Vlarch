@@ -5,6 +5,13 @@
 VLARCH_OVERRIDE_APPEND_BEGIN='# vlarch:overrides:append'
 VLARCH_OVERRIDE_APPEND_END='# vlarch:overrides:end'
 
+# Overwrite in place so Hyprland's config watcher keeps the same inode (mv breaks reload).
+vlarch_override_commit_file() {
+  local target="$1" tmp="$2"
+  cp -- "$tmp" "$target"
+  rm -f "$tmp"
+}
+
 vlarch_override_normalize_line() {
   local line="$1"
   line="${line#"${line%%[![:space:]]*}"}"
@@ -119,7 +126,9 @@ alias gs='git status'
 alias gc='git commit'
 ```
 
-After saving, run `vlarch overrides` or `vlarch update` to apply.
+After saving, run `vlarch overrides` or `vlarch update` to apply. Hyprland
+configs are reloaded automatically; if a stale error bar remains, run
+`hyprctl seterror disable && hyprctl reload`.
 README
   fi
 }
@@ -216,7 +225,7 @@ vlarch_override_apply_replace() {
       printf '%s\n' "$line" >>"$tmp"
     fi
   done <"$target"
-  mv -f "$tmp" "$target"
+  vlarch_override_commit_file "$target" "$tmp"
 
   if declare -F vlarch_warn >/dev/null 2>&1; then
     for key in "${!key_replacements[@]}"; do
@@ -238,7 +247,7 @@ vlarch_override_strip_append_block() {
     $0 == end { skip = 0; next }
     !skip { print }
   ' "$target" >"$tmp"
-  mv -f "$tmp" "$target"
+  vlarch_override_commit_file "$target" "$tmp"
 }
 
 vlarch_override_apply_append() {
@@ -284,11 +293,34 @@ vlarch_override_apply_one() {
   return 0
 }
 
+vlarch_overrides_reload_hyprland() {
+  local user="$1" uid runtime
+
+  command -v hyprctl >/dev/null 2>&1 || return 0
+  id "$user" &>/dev/null || return 0
+  uid="$(id -u "$user")"
+  runtime="/run/user/${uid}"
+  [[ -d "${runtime}/hypr" ]] || return 0
+
+  if command -v runuser >/dev/null 2>&1; then
+    runuser -u "$user" -- bash -lc \
+      "export XDG_RUNTIME_DIR='${runtime}'; hyprctl seterror disable 2>/dev/null; hyprctl reload 2>/dev/null" \
+      || true
+    return 0
+  fi
+
+  if [[ "$(id -u)" -eq "$uid" ]]; then
+    export XDG_RUNTIME_DIR="${runtime}"
+    hyprctl seterror disable 2>/dev/null || true
+    hyprctl reload 2>/dev/null || true
+  fi
+}
+
 vlarch_apply_overrides() {
   local user="$1"
   local home="/home/${user}"
   local overrides_dir="${home}/.overrides"
-  local file applied=0
+  local file applied=0 hypr_touched=0 target
 
   [[ -n "$user" ]] || return 1
   [[ -d "$home" ]] || return 1
@@ -296,11 +328,20 @@ vlarch_apply_overrides() {
   vlarch_override_bootstrap_dir "$user"
 
   while IFS= read -r -d '' file; do
-    vlarch_override_apply_one "$user" "$file" && applied=$((applied + 1)) || true
+    if vlarch_override_apply_one "$user" "$file"; then
+      applied=$((applied + 1))
+      target="$(vlarch_override_target_for "$home" "$overrides_dir" "$file" 2>/dev/null || true)"
+      [[ "$target" == "${home}/.config/hypr/"* ]] && hypr_touched=1
+    fi
   done < <(find "$overrides_dir" -type f -print0)
+
+  if ((hypr_touched)); then
+    vlarch_overrides_reload_hyprland "$user"
+  fi
 
   if declare -F vlarch_info >/dev/null 2>&1; then
     vlarch_info "overrides: applied ${applied} file(s) from ${overrides_dir}"
+    ((hypr_touched)) && vlarch_info "overrides: reloaded Hyprland config"
   fi
   return 0
 }
