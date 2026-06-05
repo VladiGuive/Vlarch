@@ -18,8 +18,8 @@ local KEY_DISPLAY = {
 	Print = "Print",
 }
 
-local function code_keys(keys)
-	return "`" .. keys .. "`"
+local function label_keys(keys)
+	return keys
 end
 
 local GROUP_INFO = {
@@ -27,63 +27,42 @@ local GROUP_INFO = {
 		priority = 40,
 		description = "Switch current workspace on the focused monitor",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + 1…0")
+			return label_keys(mods .. " + 1…0")
 		end,
 	},
 	workspace_move = {
 		priority = 55,
 		description = "Move window to workspace on the focused monitor",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + 1…0")
+			return label_keys(mods .. " + 1…0")
 		end,
 	},
 	movefocus = {
 		priority = 30,
 		description = "Change focus between windows (arrow keys)",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + ↑ ↓ ← →")
-		end,
-	},
-	volume = {
-		priority = 90,
-		description = "Adjust output volume",
-		format_keys = function(_, _)
-			return code_keys("XF86Audio ↑ ↓")
-		end,
-	},
-	mic_mute = {
-		priority = 92,
-		description = "Toggle microphone mute",
-		format_keys = function(_, _)
-			return code_keys("XF86AudioMicMute")
-		end,
-	},
-	brightness = {
-		priority = 91,
-		description = "Adjust screen brightness",
-		format_keys = function(_, _)
-			return code_keys("XF86MonBrightness ↑ ↓")
+			return label_keys(mods .. " + ↑ ↓ ← →")
 		end,
 	},
 	workspace_scroll = {
 		priority = 51,
 		description = "Cycle workspace on the focused monitor",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + scroll ↑↓")
+			return label_keys(mods .. " + scroll ↑↓")
 		end,
 	},
 	mouse_move = {
 		priority = 48,
 		description = "Move window by dragging",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + left click")
+			return label_keys(mods .. " + left click")
 		end,
 	},
 	mouse_resize = {
 		priority = 49,
 		description = "Resize window by dragging",
 		format_keys = function(mods, _)
-			return code_keys(mods .. " + right click")
+			return label_keys(mods .. " + right click")
 		end,
 	},
 }
@@ -96,8 +75,7 @@ local BIND_PRIORITY = {
 	screenshot_region = 11,
 	killactive = 20,
 	togglefloating = 45,
-	["fullscreenstate:0 2"] = 46,
-	["fullscreenstate:2 0"] = 47,
+	fullscreen = 46,
 	workspace_scroll = 51,
 	mouse_move = 48,
 	mouse_resize = 49,
@@ -111,18 +89,11 @@ local BIND_DESCRIPTIONS = {
 	["exec:kitty -e tmux"] = "Open terminal",
 	killactive = "Close focused window",
 	togglefloating = "Toggle floating on focused window",
-	["fullscreenstate:0 2"] = "Fullscreen content inside tile (keeps browser UI)",
-	["fullscreenstate:2 0"] = "Maximize window in tile (tabs and toolbar visible)",
+	fullscreen = "Toggle fullscreen on focused window",
 	screenshot_full = "Take a full-screen screenshot to clipboard",
 	screenshot_region = "Take a region screenshot to clipboard",
 	mouse_movewindow = "Move window by dragging",
 	mouse_resizewindow = "Resize window by dragging",
-	["exec:wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"] = "Raise volume",
-	["exec:wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"] = "Lower volume",
-	["exec:wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"] = "Toggle output mute",
-	["exec:wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"] = "Toggle microphone mute",
-	["exec:brightnessctl -e4 -n2 set 5%+"] = "Increase brightness",
-	["exec:brightnessctl -e4 -n2 set 5%-"] = "Decrease brightness",
 }
 
 local function get_mods(modmask)
@@ -156,6 +127,11 @@ local MOUSE_KEY_LABEL = {
 	mouse_down = "scroll down",
 	mouse_up = "scroll up",
 }
+
+local function is_media_key_bind(bind)
+	local key = bind.key or ""
+	return key:find("^XF86") ~= nil
+end
 
 local function format_keys(bind)
 	local key = bind.key or ""
@@ -205,15 +181,6 @@ local function get_group_id(bind)
 	if dispatcher == "exec" and arg:find("slurp") and arg:find("grim") then
 		return "screenshot_region"
 	end
-	if key == "XF86AudioRaiseVolume" or key == "XF86AudioLowerVolume" or key == "XF86AudioMute" then
-		return "volume"
-	end
-	if key == "XF86AudioMicMute" then
-		return "mic_mute"
-	end
-	if key == "XF86MonBrightnessUp" or key == "XF86MonBrightnessDown" then
-		return "brightness"
-	end
 	if key == "mouse_down" or key == "mouse_up" then
 		if dispatcher == "exec" and (arg:match("^vlarch%-workspace next") or arg:match("^vlarch%-workspace prev")) then
 			return "workspace_scroll"
@@ -258,13 +225,16 @@ local function describe_bind(bind)
 		return BIND_DESCRIPTIONS["exec:kitty -e tmux"]
 	end
 
+	if dispatcher == "fullscreen" then
+		return BIND_DESCRIPTIONS.fullscreen
+	end
+
 	local sig = bind_signature(bind)
 	if BIND_DESCRIPTIONS[sig] then
 		return BIND_DESCRIPTIONS[sig]
 	end
 
 	if bind.mouse then
-		local arg = bind.arg or ""
 		if arg == "movewindow" then
 			return BIND_DESCRIPTIONS.mouse_movewindow
 		end
@@ -313,7 +283,10 @@ local function bind_priority(bind, group_id)
 		return BIND_PRIORITY["exec:kitty"]
 	end
 
-	local gid = get_group_id(bind)
+	if dispatcher == "fullscreen" then
+		return BIND_PRIORITY.fullscreen
+	end
+
 	if gid and BIND_PRIORITY[gid] then
 		return BIND_PRIORITY[gid]
 	end
@@ -327,6 +300,9 @@ local function bind_priority(bind, group_id)
 end
 
 local function should_include(bind)
+	if is_media_key_bind(bind) then
+		return false
+	end
 	if bind.submap and bind.submap ~= "" then
 		return false
 	end
@@ -359,7 +335,7 @@ function GetEntries()
 	local handle = io.popen("hyprctl binds -j 2>/dev/null")
 	if not handle then
 		return {
-			{ Text = "`error`", Subtext = "Hyprland is not running", Value = "error" },
+			{ Text = "error", Subtext = "Hyprland is not running", Value = "error" },
 		}
 	end
 
@@ -368,20 +344,20 @@ function GetEntries()
 
 	if not output or output == "" then
 		return {
-			{ Text = "`empty`", Subtext = "hyprctl binds -j returned no data", Value = "empty" },
+			{ Text = "empty", Subtext = "hyprctl binds -j returned no data", Value = "empty" },
 		}
 	end
 
 	local ok, data = pcall(json.decode, output)
 	if not ok then
 		return {
-			{ Text = "`error`", Subtext = tostring(data), Value = "error" },
+			{ Text = "error", Subtext = tostring(data), Value = "error" },
 		}
 	end
 
 	if type(data) ~= "table" then
 		return {
-			{ Text = "`error`", Subtext = "Expected a JSON array from hyprctl", Value = "error" },
+			{ Text = "error", Subtext = "Expected a JSON array from hyprctl", Value = "error" },
 		}
 	end
 
@@ -402,7 +378,7 @@ function GetEntries()
 				local keys = format_keys(bind)
 				local description = describe_bind(bind)
 				local priority = bind_priority(bind, nil)
-				add_entry(entries, seen, code_keys(keys), description, keys, priority)
+				add_entry(entries, seen, label_keys(keys), description, keys, priority)
 			end
 		end
 	end
@@ -410,9 +386,6 @@ function GetEntries()
 	for group_id, group in pairs(groups) do
 		local info = GROUP_INFO[group_id]
 		local mods = mods_prefix(group.bind)
-		if mods ~= "" then
-			mods = mods
-		end
 		local text = info.format_keys(mods, group.bind)
 		add_entry(entries, seen, text, group.description, group_id, info.priority)
 	end
@@ -433,7 +406,7 @@ function GetEntries()
 
 	if #entries == 0 then
 		table.insert(entries, {
-			Text = "`none`",
+			Text = "none",
 			Subtext = "No keybinds found in hyprland.conf",
 			Value = "none",
 		})
