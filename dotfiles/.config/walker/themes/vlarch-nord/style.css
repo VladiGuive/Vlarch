@@ -107,6 +107,17 @@ child:selected .item-box * {
   opacity: 0.55;
 }
 
+/* Keybinds menu (menus:keybinds): code-like keys, readable descriptions */
+.menus-keybinds .item-text {
+  font-weight: 600;
+  color: @theme_fg_bright;
+}
+
+.menus-keybinds .item-subtext {
+  font-size: 13px;
+  opacity: 0.72;
+}
+
 .providerlist .item-subtext {
   font-size: unset;
   opacity: 0.75;
