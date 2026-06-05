@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# vlarch-overrides - apply ~/.overrides without a full vlarch update.
+
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+VLARCH_SHARE_DIR="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
+
+_die() {
+  printf '[vlarch] error: %s\n' "$*" >&2
+  exit 1
+}
+
+vlarch_warn() {
+  printf '[vlarch] warning: %s\n' "$*" >&2
+}
+
+vlarch_info() {
+  if ((VLARCH_VERBOSE)); then
+    printf '[vlarch] %s\n' "$*"
+  fi
+}
+
+_vlarch_installed_user() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_vlarch_overrides_lib() {
+  local lib self_dir
+
+  lib="${VLARCH_SHARE_DIR}/overrides.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  self_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")"
+  lib="${self_dir}/../update/lib/overrides.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  _die "overrides library missing (expected ${VLARCH_SHARE_DIR}/overrides.sh); run: vlarch update"
+}
+
+main() {
+  local user
+
+  while (($#)); do
+    case "$1" in
+      --verbose|-v) VLARCH_VERBOSE=1; shift ;;
+      --help|-h)
+        cat <<'USAGE'
+vlarch-overrides - apply ~/.overrides to managed dotfiles
+
+Usage: vlarch overrides [--verbose]
+USAGE
+        exit 0
+        ;;
+      *) _die "unknown option: $1" ;;
+    esac
+  done
+
+  user="$(_vlarch_installed_user)" || _die "could not read user from ${VLARCH_INFO_FILE}"
+  _vlarch_overrides_lib
+  vlarch_apply_overrides "$user"
+  printf '[vlarch] overrides applied for %s\n' "$user"
+}
+
+main "$@"

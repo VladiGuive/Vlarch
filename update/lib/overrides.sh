@@ -96,19 +96,30 @@ When several lines share the same key (e.g. many `bindd = …`), use an explicit
 
 ```
 @@@
-exec-once = my-custom-command
+exec-once = ~/.local/bin/my-startup.sh
 ```
 
 ## Example
 
-`~/.overrides/.config/hypr/hyprland.conf`:
+`~/.overrides/.config/hypr/hyprland.conf` — keyboard, one keybind, and a personal startup script:
 
 ```
 !!!
     kb_layout = latam
+    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot full screen, exec, grim - | wl-copy
 @@@
-exec-once = my-custom-command
+exec-once = ~/.local/bin/my-startup.sh
 ```
+
+`~/.overrides/.zshrc` — add aliases without touching the managed file:
+
+```
+@@@
+alias gs='git status'
+alias gc='git commit'
+```
+
+After saving, run `vlarch overrides` or `vlarch update` to apply.
 README
   fi
 }

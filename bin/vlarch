@@ -178,6 +178,13 @@ cmd_version() {
 
 : "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
 
+# vlarch:summary=Apply ~/.overrides to managed dotfiles without a full update.
+cmd_overrides() {
+  command -v vlarch-overrides >/dev/null 2>&1 \
+    || _die "vlarch-overrides not installed; run: vlarch update"
+  vlarch-overrides "$@"
+}
+
 # vlarch:summary=Update Vlarch from CDN (packages, dotfiles, hyprpm, CLI).
 cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
@@ -235,7 +242,7 @@ _summary_for() {
 
 _needs_root() {
   case "${1:-}" in
-    update|post-install|first-boot) return 0 ;;
+    update|post-install|first-boot|overrides) return 0 ;;
     *) return 1 ;;
   esac
 }
