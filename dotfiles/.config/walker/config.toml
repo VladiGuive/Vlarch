@@ -23,6 +23,7 @@ quick_activate = []
 
 [placeholders]
 "default" = { input = "Search...", list = "No Results" }
+"archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
 
 [providers]
 max_results = 256
@@ -70,3 +71,17 @@ provider = "menus:keybinds"
 [[providers.prefixes]]
 prefix = "~"
 provider = "menus:wifi"
+
+[[providers.prefixes]]
+prefix = "p"
+provider = "archlinuxpkgs"
+
+[providers.actions]
+archlinuxpkgs = [
+  { action = "install", bind = "Return", default = true },
+  { action = "remove", bind = "Return" },
+  { action = "show_all", label = "show all", bind = "ctrl i", after = "AsyncClearReload" },
+  { action = "refresh", label = "refresh", bind = "ctrl r", after = "AsyncReload" },
+  { action = "visit_url", label = "open URL", bind = "ctrl o" },
+  { action = "show_installed", label = "show installed", bind = "ctrl i", after = "AsyncClearReload" },
+]
