@@ -5,6 +5,4 @@ alwaysApply: true
 
 # Vlarch release version
 
-When you finish a user-facing change and commit or push to `main`, also bump the repo root `version.txt` (patch increment, e.g. `0.0.111` → `0.0.112`) in the same commit or an immediate follow-up before push.
-
-`version.txt` is what `update.sh`, the CDN, and `vlarch-waybar-update` use to detect new releases. Do not push feature/fix work without updating it unless the user explicitly says to skip versioning.
+When you finish a user-facing change, bump the repo root `version.txt` (patch increment, e.g. `0.0.111` → `0.0.112`) in the same commit, then commit and push to `main` unless the user explicitly says not to push or to skip versioning.
