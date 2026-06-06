@@ -362,11 +362,11 @@ PY
 }
 
 vlarch_wifi_open_walker() {
-  command -v walker >/dev/null 2>&1 || {
-    printf 'walker not found\n' >&2
+  command -v vlarch-walker >/dev/null 2>&1 || {
+    printf 'vlarch-walker not found\n' >&2
     exit 1
   }
-  walker -m menus:wifi -p "Search networks..."
+  vlarch-walker -m menus:wifi -p "Search networks..."
 }
 
 case "${1:---help}" in

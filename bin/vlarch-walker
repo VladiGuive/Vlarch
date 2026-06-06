@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Open Walker via its background service (layer overlay). Ensures the service is up first.
+
+set -euo pipefail
+
+_walker_sock() {
+  printf '%s/walker/walker.sock' "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+}
+
+_service_running() {
+  pgrep -f '[w]alker --gapplication-service' >/dev/null 2>&1
+}
+
+_ensure_service() {
+  _service_running && return 0
+  command -v vlarch-walker-services >/dev/null 2>&1 || return 1
+  vlarch-walker-services
+  local i
+  for i in $(seq 1 40); do
+    _service_running && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
+if [[ $# -eq 0 ]]; then
+  sock="$(_walker_sock)"
+  if [[ -S "$sock" ]] && command -v nc >/dev/null 2>&1; then
+    nc -U "$sock"
+    exit 0
+  fi
+fi
+
+_ensure_service || true
+exec walker "$@"

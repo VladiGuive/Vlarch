@@ -73,6 +73,18 @@ start_walker_service() {
 
   walker --gapplication-service >>"$LOG" 2>&1 &
   log 'started walker --gapplication-service'
+
+  local i sock
+  sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/walker/walker.sock"
+  for i in $(seq 1 40); do
+    if [[ -S "$sock" ]]; then
+      log "walker socket ready (${i} checks)"
+      return 0
+    fi
+    sleep 0.1
+  done
+
+  log 'walker socket not ready after startup wait'
 }
 
 : >"$LOG"
