@@ -73,7 +73,7 @@ prefix = "~"
 provider = "menus:wifi"
 
 [[providers.prefixes]]
-prefix = "p"
+prefix = "\\"
 provider = "archlinuxpkgs"
 
 [providers.actions]
