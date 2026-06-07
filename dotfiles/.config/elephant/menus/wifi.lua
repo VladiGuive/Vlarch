@@ -1,4 +1,6 @@
 -- Vlarch: WiFi network picker (NetworkManager via vlarch-wifi).
+local L = dofile(os.getenv("HOME") .. "/.config/elephant/utils/locale.lua")
+
 Name = "wifi"
 NamePretty = "WiFi"
 Icon = "network-wireless"
@@ -14,13 +16,13 @@ end
 local function read_wifi_data()
 	local handle = io.popen(VLARCH_WIFI .. " --list-json 2>/dev/null")
 	if not handle then
-		return nil, "could not run vlarch-wifi"
+		return nil, L.t("could not run vlarch-wifi", "no se pudo ejecutar vlarch-wifi")
 	end
 	local raw = handle:read("*a") or ""
 	handle:close()
 	raw = raw:match("^%s*(.-)%s*$")
 	if raw == "" then
-		return nil, "vlarch-wifi returned no data"
+		return nil, L.t("vlarch-wifi returned no data", "vlarch-wifi no devolvió datos")
 	end
 	if jsonDecode then
 		local ok, data = pcall(jsonDecode, raw)
@@ -34,7 +36,7 @@ local function read_wifi_data()
 	if raw:find('"available"%s*:%s*false') then
 		return { available = false }, nil
 	end
-	return nil, "invalid wifi data"
+	return nil, L.t("invalid wifi data", "datos de WiFi inválidos")
 end
 
 local function info_entry(text, subtext, value, icon)
@@ -81,7 +83,7 @@ function GetEntries()
 	end
 	return {
 		info_entry(
-			"WiFi menu error",
+			L.t("WiFi menu error", "Error en el menú de WiFi"),
 			tostring(result),
 			"__info:error__",
 			"dialog-error"
@@ -95,8 +97,8 @@ function build_entries()
 
 	if not data then
 		table.insert(entries, info_entry(
-			"WiFi unavailable",
-			err or "Unknown error",
+			L.t("WiFi unavailable", "WiFi no disponible"),
+			err or L.t("Unknown error", "Error desconocido"),
 			"__info:error__",
 			"dialog-error"
 		))
@@ -105,8 +107,8 @@ function build_entries()
 
 	if not data.available then
 		table.insert(entries, info_entry(
-			"No WiFi adapter",
-			"This machine has no wireless interface",
+			L.t("No WiFi adapter", "Sin adaptador WiFi"),
+			L.t("This machine has no wireless interface", "Este equipo no tiene interfaz inalámbrica"),
 			"__info:no_adapter__",
 			"network-wireless-disabled"
 		))
@@ -115,14 +117,14 @@ function build_entries()
 
 	if data.parse_error then
 		table.insert(entries, info_entry(
-			"WiFi data error",
-			"Could not parse network list; try rescan",
+			L.t("WiFi data error", "Error en los datos de WiFi"),
+			L.t("Could not parse network list; try rescan", "No se pudo leer la lista de redes; intenta reescanear"),
 			"__info:parse_error__",
 			"dialog-warning"
 		))
 		table.insert(entries, {
-			Text = "Rescan networks",
-			Subtext = "Refresh nearby access points",
+			Text = L.t("Rescan networks", "Reescanear redes"),
+			Subtext = L.t("Refresh nearby access points", "Actualizar puntos de acceso cercanos"),
 			Value = "__rescan__",
 			Icon = "view-refresh",
 		})
@@ -131,19 +133,19 @@ function build_entries()
 
 	if data.radio then
 		table.insert(entries, {
-			Text = "Turn WiFi off",
-			Subtext = "Disable the wireless radio",
+			Text = L.t("Turn WiFi off", "Apagar WiFi"),
+			Subtext = L.t("Disable the wireless radio", "Desactivar la radio inalámbrica"),
 			Value = "__toggle_radio__",
 			Icon = "network-wireless-disabled",
-			Keywords = "wifi radio off disable",
+			Keywords = "wifi radio off disable apagar desactivar",
 		})
 	else
 		table.insert(entries, {
-			Text = "Turn WiFi on",
-			Subtext = "Enable the wireless radio",
+			Text = L.t("Turn WiFi on", "Encender WiFi"),
+			Subtext = L.t("Enable the wireless radio", "Activar la radio inalámbrica"),
 			Value = "__toggle_radio__",
 			Icon = "network-wireless",
-			Keywords = "wifi radio on enable",
+			Keywords = "wifi radio on enable encender activar",
 		})
 		return entries
 	end
@@ -151,20 +153,20 @@ function build_entries()
 	if data.connected and data.connected.ssid then
 		local connected = data.connected
 		table.insert(entries, {
-			Text = "Disconnect",
+			Text = L.t("Disconnect", "Desconectar"),
 			Subtext = connected.ssid .. " (" .. tostring(connected.signal or 0) .. "%)",
 			Value = "__disconnect__",
 			Icon = "network-wireless-connected",
-			Keywords = "wifi disconnect leave " .. connected.ssid,
+			Keywords = "wifi disconnect leave desconectar " .. connected.ssid,
 		})
 	end
 
 	table.insert(entries, {
-		Text = "Rescan networks",
-		Subtext = "Refresh nearby access points",
+		Text = L.t("Rescan networks", "Reescanear redes"),
+		Subtext = L.t("Refresh nearby access points", "Actualizar puntos de acceso cercanos"),
 		Value = "__rescan__",
 		Icon = "view-refresh",
-		Keywords = "wifi rescan refresh scan",
+		Keywords = "wifi rescan refresh scan reescanear actualizar",
 	})
 
 	local seen = {}
@@ -177,17 +179,17 @@ function build_entries()
 				if net.security and net.security ~= "" and net.security ~= "--" then
 					subtext = subtext .. " · " .. net.security
 				else
-					subtext = subtext .. " · Open"
+					subtext = subtext .. " · " .. L.t("Open", "Abierta")
 				end
 				if net.in_use then
-					subtext = subtext .. " · Connected"
+					subtext = subtext .. " · " .. L.t("Connected", "Conectada")
 				end
 				table.insert(entries, {
 					Text = ssid,
 					Subtext = subtext,
 					Value = network_value(ssid),
 					Icon = signal_icon(net.signal),
-					Keywords = "wifi network wlan " .. ssid,
+					Keywords = "wifi network wlan red " .. ssid,
 				})
 			end
 		end
@@ -195,8 +197,8 @@ function build_entries()
 
 	if #entries <= 2 then
 		table.insert(entries, info_entry(
-			"No networks found",
-			"Try rescanning or move closer to an access point",
+			L.t("No networks found", "No se encontraron redes"),
+			L.t("Try rescanning or move closer to an access point", "Intenta reescanear o acércate a un punto de acceso"),
 			"__info:no_networks__",
 			"network-wireless-offline"
 		))

@@ -1,6 +1,8 @@
 -- Vlarch: curated keybind reference (view-only). Edit here when hyprland.conf binds change.
+local L = dofile(os.getenv("HOME") .. "/.config/elephant/utils/locale.lua")
+
 Name = "keybinds"
-NamePretty = "Keybinds"
+NamePretty = L.t("Keybinds", "Atajos de teclado")
 Icon = "preferences-desktop-keyboard-shortcuts"
 Cache = true
 FixedOrder = true
@@ -11,83 +13,98 @@ SearchName = true
 local BINDS = {
 	{
 		keys = "Super + Space",
-		desc = "Open application launcher (Walker)",
-		keywords = "walker launcher search run",
+		desc = L.t("Open application launcher (Walker)", "Abrir el lanzador de aplicaciones (Walker)"),
+		keywords = "walker launcher search run lanzador buscar",
 	},
 	{
 		keys = "Super + K",
-		desc = "Open this keybind reference",
-		keywords = "keybinds shortcuts help",
+		desc = L.t("Open this keybind reference", "Abrir esta referencia de atajos"),
+		keywords = "keybinds shortcuts help atajos teclado ayuda",
 	},
 	{
 		keys = "Super + Enter",
-		desc = "Open terminal",
-		keywords = "kitty tmux shell",
+		desc = L.t("Open terminal", "Abrir terminal"),
+		keywords = "kitty tmux shell terminal",
 	},
 	{
 		keys = "Print",
-		desc = "Screenshot all screens to ~/Pictures/Screenshots/",
-		keywords = "grim screenshot capture screen file save",
+		desc = L.t(
+			"Screenshot all screens to ~/Pictures/Screenshots/",
+			"Captura de todas las pantallas en ~/Pictures/Screenshots/"
+		),
+		keywords = "grim screenshot capture screen file save captura pantalla guardar",
 	},
 	{
 		keys = "Shift + Print",
-		desc = "Screenshot all screens to clipboard",
-		keywords = "grim screenshot capture screen clipboard",
+		desc = L.t("Screenshot all screens to clipboard", "Captura de todas las pantallas al portapapeles"),
+		keywords = "grim screenshot capture screen clipboard captura pantalla portapapeles",
 	},
 	{
 		keys = "Super + S",
-		desc = "Screenshot region to ~/Pictures/Screenshots/",
-		keywords = "grim slurp area select screenshot file save",
+		desc = L.t(
+			"Screenshot region to ~/Pictures/Screenshots/",
+			"Captura de una región en ~/Pictures/Screenshots/"
+		),
+		keywords = "grim slurp area select screenshot file save captura region area guardar",
 	},
 	{
 		keys = "Super + Shift + S",
-		desc = "Screenshot region to clipboard",
-		keywords = "grim slurp area select screenshot clipboard",
+		desc = L.t("Screenshot region to clipboard", "Captura de una región al portapapeles"),
+		keywords = "grim slurp area select screenshot clipboard captura region portapapeles",
 	},
 	{
 		keys = "Super + Q",
-		desc = "Close focused window",
-		keywords = "kill close quit",
+		desc = L.t("Close focused window", "Cerrar la ventana enfocada"),
+		keywords = "kill close quit cerrar ventana",
 	},
 	{
 		keys = "Super + ↑ ↓ ← →",
-		desc = "Change focus between windows",
-		keywords = "focus move arrow direction",
+		desc = L.t("Change focus between windows", "Cambiar el foco entre ventanas"),
+		keywords = "focus move arrow direction foco ventana flecha",
 	},
 	{
 		keys = "Super + 1…0",
-		desc = "Switch workspace on the focused monitor (0 = workspace 10)",
-		keywords = "workspace desktop monitor goto",
+		desc = L.t(
+			"Switch workspace on the focused monitor (0 = workspace 10)",
+			"Cambiar de espacio de trabajo en el monitor enfocado (0 = espacio 10)"
+		),
+		keywords = "workspace desktop monitor goto escritorio espacio monitor",
 	},
 	{
 		keys = "Super + V",
-		desc = "Toggle floating on focused window",
-		keywords = "float tile",
+		desc = L.t("Toggle floating on focused window", "Alternar flotante en la ventana enfocada"),
+		keywords = "float tile flotante ventana",
 	},
 	{
 		keys = "Super + F",
-		desc = "Fullscreen content inside the tile (keeps browser tabs and toolbar)",
-		keywords = "fullscreen maximize video",
+		desc = L.t(
+			"Fullscreen content inside the tile (keeps browser tabs and toolbar)",
+			"Pantalla completa del contenido en el mosaico (mantiene pestañas y barra del navegador)"
+		),
+		keywords = "fullscreen maximize video pantalla completa maximizar",
 	},
 	{
 		keys = "Super + left click",
-		desc = "Move window by dragging",
-		keywords = "mouse drag move window",
+		desc = L.t("Move window by dragging", "Mover ventana arrastrando"),
+		keywords = "mouse drag move window raton arrastrar mover ventana",
 	},
 	{
 		keys = "Super + right click",
-		desc = "Resize window by dragging",
-		keywords = "mouse drag resize",
+		desc = L.t("Resize window by dragging", "Redimensionar ventana arrastrando"),
+		keywords = "mouse drag resize raton arrastrar redimensionar ventana",
 	},
 	{
 		keys = "Super + scroll ↑↓",
-		desc = "Cycle workspace on the focused monitor",
-		keywords = "workspace next previous scroll wheel",
+		desc = L.t("Cycle workspace on the focused monitor", "Recorrer espacios de trabajo en el monitor enfocado"),
+		keywords = "workspace next previous scroll wheel escritorio siguiente anterior rueda",
 	},
 	{
 		keys = "Super + Shift + 1…0",
-		desc = "Move window to workspace on the focused monitor (0 = workspace 10)",
-		keywords = "workspace move window shift",
+		desc = L.t(
+			"Move window to workspace on the focused monitor (0 = workspace 10)",
+			"Mover ventana al espacio de trabajo en el monitor enfocado (0 = espacio 10)"
+		),
+		keywords = "workspace move window shift escritorio mover ventana",
 	},
 }
 
