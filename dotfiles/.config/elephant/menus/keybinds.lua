@@ -26,13 +26,23 @@ local BINDS = {
 	},
 	{
 		keys = "Print",
-		desc = "Screenshot full screen to clipboard",
-		keywords = "grim screenshot capture screen",
+		desc = "Screenshot all screens to ~/Pictures/Screenshots/",
+		keywords = "grim screenshot capture screen file save",
+	},
+	{
+		keys = "Shift + Print",
+		desc = "Screenshot all screens to clipboard",
+		keywords = "grim screenshot capture screen clipboard",
+	},
+	{
+		keys = "Super + S",
+		desc = "Screenshot region to ~/Pictures/Screenshots/",
+		keywords = "grim slurp area select screenshot file save",
 	},
 	{
 		keys = "Super + Shift + S",
 		desc = "Screenshot region to clipboard",
-		keywords = "grim slurp area select screenshot",
+		keywords = "grim slurp area select screenshot clipboard",
 	},
 	{
 		keys = "Super + Q",
