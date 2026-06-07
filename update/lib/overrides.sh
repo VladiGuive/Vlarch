@@ -96,7 +96,7 @@ When several lines share the same key (e.g. many `bindd = …`), use an explicit
 
 ```
 !!!
-    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot all screens to file, exec, bash -c 'dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"; grim - "$dir/$(date +%Y_%m_%d_%H_%M_%S).png"'
+    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot all screens to file, exec, bash -c 'dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"; grim "$dir/$(date +%Y_%m_%d_%H_%M_%S).png"'
 ```
 
 **`@@@` — append** lines at the end inside a managed block (safe across updates):
@@ -113,7 +113,7 @@ exec-once = ~/.local/bin/my-startup.sh
 ```
 !!!
     kb_layout = latam
-    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot all screens to file, exec, bash -c 'dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"; grim - "$dir/$(date +%Y_%m_%d_%H_%M_%S).png"'
+    bindd = , Print, Screenshot full screen to clipboard, exec, grim - | wl-copy -> bindd = , Print, Screenshot all screens to file, exec, bash -c 'dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"; grim "$dir/$(date +%Y_%m_%d_%H_%M_%S).png"'
 @@@
 exec-once = ~/.local/bin/my-startup.sh
 ```
