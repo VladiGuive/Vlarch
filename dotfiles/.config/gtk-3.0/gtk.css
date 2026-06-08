@@ -1,5 +1,4 @@
-/* Vlarch GTK3 overrides — Nord + square corners; sync with kitty/theme.conf */
-/* VLARCH_BG_OPACITY=0.85 */
+/* Vlarch GTK3 overrides — square corners; GTK colors from Nordic theme (palette: dotfiles/theme/nord.json) */
 
 * {
   border-radius: 0;

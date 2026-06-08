@@ -21,7 +21,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 
     -- neo-tree resets filtered-item highlights on ColorScheme; schedule so we win.
     vim.schedule(function()
-      local dotfile = { fg = "#8FBCBB", bg = "NONE" } -- nord7 — readable on transparent bg
+      local nord = require("config.nord-palette")
+      local dotfile = { fg = nord.nord7, bg = "NONE" } -- readable on transparent bg
       vim.api.nvim_set_hl(0, "NeoTreeDotfile", dotfile)
       vim.api.nvim_set_hl(0, "NeoTreeGitIgnored", dotfile)
       vim.api.nvim_set_hl(0, "NeoTreeHiddenByName", dotfile)

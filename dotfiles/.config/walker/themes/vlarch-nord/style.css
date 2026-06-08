@@ -1,18 +1,4 @@
-/* Nord palette — keep in sync with ~/.config/kitty/theme.conf */
-/* VLARCH_BG_OPACITY=0.85 — keep in sync with kitty.conf background_opacity */
-
-@define-color window_bg_color #2E3440;
-@define-color window_bg_alpha alpha(@window_bg_color, 0.85);
-@define-color accent_bg_color #434C5E;
-@define-color theme_fg_color #D8DEE9;
-@define-color theme_fg_bright #ECEFF4;
-@define-color accent_color #88C0D0;
-@define-color accent_color_alt #81A1C1;
-@define-color border_color #4C566A;
-@define-color input_bg_color #3B4252;
-@define-color selection_bg_color #434C5E;
-@define-color error_bg_color #BF616A;
-@define-color error_fg_color #ECEFF4;
+@import "./colors.css";
 
 * {
   all: unset;

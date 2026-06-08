@@ -1,0 +1,68 @@
+{
+  "name": "nord",
+  "background_opacity": 0.85,
+  "palette": {
+    "nord0": "#2E3440",
+    "nord1": "#3B4252",
+    "nord2": "#434C5E",
+    "nord3": "#4C566A",
+    "nord4": "#D8DEE9",
+    "nord5": "#E5E9F0",
+    "nord6": "#ECEFF4",
+    "nord7": "#8FBCBB",
+    "nord8": "#88C0D0",
+    "nord9": "#81A1C1",
+    "nord10": "#5E81AC",
+    "nord11": "#BF616A",
+    "nord12": "#D08770",
+    "nord13": "#EBCB8B",
+    "nord14": "#A3BE8C",
+    "nord15": "#B48EAD"
+  },
+  "hypr": {
+    "active_border": ["nord8", "nord9"],
+    "inactive_border": "nord3",
+    "shadow": "nord0"
+  },
+  "waybar": {
+    "base": "nord0",
+    "surface0": "nord1",
+    "surface1": "nord2",
+    "surface2": "nord3",
+    "text": "nord4",
+    "subtext1": "nord5",
+    "subtext0": "nord6",
+    "lavender": "nord15",
+    "blue": "nord9",
+    "sky": "nord8",
+    "sapphire": "nord10",
+    "green": "nord14",
+    "yellow": "nord13",
+    "red": "nord11",
+    "maroon": "nord15",
+    "pink": "nord15",
+    "mauve": "nord15"
+  },
+  "walker": {
+    "window_bg": "nord0",
+    "accent_bg": "nord2",
+    "theme_fg": "nord4",
+    "theme_fg_bright": "nord6",
+    "accent": "nord8",
+    "accent_alt": "nord9",
+    "border": "nord3",
+    "input_bg": "nord1",
+    "selection_bg": "nord2",
+    "error_bg": "nord11",
+    "error_fg": "nord6"
+  },
+  "ohmyposh": {
+    "secondary_prompt": "nord15",
+    "success_prompt": "nord15",
+    "error_prompt": "nord11",
+    "path": "nord9",
+    "git": "nord3",
+    "git_status": "nord7",
+    "execution_time": "nord13"
+  }
+}

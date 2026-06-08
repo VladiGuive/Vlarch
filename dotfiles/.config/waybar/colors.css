@@ -1,4 +1,5 @@
-/* Nord palette — keep in sync with ~/.config/kitty/theme.conf (VLARCH_BG_OPACITY=0.85 in kitty/walker) */
+/* Generated from dotfiles/theme/nord.json — do not edit; run: vlarch-theme-generate */
+/* VLARCH_BG_OPACITY=0.85 in kitty/walker */
 
 @define-color base #2E3440;
 @define-color surface0 #3B4252;

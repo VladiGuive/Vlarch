@@ -1,4 +1,4 @@
--- Nord palette — keep in sync with ~/.config/kitty/theme.conf
+-- Nord colorscheme — palette in dotfiles/theme/nord.json (generated dotfiles via vlarch-theme-generate)
 return {
   {
     "shaunsingh/nord.nvim",
