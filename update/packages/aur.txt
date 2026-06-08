@@ -14,6 +14,7 @@ elephant-symbols
 elephant-websearch
 elephant-clipboard
 elephant-menus
+elephant-todo
 elephant-archlinuxpkgs
 timeshift-autosnap
 xwaylandvideobridge
