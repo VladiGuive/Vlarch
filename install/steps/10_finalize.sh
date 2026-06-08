@@ -27,6 +27,9 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]] || vlarch_die "missing bin/vlarch-theme-generate"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" ]] || vlarch_die "missing bin/vlarch-ensure-hermes"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" ]] || vlarch_die "missing bin/vlarch-hermes-dashboard"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-agent" ]] || vlarch_die "missing bin/vlarch-agent"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -49,6 +52,9 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /mnt/usr/local/bin/vlarc
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-edge" /mnt/usr/local/bin/vlarch-edge
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-overrides" /mnt/usr/local/bin/vlarch-overrides
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /mnt/usr/local/bin/vlarch-theme-generate
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" /mnt/usr/local/bin/vlarch-ensure-hermes
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" /mnt/usr/local/bin/vlarch-hermes-dashboard
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /mnt/usr/local/bin/vlarch-agent
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
 

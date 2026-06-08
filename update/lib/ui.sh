@@ -27,11 +27,12 @@ VLARCH_ESC_SHOW_CURSOR=$'\033[?25h'
 declare -gA VLARCH_STEP_TITLES=(
   [01_preflight]="Preflight checks"
   [02_packages]="Package sync"
-  [03_dotfiles]="Dotfiles and tmux"
-  [04_hyprpm]="Hyprland plugins"
-  [05_grub_snapshots]="GRUB snapshot menu"
-  [06_finalize]="Finalize update"
-  [07_getty_login]="Configure tty1 autologin"
+  [03_hermes]="Hermes agent setup"
+  [04_dotfiles]="Dotfiles and tmux"
+  [05_hyprpm]="Hyprland plugins"
+  [06_grub_snapshots]="GRUB snapshot menu"
+  [07_finalize]="Finalize update"
+  [08_getty_login]="Configure tty1 autologin"
 )
 
 vlarch_ui_enabled() {

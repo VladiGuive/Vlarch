@@ -23,6 +23,7 @@ quick_activate = []
 
 [placeholders]
 "default" = { input = "Search...", list = "No Results" }
+"menus:agent" = { input = "Search...", list = "Ask AI" }
 "archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
 "todo" = { input = "Todo", list = "No todos" }
 "menus:themes" = { input = "Themes...", list = "No themes found" }
@@ -32,7 +33,7 @@ max_results = 256
 default = [
   "desktopapplications",
   "calc",
-  "websearch",
+  "menus:agent",
 ]
 empty = [
   "desktopapplications",

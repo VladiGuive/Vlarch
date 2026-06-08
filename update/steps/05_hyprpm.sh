@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 04 - hyprpm: refresh plugin headers/builds as the install user (reload deferred).
+# 05 - hyprpm: refresh plugin headers/builds as the install user (reload deferred).
 set -euo pipefail
 
 # shellcheck disable=SC1091
