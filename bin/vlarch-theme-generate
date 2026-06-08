@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vlarch-theme-generate - apply a ~/.config/.themes/*.json palette to dotfile colors
+# vlarch-theme-generate - apply a ~/.config/themes/*.json palette to dotfile colors
 
 set -euo pipefail
 
@@ -35,8 +35,8 @@ _resolve_paths() {
     if [[ -z "$theme_arg" && -f "${HOME}/.config/vlarch/active-theme" ]]; then
       theme_arg="$(<"${HOME}/.config/vlarch/active-theme")"
     fi
-    if [[ -z "$theme_arg" && -f "${HOME}/.config/.themes/nord.json" ]]; then
-      theme_arg="${HOME}/.config/.themes/nord.json"
+    if [[ -z "$theme_arg" && -f "${HOME}/.config/themes/nord.json" ]]; then
+      theme_arg="${HOME}/.config/themes/nord.json"
     fi
     return 0
   fi
@@ -46,7 +46,7 @@ _resolve_paths() {
   VLARCH_THEME_SCRIPT="${repo_root}/scripts/generate-nord-theme.py"
   VLARCH_THEME_OUTPUT="${repo_root}/dotfiles/.config"
   if [[ -z "$theme_arg" ]]; then
-    theme_arg="${repo_root}/dotfiles/.config/.themes/nord.json"
+    theme_arg="${repo_root}/dotfiles/.config/themes/nord.json"
   fi
 }
 
@@ -57,7 +57,7 @@ main() {
     case "$1" in
       --help|-h)
         cat <<'USAGE'
-vlarch-theme-generate - apply a ~/.config/.themes/*.json palette to dotfile colors
+vlarch-theme-generate - apply a ~/.config/themes/*.json palette to dotfile colors
 
 Usage: vlarch-theme-generate [theme.json]
 USAGE

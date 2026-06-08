@@ -1,4 +1,4 @@
--- Vlarch: theme picker — lists ~/.config/.themes/*.json and runs vlarch-theme-generate.
+-- Vlarch: theme picker — lists ~/.config/themes/*.json and runs vlarch-theme-generate.
 local L = dofile(os.getenv("HOME") .. "/.config/elephant/utils/locale.lua")
 
 Name = "themes"
@@ -7,7 +7,7 @@ Icon = "preferences-desktop-theme"
 FixedOrder = true
 Action = "lua:Activate"
 
-local THEMES_DIR = os.getenv("HOME") .. "/.config/.themes"
+local THEMES_DIR = os.getenv("HOME") .. "/.config/themes"
 local ACTIVE_FILE = os.getenv("HOME") .. "/.config/vlarch/active-theme"
 
 local function shell_quote(value)
@@ -122,7 +122,7 @@ function GetEntries()
 			entries,
 			info_entry(
 				L.t("No themes found", "No se encontraron temas"),
-				L.t("Add *.json files to ~/.config/.themes/", "Añade archivos *.json en ~/.config/.themes/"),
+				L.t("Add *.json files to ~/.config/themes/", "Añade archivos *.json en ~/.config/themes/"),
 				"__info:no_themes__",
 				"dialog-warning"
 			)

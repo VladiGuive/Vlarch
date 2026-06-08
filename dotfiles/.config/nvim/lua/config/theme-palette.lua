@@ -1,4 +1,4 @@
--- Generated from ~/.config/.themes/nord.json — do not edit; run: vlarch-theme-generate
+-- Generated from ~/.config/themes/nord.json — do not edit; run: vlarch-theme-generate
 return {
   dotfile = "#8FBCBB",
   polar_night_0 = "#2E3440",

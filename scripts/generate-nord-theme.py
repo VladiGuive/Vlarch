@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate themed dotfiles from a ~/.config/.themes/*.json palette file."""
+"""Generate themed dotfiles from a ~/.config/themes/*.json palette file."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-THEMES_DIR_NAME = ".themes"
+THEMES_DIR_NAME = "themes"
 ACTIVE_THEME_FILE = "vlarch/active-theme"
 
 # Vlarch decides which semantic palette role each app uses.
@@ -108,7 +108,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--theme",
         type=Path,
-        help="Theme JSON (default: ~/.config/vlarch/active-theme or ~/.config/.themes/nord.json)",
+        help="Theme JSON (default: ~/.config/vlarch/active-theme or ~/.config/themes/nord.json)",
     )
     parser.add_argument(
         "--output",
@@ -143,13 +143,13 @@ def resolve_theme_path(theme_arg: Path | None) -> Path:
 
     repo_default = (
         Path(__file__).resolve().parent.parent
-        / "dotfiles/.config/.themes/nord.json"
+        / "dotfiles/.config/themes/nord.json"
     )
     if repo_default.is_file():
         return repo_default.resolve()
 
     raise FileNotFoundError(
-        "no theme file found; pass --theme or add ~/.config/.themes/nord.json"
+        "no theme file found; pass --theme or add ~/.config/themes/nord.json"
     )
 
 
@@ -202,7 +202,7 @@ class ThemeGenerator:
         self.theme_path = theme_path
         self.output_root = output_root
         self.theme = load_theme(theme_path)
-        self.source_label = f"~/.config/.themes/{theme_path.name}"
+        self.source_label = f"~/.config/themes/{theme_path.name}"
         self.generated = (
             f"Generated from {self.source_label} — do not edit; run: vlarch-theme-generate"
         )

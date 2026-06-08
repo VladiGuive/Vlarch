@@ -1,4 +1,4 @@
--- Nord colorscheme — palette in ~/.config/.themes/*.json (vlarch-theme-generate / Walker # themes)
+-- Nord colorscheme — palette in ~/.config/themes/*.json (vlarch-theme-generate / Walker # themes)
 return {
   {
     "shaunsingh/nord.nvim",
