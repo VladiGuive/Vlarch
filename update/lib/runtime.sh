@@ -6,13 +6,21 @@ vlarch_update_lock_path() {
   printf '%s/update.lock' "$state_dir"
 }
 
-vlarch_acquire_update_lock() {
+vlarch_with_update_lock() {
   local lock_path="${1:-$(vlarch_update_lock_path)}"
-  local state_dir
+  local state_dir rc=0
+  shift
+  ((${#@})) || return 1
   state_dir="$(dirname -- "$lock_path")"
   install -d -m 0755 "$state_dir" || return 1
-  exec {VLARCH_UPDATE_LOCK_FD}>>"$lock_path"
-  flock -n "$VLARCH_UPDATE_LOCK_FD"
+  (
+    flock -n 9 || exit 111
+    "$@"
+  ) 9>>"$lock_path" || rc=$?
+  if ((rc == 111)); then
+    return 111
+  fi
+  return "$rc"
 }
 
 vlarch_cdn_base_for_branch() {

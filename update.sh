@@ -36,15 +36,6 @@ _die() {
   exit 1
 }
 
-_acquire_update_lock() {
-  install -d -m 0755 "$VLARCH_STATE_DIR" \
-    || _die "cannot create state dir ${VLARCH_STATE_DIR}"
-  exec {VLARCH_UPDATE_LOCK_FD}>>"$VLARCH_UPDATE_LOCK"
-  if ! flock -n "$VLARCH_UPDATE_LOCK_FD"; then
-    _die "another update is already running"
-  fi
-}
-
 _ui_print_logo() {
   local logo_url="${VLARCH_CDN_BASE}/install/assets/logo.txt"
 
@@ -208,6 +199,64 @@ _run_main() {
   bash "${root}/update/main.sh" "$@"
 }
 
+_vlarch_update_locked() {
+  # When update.sh is run directly from a checked-out repo, reuse it.
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/main.sh" ]]; then
+    _check_version_gate
+    _run_main "${VLARCH_SCRIPT_DIR}" "${ARGS[@]}"
+    return 0
+  fi
+
+  local _self _root
+  _self="${BASH_SOURCE[0]:-}"
+  if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
+    _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
+    if [[ -f "${_root}/update/main.sh" ]]; then
+      export VLARCH_SCRIPT_DIR="$_root"
+      _check_version_gate
+      _run_main "${_root}" "${ARGS[@]}"
+      return 0
+    fi
+  fi
+
+  [[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: vlarch update)"
+
+  command -v git >/dev/null 2>&1 || _die "git not found"
+  command -v curl >/dev/null 2>&1 || _die "curl not found"
+
+  _check_version_gate
+
+  if [[ -z "${VLARCH_GIT_BRANCH}" ]]; then
+    VLARCH_GIT_BRANCH="$(_local_branch "$VLARCH_INFO_FILE")"
+    export VLARCH_GIT_BRANCH
+  fi
+
+  local WORKDIR
+  WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
+  [[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
+  trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
+  rm -rf "${WORKDIR}"
+
+  _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
+    git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
+
+  _run_main "${WORKDIR}" "${ARGS[@]}"
+}
+
+_with_update_lock() {
+  install -d -m 0755 "$VLARCH_STATE_DIR" \
+    || _die "cannot create state dir ${VLARCH_STATE_DIR}"
+  local rc=0
+  (
+    flock -n 9 || exit 111
+    _vlarch_update_locked
+  ) 9>>"$VLARCH_UPDATE_LOCK" || rc=$?
+  if ((rc == 111)); then
+    _die "another update is already running"
+  fi
+  ((rc == 0)) || exit "$rc"
+}
+
 # Parse bootstrap-level flags first (consumed here; rest pass through to main).
 ARGS=()
 while (($#)); do
@@ -254,41 +303,4 @@ fi
 
 export VLARCH_VERBOSE VLARCH_CDN_BASE VLARCH_FORCE_UPDATE
 
-_acquire_update_lock
-
-# When update.sh is run directly from a checked-out repo, reuse it.
-if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/main.sh" ]]; then
-  _check_version_gate
-  _run_main "${VLARCH_SCRIPT_DIR}" "${ARGS[@]}"
-fi
-_self="${BASH_SOURCE[0]:-}"
-if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
-  _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
-  if [[ -f "${_root}/update/main.sh" ]]; then
-    export VLARCH_SCRIPT_DIR="$_root"
-    _check_version_gate
-    _run_main "${_root}" "${ARGS[@]}"
-  fi
-fi
-
-[[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: vlarch update)"
-
-command -v git >/dev/null 2>&1 || _die "git not found"
-command -v curl >/dev/null 2>&1 || _die "curl not found"
-
-_check_version_gate
-
-if [[ -z "${VLARCH_GIT_BRANCH}" ]]; then
-  VLARCH_GIT_BRANCH="$(_local_branch "$VLARCH_INFO_FILE")"
-  export VLARCH_GIT_BRANCH
-fi
-
-WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
-[[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
-trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
-rm -rf "${WORKDIR}"
-
-_run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
-  git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
-
-_run_main "${WORKDIR}" "${ARGS[@]}"
+_with_update_lock
