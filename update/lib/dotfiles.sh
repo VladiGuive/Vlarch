@@ -29,6 +29,12 @@ vlarch_deploy_dotfiles() {
           "$entry" "${home}/.config/${base}"
       fi
     done < <(find "${src_dir}/.config" -mindepth 1 -maxdepth 1 -print0)
+
+    if [[ ! -f "${home}/.config/vlarch/active-theme" && -f "${home}/.config/.themes/nord.json" ]]; then
+      mkdir -p "${home}/.config/vlarch"
+      printf '%s\n' "${home}/.config/.themes/nord.json" >"${home}/.config/vlarch/active-theme"
+      chown "${user}:${user}" "${home}/.config/vlarch/active-theme"
+    fi
   fi
 
   if [[ -d "${src_dir}/.local" ]]; then

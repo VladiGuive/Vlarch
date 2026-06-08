@@ -25,6 +25,7 @@ quick_activate = []
 "default" = { input = "Search...", list = "No Results" }
 "archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
 "todo" = { input = "Todo", list = "No todos" }
+"menus:themes" = { input = "Themes...", list = "No themes found" }
 
 [providers]
 max_results = 256
@@ -80,6 +81,10 @@ provider = "archlinuxpkgs"
 [[providers.prefixes]]
 prefix = "!"
 provider = "todo"
+
+[[providers.prefixes]]
+prefix = "#"
+provider = "menus:themes"
 
 [providers.actions]
 archlinuxpkgs = [

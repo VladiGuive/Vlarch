@@ -26,6 +26,8 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-portal-start" ]] || vlarch_die "missing bin/vlarch-portal-start"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]] || vlarch_die "missing bin/vlarch-theme-generate"
+[[ -f "${VLARCH_SCRIPT_DIR}/scripts/generate-nord-theme.py" ]] || vlarch_die "missing scripts/generate-nord-theme.py"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -47,6 +49,8 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-workspace" /mnt/usr/local/bin/vlarch-w
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /mnt/usr/local/bin/vlarch-portal-start
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-edge" /mnt/usr/local/bin/vlarch-edge
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-overrides" /mnt/usr/local/bin/vlarch-overrides
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /mnt/usr/local/bin/vlarch-theme-generate
+install -Dm0755 "${VLARCH_SCRIPT_DIR}/scripts/generate-nord-theme.py" /mnt/usr/local/share/vlarch/generate-nord-theme.py
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
 

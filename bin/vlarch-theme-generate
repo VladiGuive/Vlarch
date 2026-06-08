@@ -1,10 +1,82 @@
 #!/usr/bin/env bash
-# vlarch-theme-generate - regenerate Nord-themed dotfiles from dotfiles/theme/nord.json
+# vlarch-theme-generate - apply a ~/.config/.themes/*.json palette to dotfile colors
 
 set -euo pipefail
 
-self="${BASH_SOURCE[0]:-}"
-self_dir="$(cd -- "$(dirname -- "$self")" && pwd -P)"
-root="$(cd -- "${self_dir}/.." && pwd -P)"
+VLARCH_SHARE_DIR="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
 
-exec python3 "${root}/scripts/generate-nord-theme.py" "$@"
+_die() {
+  printf '[vlarch] error: %s\n' "$*" >&2
+  exit 1
+}
+
+_vlarch_theme_refresh() {
+  command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+  if pgrep -x waybar >/dev/null 2>&1; then
+    pkill -SIGUSR2 waybar 2>/dev/null || killall -SIGUSR2 waybar 2>/dev/null || true
+  fi
+}
+
+_resolve_repo_root() {
+  local self="$1" self_dir root
+
+  self_dir="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+  root="$(cd -- "${self_dir}/.." && pwd -P)"
+  [[ -f "${root}/scripts/generate-nord-theme.py" ]] || return 1
+  printf '%s' "$root"
+}
+
+_resolve_paths() {
+  local self="$1" theme_arg="${2:-}"
+
+  if [[ -f "${VLARCH_SHARE_DIR}/generate-nord-theme.py" ]]; then
+    VLARCH_THEME_SCRIPT="${VLARCH_SHARE_DIR}/generate-nord-theme.py"
+    VLARCH_THEME_OUTPUT="${HOME}/.config"
+    if [[ -z "$theme_arg" && -f "${HOME}/.config/vlarch/active-theme" ]]; then
+      theme_arg="$(<"${HOME}/.config/vlarch/active-theme")"
+    fi
+    if [[ -z "$theme_arg" && -f "${HOME}/.config/.themes/nord.json" ]]; then
+      theme_arg="${HOME}/.config/.themes/nord.json"
+    fi
+    return 0
+  fi
+
+  local repo_root
+  repo_root="$(_resolve_repo_root "$self")" || return 1
+  VLARCH_THEME_SCRIPT="${repo_root}/scripts/generate-nord-theme.py"
+  VLARCH_THEME_OUTPUT="${repo_root}/dotfiles/.config"
+  if [[ -z "$theme_arg" ]]; then
+    theme_arg="${repo_root}/dotfiles/.config/.themes/nord.json"
+  fi
+}
+
+main() {
+  local self="${BASH_SOURCE[0]:-}" theme_arg=""
+
+  while (($#)); do
+    case "$1" in
+      --help|-h)
+        cat <<'USAGE'
+vlarch-theme-generate - apply a ~/.config/.themes/*.json palette to dotfile colors
+
+Usage: vlarch-theme-generate [theme.json]
+USAGE
+        exit 0
+        ;;
+      --) shift; theme_arg="${1:-}"; break ;;
+      -*) _die "unknown option: $1" ;;
+      *) theme_arg="$1"; shift; break ;;
+    esac
+  done
+
+  _resolve_paths "$self" "$theme_arg" \
+    || _die "theme generator missing (run: vlarch update)"
+
+  local -a cmd=(python3 "$VLARCH_THEME_SCRIPT" --output "$VLARCH_THEME_OUTPUT")
+  [[ -n "$theme_arg" ]] && cmd+=(--theme "$theme_arg")
+
+  "${cmd[@]}"
+  _vlarch_theme_refresh
+}
+
+main "$@"
