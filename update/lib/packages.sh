@@ -22,42 +22,27 @@ vlarch_bootstrap_yay() {
   "
 }
 
-vlarch_remove_elephant_bin_pkgs() {
+vlarch_remove_conflicting_src_pkgs() {
   local user="$1"
+  shift
   local -a to_remove=()
-  local pkg
+  local pkg src
 
-  while IFS= read -r pkg; do
-    [[ -n "$pkg" ]] || continue
-    case "$pkg" in
-      elephant-bin|elephant-*-bin) to_remove+=("$pkg") ;;
-    esac
-  done < <(pacman -Qq 2>/dev/null || true)
+  for pkg in "$@"; do
+    [[ "$pkg" == *-bin ]] || continue
+    src="${pkg%-bin}"
+    pacman -Q "$src" >/dev/null 2>&1 && to_remove+=("$src")
+  done
 
   ((${#to_remove[@]})) || return 0
 
   if declare -F vlarch_warn >/dev/null 2>&1; then
-    vlarch_warn "removing elephant-bin packages (switching to source elephant): ${to_remove[*]}"
+    vlarch_warn "removing source packages (switching to -bin): ${to_remove[*]}"
   fi
 
   pacman -Rdd --noconfirm "${to_remove[@]}" \
     || pacman -Rns --noconfirm "${to_remove[@]}" \
     || runuser -u "$user" -- yay -Rdd --noconfirm "${to_remove[@]}" \
-    || true
-}
-
-vlarch_remove_walker_bin_pkg() {
-  local user="$1"
-
-  pacman -Q walker-bin >/dev/null 2>&1 || return 0
-
-  if declare -F vlarch_warn >/dev/null 2>&1; then
-    vlarch_warn "removing walker-bin (switching to source walker)"
-  fi
-
-  pacman -Rdd --noconfirm walker-bin \
-    || pacman -Rns --noconfirm walker-bin \
-    || runuser -u "$user" -- yay -Rdd --noconfirm walker-bin \
     || true
 }
 
@@ -87,14 +72,13 @@ vlarch_yay_install_manifests() {
     read -r -a all_aur_pkgs <<< "$aur_pkgs"
     for pkg in "${all_aur_pkgs[@]}"; do
       case "$pkg" in
-        walker|elephant|elephant-*) walker_stack_pkgs+=("$pkg") ;;
+        walker|walker-bin|elephant|elephant-*) walker_stack_pkgs+=("$pkg") ;;
         *) other_pkgs+=("$pkg") ;;
       esac
     done
 
     if ((${#walker_stack_pkgs[@]})); then
-      vlarch_remove_elephant_bin_pkgs "$user"
-      vlarch_remove_walker_bin_pkg "$user"
+      vlarch_remove_conflicting_src_pkgs "$user" "${walker_stack_pkgs[@]}"
       # One yay transaction keeps walker, elephant, and plugins on the same version.
       vlarch_yay_install_pkgs "$user" "${walker_stack_pkgs[@]}"
     fi
