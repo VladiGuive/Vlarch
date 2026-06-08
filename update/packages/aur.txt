@@ -18,5 +18,5 @@ elephant-todo
 elephant-archlinuxpkgs
 timeshift-autosnap
 xwaylandvideobridge
-microsoft-edge-stable-bin
 obsidian
+zen-browser
