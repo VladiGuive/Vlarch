@@ -42,7 +42,8 @@ vlarch_theme_generate_staged() {
     fi
     return 1
   fi
-  "$theme_bin" --output "$output_root" --no-refresh --no-persist "$theme_file"
+  # Generator prints "wrote ..." to stdout; keep stdout clean for staging path capture.
+  "$theme_bin" --output "$output_root" --no-refresh --no-persist "$theme_file" >&2
 }
 
 # Copy repo dotfiles, bake the user's active theme and ~/.overrides, return staging dir.
@@ -71,13 +72,14 @@ vlarch_prepare_dotfiles_staging() {
     vlarch_apply_overrides_at_root "$user" "$stage"
   fi
 
-  printf '%s' "$stage"
+  VLARCH_DOTFILES_STAGE="$stage"
+  return 0
 }
 
 vlarch_run_prepare_dotfiles_staging() {
   local user="$1" src_dir="$2"
-  VLARCH_DOTFILES_STAGE="$(vlarch_prepare_dotfiles_staging "$user" "$src_dir")"
-  [[ -n "$VLARCH_DOTFILES_STAGE" && -d "$VLARCH_DOTFILES_STAGE" ]]
+  vlarch_prepare_dotfiles_staging "$user" "$src_dir" \
+    && [[ -n "${VLARCH_DOTFILES_STAGE:-}" && -d "$VLARCH_DOTFILES_STAGE" ]]
 }
 
 vlarch_deploy_dotfiles() {
