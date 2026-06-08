@@ -234,7 +234,8 @@ _vlarch_update_locked() {
   local WORKDIR
   WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
   [[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
-  trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
+  # Quote path now: WORKDIR is local and unset before this EXIT trap runs.
+  trap 'rm -rf '"$(printf '%q' "$WORKDIR")"' 2>/dev/null || true' EXIT
   rm -rf "${WORKDIR}"
 
   _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
