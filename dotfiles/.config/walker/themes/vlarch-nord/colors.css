@@ -1,15 +1,15 @@
-/* Generated from ~/.config/themes/nord.json — do not edit; run: vlarch-theme-generate */
+/* Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate */
 /* VLARCH_BG_OPACITY=0.85 — keep in sync with kitty/theme.conf */
 
-@define-color window_bg_color #2E3440;
+@define-color window_bg_color #EBE0B8;
 @define-color window_bg_alpha alpha(@window_bg_color, 0.85);
-@define-color accent_bg_color #434C5E;
-@define-color theme_fg_color #D8DEE9;
-@define-color theme_fg_bright #ECEFF4;
-@define-color accent_color #88C0D0;
-@define-color accent_color_alt #81A1C1;
-@define-color border_color #4C566A;
-@define-color input_bg_color #3B4252;
-@define-color selection_bg_color #434C5E;
-@define-color error_bg_color #BF616A;
-@define-color error_fg_color #ECEFF4;
+@define-color accent_bg_color #D4C490;
+@define-color theme_fg_color #3A2810;
+@define-color theme_fg_bright #241808;
+@define-color accent_color #C89810;
+@define-color accent_color_alt #8A6408;
+@define-color border_color #A08850;
+@define-color input_bg_color #E2D6A8;
+@define-color selection_bg_color #D4C490;
+@define-color error_bg_color #C03828;
+@define-color error_fg_color #241808;

@@ -1,5 +1,5 @@
-/* Generated from ~/.config/themes/nord.json — do not edit; run: vlarch-theme-generate */
-/* VLARCH_ROUNDNESS=0 */
+/* Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate */
+/* VLARCH_ROUNDNESS=16 */
 
 #workspaces,
 #workspaces button,
@@ -16,5 +16,5 @@
 #language,
 #cava,
 #custom-power {
-  border-radius: 0px;
+  border-radius: 16px;
 }
