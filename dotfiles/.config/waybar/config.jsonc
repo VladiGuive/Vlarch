@@ -93,11 +93,11 @@
     "tooltip": true,
     "on-click": "vlarch-waybar-wifi --open"
   },
-	"custom/reboot": {
-		"tooltip": false,
-		"on-click": "reboot",
-		"format": "󰜉"
-	},
+  "custom/reboot": {
+    "tooltip": "Reboot",
+    "on-click": "reboot",
+    "format": "󰜉"
+  },
   "custom/power": {
     "tooltip": false,
     "on-click": "sudo systemctl poweroff",

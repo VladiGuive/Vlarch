@@ -22,6 +22,11 @@ local BINDS = {
 		keywords = "keybinds shortcuts help atajos teclado ayuda",
 	},
 	{
+		keys = "$",
+		desc = L.t("Open theme picker in Walker (then pick a palette)", "Abrir selector de temas en Walker"),
+		keywords = "theme colors palette walker temas colores",
+	},
+	{
 		keys = "Super + Enter",
 		desc = L.t("Open terminal", "Abrir terminal"),
 		keywords = "kitty tmux shell terminal",

@@ -51,6 +51,7 @@ button {
 #custom-vlarch-battery,
 #pulseaudio,
 #custom-lock,
+#custom-reboot,
 #language,
 #cava,
 #custom-power {
@@ -153,6 +154,11 @@ button {
 
 #custom-lock {
   color: @sky;
+}
+
+#custom-reboot {
+  border-radius: 0;
+  color: @yellow;
 }
 
 #custom-power {

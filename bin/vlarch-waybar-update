@@ -107,6 +107,37 @@ _vlarch_waybar_failed_message() {
   head -1 "$VLARCH_WAYBAR_UPDATE_FAILED_FILE" 2>/dev/null
 }
 
+vlarch_waybar_show_complete() {
+  local width=50 lines=10
+  local ver=""
+
+  ver="$(_vlarch_local_version 2>/dev/null || true)"
+
+  if [[ -t 1 ]]; then
+    stty cols "$width" rows "$lines" 2>/dev/null || true
+    printf '\033[8;%d;%dt' "$lines" "$width"
+    clear || true
+  fi
+
+  printf '%b' '\033[38;5;109m'
+  cat <<'LOGO'
+ _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/
+LOGO
+  printf '%b' '\033[0m\n'
+  if [[ -n "$ver" ]]; then
+    printf '%b→ %s%b\n' '\033[35m' "$ver" '\033[0m'
+    printf '\n'
+  fi
+  printf '%bUpdate complete%b\n' '\033[38;5;150m' '\033[0m'
+  printf '\n'
+  printf '%bEnter%b → reboot.\n' '\033[92m' '\033[0m'
+  printf '%bEsc%b → close.\n' '\033[92m' '\033[0m'
+  printf '%b\033[%d;1H\033[?25l' '\033[0m' "$lines"
+}
+
 vlarch_waybar_show_error() {
   local msg="$1"
   local width=50 lines=10
@@ -184,8 +215,8 @@ vlarch_waybar_session() {
 
   _vlarch_waybar_clear_failed
   vlarch_waybar_refresh
+  vlarch_waybar_show_complete
 
-  # Prompts are drawn by vlarch_ui_show_complete; only read keys here.
   stty -echo -icanon time 0 min 0 2>/dev/null || true
   while true; do
     IFS= read -rsn1 key </dev/tty 2>/dev/null || break

@@ -83,7 +83,7 @@ prefix = "!"
 provider = "todo"
 
 [[providers.prefixes]]
-prefix = "#"
+prefix = "$"
 provider = "menus:themes"
 
 [providers.actions]
