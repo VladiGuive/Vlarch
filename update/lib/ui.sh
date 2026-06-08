@@ -256,7 +256,7 @@ vlarch_ui_render_frame() {
   vlarch_ui_print_logo || true
 
   # Line 5: target version
-  ver_line=" → ${to_ver:-${VLARCH_VERSION:-update}}"
+  ver_line="$(vlarch_ui_version_line "${to_ver:-${VLARCH_VERSION:-update}}")"
   vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
 
   # Line 6: blank
@@ -342,6 +342,25 @@ vlarch_ui_set_versions() {
   vlarch_ui_state_write to_version "$to"
 }
 
+vlarch_ui_update_branch() {
+  local branch="${VLARCH_GIT_BRANCH:-}"
+  if [[ -z "$branch" ]] && declare -F vlarch_install_info_branch >/dev/null 2>&1; then
+    branch="$(vlarch_install_info_branch)"
+  fi
+  printf '%s' "${branch:-main}"
+}
+
+vlarch_ui_version_line() {
+  local ver="$1"
+  local branch
+  branch="$(vlarch_ui_update_branch)"
+  if [[ "$branch" == main ]]; then
+    printf ' → %s' "$ver"
+  else
+    printf '%s → %s' "$branch" "$ver"
+  fi
+}
+
 vlarch_ui_show_complete() {
   local ver_line
   if [[ -t 1 ]]; then
@@ -349,7 +368,7 @@ vlarch_ui_show_complete() {
     clear || true
   fi
   vlarch_ui_print_logo || true
-  ver_line=" → ${VLARCH_VERSION:-}"
+  ver_line="$(vlarch_ui_version_line "${VLARCH_VERSION:-}")"
   vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
   printf '\n'
   vlarch_ui_say "${VLARCH_TERM_GREEN}" "Update complete"
