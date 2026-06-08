@@ -20,7 +20,7 @@ aur_manifest="${VLARCH_MANIFEST_DIR}/aur.txt"
 [[ -f "$aur_manifest" ]] || vlarch_die "missing manifest: $aur_manifest"
 
 if ((VLARCH_DRY_RUN)); then
-  vlarch_update_note "packages: dry-run (would run pacman -Syu and yay --needed)"
+  vlarch_update_note "packages: dry-run (would run pacman -Syu and yay manifest sync)"
   exit 0
 fi
 

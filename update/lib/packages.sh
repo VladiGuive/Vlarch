@@ -46,11 +46,44 @@ vlarch_remove_conflicting_src_pkgs() {
     || true
 }
 
-vlarch_yay_install_pkgs() {
+vlarch_yay_install_missing_pkgs() {
   local user="$1"
   shift
   (("$#")) || return 0
-  runuser -u "$user" -- yay -S --noconfirm --needed --norebuild --noredownload "$@"
+  runuser -u "$user" -- yay -S --noconfirm --needed "$@"
+}
+
+vlarch_yay_upgrade_installed_pkgs() {
+  local user="$1"
+  shift
+  (("$#")) || return 0
+  # Omit --norebuild/--noredownload so yay can fetch AUR updates and rebuild.
+  runuser -u "$user" -- yay -S --noconfirm --needed "$@"
+}
+
+vlarch_yay_sync_manifest_pkgs() {
+  local user="$1"
+  shift
+  (("$#")) || return 0
+  local -a missing=() installed=()
+  local pkg
+
+  for pkg in "$@"; do
+    if pacman -Q "$pkg" >/dev/null 2>&1; then
+      installed+=("$pkg")
+    else
+      missing+=("$pkg")
+    fi
+  done
+
+  if ((${#missing[@]} && ${#installed[@]})); then
+    # Mixed batch: one transaction keeps inter-dependent AUR versions aligned.
+    runuser -u "$user" -- yay -S --noconfirm --needed "$@"
+  elif ((${#missing[@]})); then
+    vlarch_yay_install_missing_pkgs "$user" "${missing[@]}"
+  elif ((${#installed[@]})); then
+    vlarch_yay_upgrade_installed_pkgs "$user" "${installed[@]}"
+  fi
 }
 
 vlarch_yay_install_manifests() {
@@ -80,10 +113,10 @@ vlarch_yay_install_manifests() {
     if ((${#walker_stack_pkgs[@]})); then
       vlarch_remove_conflicting_src_pkgs "$user" "${walker_stack_pkgs[@]}"
       # One yay transaction keeps walker, elephant, and plugins on the same version.
-      vlarch_yay_install_pkgs "$user" "${walker_stack_pkgs[@]}"
+      vlarch_yay_sync_manifest_pkgs "$user" "${walker_stack_pkgs[@]}"
     fi
     if ((${#other_pkgs[@]})); then
-      vlarch_yay_install_pkgs "$user" "${other_pkgs[@]}"
+      vlarch_yay_sync_manifest_pkgs "$user" "${other_pkgs[@]}"
     fi
   fi
 }
