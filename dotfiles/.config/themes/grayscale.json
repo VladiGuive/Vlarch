@@ -1,6 +1,7 @@
 {
   "name": "grayscale",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#121212",
     "polar_night_1": "#1E1E1E",

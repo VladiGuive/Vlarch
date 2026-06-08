@@ -1,6 +1,7 @@
 {
   "name": "kanagawa",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#1F1F28",
     "polar_night_1": "#16161D",

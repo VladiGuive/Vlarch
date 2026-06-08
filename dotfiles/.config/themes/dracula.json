@@ -1,6 +1,7 @@
 {
   "name": "dracula",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#282A36",
     "polar_night_1": "#21222C",

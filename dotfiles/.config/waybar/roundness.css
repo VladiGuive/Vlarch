@@ -1,0 +1,20 @@
+/* Generated from ~/.config/themes/nord.json — do not edit; run: vlarch-theme-generate */
+/* VLARCH_ROUNDNESS=0 */
+
+#workspaces,
+#workspaces button,
+#custom-vlarch-update,
+#custom-vlarch-wifi,
+#custom-music,
+#tray,
+#backlight,
+#clock,
+#custom-vlarch-battery,
+#pulseaudio,
+#custom-lock,
+#custom-reboot,
+#language,
+#cava,
+#custom-power {
+  border-radius: 0px;
+}

@@ -169,6 +169,37 @@ OHMYPOSH = {
 
 NVIM_DOTFILE = "frost_0"
 
+ROUNDNESS_SCALE = {0: 0, 1: 16}
+
+WAYBAR_ROUNDNESS_SELECTORS = (
+    "#workspaces",
+    "#workspaces button",
+    "#custom-vlarch-update",
+    "#custom-vlarch-wifi",
+    "#custom-music",
+    "#tray",
+    "#backlight",
+    "#clock",
+    "#custom-vlarch-battery",
+    "#pulseaudio",
+    "#custom-lock",
+    "#custom-reboot",
+    "#language",
+    "#cava",
+    "#custom-power",
+)
+
+WALKER_ROUNDNESS_SELECTORS = (
+    "popover",
+    ".box-wrapper",
+    ".search-container",
+    ".input",
+    ".item-box",
+    ".item-quick-activation",
+    ".preview",
+    ".keybind-label",
+)
+
 
 def color(theme: dict[str, Any], key: str) -> str:
     palette = theme["palette"]
@@ -198,6 +229,15 @@ class ThemeGenerator:
 
     def c(self, key: str) -> str:
         return color(self.theme, key)
+
+    def roundness_px(self) -> int:
+        level = self.theme.get("roundness", 0)
+        if level not in ROUNDNESS_SCALE:
+            raise ValueError(
+                f"invalid roundness {level!r} in {self.theme_path.name}; "
+                f"expected one of {sorted(ROUNDNESS_SCALE)}"
+            )
+        return ROUNDNESS_SCALE[level]
 
     def write(self, rel_path: str, content: str) -> None:
         path = self.output_root / rel_path
@@ -312,6 +352,17 @@ background_opacity {opacity}
         )
         self.write("waybar/colors.css", "\n".join(lines))
 
+    def generate_waybar_roundness(self) -> None:
+        radius = self.roundness_px()
+        selectors = ",\n".join(WAYBAR_ROUNDNESS_SELECTORS)
+        content = (
+            f"{self.css_header(f'VLARCH_ROUNDNESS={radius}').rstrip()}\n\n"
+            f"{selectors} {{\n"
+            f"  border-radius: {radius}px;\n"
+            f"}}\n"
+        )
+        self.write("waybar/roundness.css", content)
+
     def generate_walker_colors(self) -> None:
         opacity = self.theme["background_opacity"]
         lines = [
@@ -338,6 +389,17 @@ background_opacity {opacity}
             lines.append(f"@define-color {css_name} {self.c(WALKER[json_key])};")
         lines.append("")
         self.write("walker/themes/vlarch-nord/colors.css", "\n".join(lines))
+
+    def generate_walker_roundness(self) -> None:
+        radius = self.roundness_px()
+        selectors = ",\n".join(WALKER_ROUNDNESS_SELECTORS)
+        content = (
+            f"{self.css_header(f'VLARCH_ROUNDNESS={radius}').rstrip()}\n\n"
+            f"{selectors} {{\n"
+            f"  border-radius: {radius}px;\n"
+            f"}}\n"
+        )
+        self.write("walker/themes/vlarch-nord/roundness.css", content)
 
     def generate_ohmyposh(self) -> None:
         op = OHMYPOSH
@@ -423,12 +485,15 @@ final_space = true
         inactive = self.c(HYPR["inactive_border"])
         shadow = self.c(HYPR["shadow"])
 
+        rounding = self.roundness_px()
         content = f"""{self.header_comment("# ")}general {{
     col.active_border = {rgba_hex(active[0])} {rgba_hex(active[1])} 45deg
     col.inactive_border = {rgba_hex_alpha(inactive)}
 }}
 
 decoration {{
+    rounding = {rounding}
+
     shadow {{
         color = {rgba_hex(shadow)}
     }}
@@ -450,7 +515,9 @@ decoration {{
     def run(self) -> None:
         self.generate_kitty()
         self.generate_waybar()
+        self.generate_waybar_roundness()
         self.generate_walker_colors()
+        self.generate_walker_roundness()
         self.generate_ohmyposh()
         self.generate_hypr_colors()
         self.generate_nvim_palette()

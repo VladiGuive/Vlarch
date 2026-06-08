@@ -1,0 +1,13 @@
+/* Generated from ~/.config/themes/nord.json — do not edit; run: vlarch-theme-generate */
+/* VLARCH_ROUNDNESS=0 */
+
+popover,
+.box-wrapper,
+.search-container,
+.input,
+.item-box,
+.item-quick-activation,
+.preview,
+.keybind-label {
+  border-radius: 0px;
+}

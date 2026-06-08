@@ -1,6 +1,7 @@
 {
   "name": "marigold",
   "background_opacity": 0.85,
+  "roundness": 1,
   "palette": {
     "polar_night_0": "#E5DCC8",
     "polar_night_1": "#DDD4C0",

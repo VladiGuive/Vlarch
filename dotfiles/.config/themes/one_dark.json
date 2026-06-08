@@ -1,6 +1,7 @@
 {
   "name": "one dark",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#282C34",
     "polar_night_1": "#21252B",

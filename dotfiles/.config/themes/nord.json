@@ -1,6 +1,7 @@
 {
   "name": "nord",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#2E3440",
     "polar_night_1": "#3B4252",

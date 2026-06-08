@@ -1,6 +1,7 @@
 {
   "name": "tokyo night",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#1A1B26",
     "polar_night_1": "#16161E",

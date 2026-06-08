@@ -1,6 +1,7 @@
 {
   "name": "solarized",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#002B36",
     "polar_night_1": "#073642",

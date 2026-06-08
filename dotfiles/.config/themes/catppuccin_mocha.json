@@ -1,6 +1,7 @@
 {
   "name": "catppuccin mocha",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#1E1E2E",
     "polar_night_1": "#181825",

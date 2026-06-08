@@ -1,6 +1,7 @@
 {
   "name": "everforest",
   "background_opacity": 0.85,
+  "roundness": 0,
   "palette": {
     "polar_night_0": "#2D353B",
     "polar_night_1": "#272E33",
