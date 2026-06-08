@@ -1,0 +1,25 @@
+---
+description: Git commit and push workflow for Vlarch (overrides global ask-first rule)
+alwaysApply: true
+---
+
+# Vlarch git workflow
+
+In this repo, finishing an implementation change **includes** bumping `version.txt`, committing, and pushing per `vlarch-version.mdc`. Do not wait for an explicit "commit" request unless the user says not to push or to skip versioning.
+
+## Git safety
+
+- NEVER update git config
+- NEVER run destructive/irreversible git commands (push --force, hard reset, etc.) unless the user explicitly requests them
+- NEVER skip hooks (--no-verify, --no-gpg-sign, etc.) unless the user explicitly requests it
+- NEVER force push to main/master; warn the user if they request it
+- Avoid git commit --amend unless all amend conditions in the global git rule are met
+- Do not commit files that likely contain secrets (.env, credentials.json, etc.)
+
+## Commit steps
+
+1. Run in parallel: `git status`, `git diff`, `git log` (recent messages for style)
+2. Stage relevant files; draft a concise commit message focused on why
+3. Commit via HEREDOC; run `git status` after to verify
+4. Push to the current branch unless the user said not to push
+5. If a pre-commit hook fails, fix the issue and create a NEW commit (never amend a failed commit)
