@@ -366,6 +366,7 @@ vlarch_ui_show_complete() {
   vlarch_ui_print_logo || true
   ver_line="$(vlarch_ui_version_line "${VLARCH_VERSION:-}")"
   vlarch_ui_say "${VLARCH_NORD_MAGENTA}" "$ver_line"
+  printf '\n'
   vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete"
   printf '%bEnter%b → reboot.\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}"
   printf '%bEsc%b → close.\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}"

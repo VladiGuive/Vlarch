@@ -62,14 +62,24 @@ start_elephant() {
   return 1
 }
 
+stop_walker_service() {
+  local sock_dir
+  sock_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/walker"
+
+  command -v walker >/dev/null 2>&1 && walker -q 2>/dev/null || true
+  pkill -f '[w]alker --gapplication-service' 2>/dev/null || true
+  pkill -x walker 2>/dev/null || true
+  rm -f "${sock_dir}/walker.sock" 2>/dev/null || true
+  sleep 0.3
+}
+
 start_walker_service() {
   command -v walker >/dev/null 2>&1 || {
     log 'walker not installed'
     return 0
   }
 
-  pkill -f '[w]alker --gapplication-service' 2>/dev/null || true
-  sleep 0.2
+  stop_walker_service
 
   # Drop inherited fds (e.g. vlarch update.lock flock) before daemonizing.
   local fd
