@@ -19,4 +19,4 @@ elephant-archlinuxpkgs
 timeshift-autosnap
 xwaylandvideobridge
 obsidian
-zen-browser
+zen-browser-bin
