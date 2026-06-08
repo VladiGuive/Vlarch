@@ -3,10 +3,30 @@
 
 set -euo pipefail
 
-VLARCH_CDN_BASE="${VLARCH_CDN_BASE:-https://vlarch.vladi.tech}"
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 # Must match "signal" on custom/vlarch-update in waybar config.jsonc.
 VLARCH_WAYBAR_UPDATE_SIGNAL="${VLARCH_WAYBAR_UPDATE_SIGNAL:-1}"
+
+_vlarch_install_branch() {
+  local branch=""
+  [[ -f "$VLARCH_INFO_FILE" ]] || { printf '%s' main; return 0; }
+  branch="$(grep -E '^branch=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+  printf '%s' "${branch:-main}"
+}
+
+_vlarch_cdn_base_for_branch() {
+  local branch="${1:-main}"
+  branch="${branch//\//-}"
+  if [[ "$branch" == main ]]; then
+    printf 'https://vlarch.vladi.tech'
+  else
+    printf 'https://vlarch-%s.vladi.tech' "$branch"
+  fi
+}
+
+if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
+  VLARCH_CDN_BASE="$(_vlarch_cdn_base_for_branch "$(_vlarch_install_branch)")"
+fi
 
 _vlarch_local_version() {
   [[ -f "$VLARCH_INFO_FILE" ]] || return 1
@@ -55,7 +75,7 @@ vlarch_waybar_refresh() {
 vlarch_waybar_session() {
   local key
 
-  sudo vlarch update || true
+  sudo VLARCH_CDN_BASE="$VLARCH_CDN_BASE" vlarch update || true
   vlarch_waybar_refresh
 
   # Prompts are drawn by vlarch_ui_show_complete; only read keys here.

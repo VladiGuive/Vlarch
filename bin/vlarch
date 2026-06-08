@@ -30,6 +30,16 @@ _install_info_branch() {
   printf '%s' "${branch:-main}"
 }
 
+_cdn_base_for_branch() {
+  local branch="${1:-main}"
+  branch="${branch//\//-}"
+  if [[ "$branch" == main ]]; then
+    printf 'https://vlarch.vladi.tech'
+  else
+    printf 'https://vlarch-%s.vladi.tech' "$branch"
+  fi
+}
+
 _install_info_set_branch() {
   local branch="$1" path="$VLARCH_INFO_FILE" tmp
   [[ -f "$path" ]] || _die "$path not found"
@@ -223,7 +233,10 @@ cmd_branch() {
   _log "branch set to $1"
 }
 
-: "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
+if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
+  VLARCH_CDN_BASE="$(_cdn_base_for_branch "$(_install_info_branch)")"
+fi
+export VLARCH_CDN_BASE
 
 # vlarch:summary=Apply ~/.overrides to managed dotfiles without a full update.
 cmd_overrides() {

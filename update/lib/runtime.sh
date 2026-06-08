@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 # Installed-system runtime helpers. Sourced - no set -e here.
 
+vlarch_cdn_base_for_branch() {
+  local branch="${1:-main}"
+  branch="${branch//\//-}"
+  if [[ "$branch" == main ]]; then
+    printf 'https://vlarch.vladi.tech'
+  else
+    printf 'https://vlarch-%s.vladi.tech' "$branch"
+  fi
+}
+
 vlarch_install_info_branch() {
   local path="${1:-${VLARCH_INFO_FILE:-/etc/vlarch/install-info}}"
   local branch=""

@@ -10,7 +10,6 @@ set -euo pipefail
 : "${VLARCH_GIT_URL:=https://github.com/VladiGuive/Vlarch.git}"
 : "${VLARCH_GIT_BRANCH:=}"
 : "${VLARCH_VERBOSE:=0}"
-: "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
 : "${VLARCH_INFO_FILE:=/etc/vlarch/install-info}"
 : "${VLARCH_FORCE_UPDATE:=0}"
 VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-update-bootstrap.log}"
@@ -91,6 +90,16 @@ _local_branch() {
   [[ -f "$path" ]] || { printf '%s' main; return 0; }
   branch="$(grep -E '^branch=' "$path" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
   printf '%s' "${branch:-main}"
+}
+
+_cdn_base_for_branch() {
+  local branch="${1:-main}"
+  branch="${branch//\//-}"
+  if [[ "$branch" == main ]]; then
+    printf 'https://vlarch.vladi.tech'
+  else
+    printf 'https://vlarch-%s.vladi.tech' "$branch"
+  fi
 }
 
 _fetch_remote_version() {
@@ -184,6 +193,10 @@ while (($#)); do
       ;;
   esac
 done
+if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
+  VLARCH_CDN_BASE="$(_cdn_base_for_branch "$(_local_branch "$VLARCH_INFO_FILE")")"
+fi
+
 export VLARCH_VERBOSE VLARCH_CDN_BASE VLARCH_FORCE_UPDATE
 
 # When update.sh is run directly from a checked-out repo, reuse it.
