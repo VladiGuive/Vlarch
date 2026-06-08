@@ -34,7 +34,7 @@ if [[ $# -eq 0 ]]; then
   # Always open the default launcher at theme dimensions. Socket toggle kept
   # stale provider layouts (e.g. menus:keybinds preview width) after an update.
   _close_walker_ui
-  exec walker -w "$VLARCH_WALKER_WIDTH" -h "$VLARCH_WALKER_HEIGHT"
+  exec walker --width "$VLARCH_WALKER_WIDTH" --height "$VLARCH_WALKER_HEIGHT"
 fi
 
 _close_walker_ui
