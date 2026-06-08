@@ -2,8 +2,7 @@
 local L = dofile(os.getenv("HOME") .. "/.config/elephant/utils/locale.lua")
 
 Name = "agent"
-NamePretty = L.t("AI Agent", "Agente IA")
-Icon = "dialog-question"
+NamePretty = L.t("Vlarch Agent", "Agente Vlarch")
 Cache = false
 FixedOrder = true
 Action = "lua:Activate"
@@ -21,10 +20,9 @@ function GetEntries(query)
 	end
 	return {
 		{
-			Text = L.t("Ask AI", "Preguntar a la IA"),
+			Text = query,
 			Subtext = query,
 			Value = query,
-			Icon = "dialog-question",
 		},
 	}
 end
