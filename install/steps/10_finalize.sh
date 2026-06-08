@@ -7,8 +7,6 @@ source "${VLARCH_SCRIPT_DIR}/install/lib/log.sh"
 # shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/install/lib/config.sh"
 # shellcheck disable=SC1091
-source "${VLARCH_SCRIPT_DIR}/install/lib/chroot.sh"
-# shellcheck disable=SC1091
 source "${VLARCH_SCRIPT_DIR}/update/lib/wallpapers.sh"
 
 vlarch_config_load "$VLARCH_CONFIG_FILE"
@@ -79,12 +77,3 @@ chmod 600 /mnt/var/lib/vlarch/runtime.env
 
 vlarch_run "systemctl enable NetworkManager (in target)" \
   arch-chroot /mnt systemctl enable NetworkManager.service
-
-vlarch_chroot_run '
-set -euo pipefail
-if [[ -f /etc/pacman.conf ]] && grep -q multilib /etc/pacman.conf; then
-  sed -i "/\[multilib\]/,/Include/ s/^#//" /etc/pacman.conf
-  pacman -Sy --noconfirm
-  pacman -S --needed --noconfirm steam
-fi
-'
