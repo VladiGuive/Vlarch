@@ -12,12 +12,14 @@ vlarch_bootstrap_yay() {
   if command -v yay >/dev/null 2>&1; then
     return 0
   fi
-  rm -rf /tmp/yay-bin
-  install -d -o "$user" -g "$user" /tmp/yay-bin
+  local build_dir
+  build_dir="$(mktemp -d)"
+  chown "$user:$user" "$build_dir"
+  trap 'rm -rf "$build_dir"' RETURN
   su - "$user" -c "
     set -euo pipefail
-    git clone --depth 1 https://aur.archlinux.org/yay-bin.git /tmp/yay-bin
-    cd /tmp/yay-bin
+    git clone --depth 1 https://aur.archlinux.org/yay-bin.git \"${build_dir}\"
+    cd \"${build_dir}\"
     makepkg -si --noconfirm
   "
 }

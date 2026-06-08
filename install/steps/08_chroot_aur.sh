@@ -21,12 +21,13 @@ if ! id "${VLARCH_USER}" >/dev/null 2>&1; then
 fi
 
 if ! command -v yay >/dev/null 2>&1; then
-  rm -rf /tmp/yay-bin
-  install -d -o "${VLARCH_USER}" -g "${VLARCH_USER}" /tmp/yay-bin
+  build_dir="$(mktemp -d)"
+  chown "${VLARCH_USER}:${VLARCH_USER}" "$build_dir"
+  trap '"'"'rm -rf "$build_dir"'"'"' EXIT
   su - "${VLARCH_USER}" -c "
     set -euo pipefail
-    git clone --depth 1 https://aur.archlinux.org/yay-bin.git /tmp/yay-bin
-    cd /tmp/yay-bin
+    git clone --depth 1 https://aur.archlinux.org/yay-bin.git \"${build_dir}\"
+    cd \"${build_dir}\"
     makepkg -si --noconfirm
   "
 fi
