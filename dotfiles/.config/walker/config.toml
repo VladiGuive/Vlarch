@@ -24,7 +24,7 @@ quick_activate = []
 [placeholders]
 "default" = { input = "Search...", list = "No Results" }
 "archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
-"todo" = { input = "Type a task, then Enter to save…", list = "No todos yet — type above and press Enter to add one" }
+"todo" = { input = "!> type a task…", list = "No todos — type !> task name, then Enter (or Ctrl+A, type, Enter)" }
 "menus:themes" = { input = "Themes...", list = "No themes found" }
 
 [providers]

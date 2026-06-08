@@ -27,10 +27,10 @@ local BINDS = {
 		keywords = "theme colors palette walker temas colores",
 	},
 	{
-		keys = "!",
+		keys = "!>",
 		desc = L.t(
-			"Open todos in Walker (type a task and press Enter to save)",
-			"Abrir tareas en Walker (escribe una tarea y pulsa Enter para guardar)"
+			"Add a todo in Walker (!> task name, then Enter)",
+			"Añadir tarea en Walker (!> nombre, luego Enter)"
 		),
 		keywords = "todo task list walker tareas",
 	},
