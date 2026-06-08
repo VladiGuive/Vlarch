@@ -1,0 +1,22 @@
+{
+  "name": "marigold",
+  "background_opacity": 0.85,
+  "palette": {
+    "polar_night_0": "#1C1810",
+    "polar_night_1": "#2A2418",
+    "polar_night_2": "#3D3524",
+    "polar_night_3": "#524832",
+    "snow_storm_0": "#F5E6C8",
+    "snow_storm_1": "#E8D4A8",
+    "snow_storm_2": "#FFF4D6",
+    "frost_0": "#E8C468",
+    "frost_1": "#F5C842",
+    "frost_2": "#D4A82A",
+    "frost_3": "#A67C18",
+    "aurora_red": "#D45D52",
+    "aurora_orange": "#E8943A",
+    "aurora_yellow": "#FFD666",
+    "aurora_green": "#8FB339",
+    "aurora_purple": "#C9A227"
+  }
+}
