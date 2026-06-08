@@ -14,4 +14,8 @@ blacklist = [
   "^qdbus",
   "^qv4l2$",
   "^qvidcap$",
+  # Java runtime / REPL utilities (not daily launchers).
+  "openjdk$",
+  # Android screen mirroring CLI + console wrapper.
+  "^scrcpy",
 ]
