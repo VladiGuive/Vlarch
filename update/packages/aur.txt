@@ -21,4 +21,4 @@ xwaylandvideobridge
 obsidian-bin
 zen-browser-bin
 # Hermes integration
-hermes-agent-desktop-bin
+hermes-agent
