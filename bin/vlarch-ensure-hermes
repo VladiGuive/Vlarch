@@ -91,9 +91,6 @@ _vlarch_run_setup() {
   _vlarch_log "hermes gateway start"
   hermes gateway start
 
-  _vlarch_log "hermes doctor --fix"
-  hermes doctor --fix
-
   _vlarch_apply_setcap
   _vlarch_log "setup complete"
 }
