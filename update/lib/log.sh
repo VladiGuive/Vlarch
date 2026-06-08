@@ -18,9 +18,7 @@ vlarch_info() {
 }
 
 vlarch_warn() {
-  if ((VLARCH_VERBOSE)); then
-    printf '[vlarch] warning: %s\n' "$*" >&2
-  fi
+  printf '[vlarch] warning: %s\n' "$*" >&2
 }
 
 vlarch_die() {

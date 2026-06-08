@@ -3,7 +3,7 @@
 # Public:
 #   vlarch_step <msg>            - silent unless VLARCH_VERBOSE=1
 #   vlarch_info <msg>            - silent unless VLARCH_VERBOSE=1
-#   vlarch_warn <msg>            - silent unless VLARCH_VERBOSE=1
+#   vlarch_warn <msg>            - always prints to stderr
 #   vlarch_die  <msg>            - always prints; dumps tail of VLARCH_LAST_LOG; exits 1
 #   vlarch_require_cmd <name>    - vlarch_die if missing
 #   vlarch_run  <label> <cmd...> - quiet wrapper: captures cmd output to a per-step
@@ -29,9 +29,7 @@ vlarch_info() {
 }
 
 vlarch_warn() {
-  if ((VLARCH_VERBOSE)); then
-    printf '[vlarch] warning: %s\n' "$*" >&2
-  fi
+  printf '[vlarch] warning: %s\n' "$*" >&2
 }
 
 vlarch_die() {
