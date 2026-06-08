@@ -29,7 +29,6 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]] || vlarch_die "missing bin/vlarch-theme-generate"
-[[ -f "${VLARCH_SCRIPT_DIR}/scripts/generate-nord-theme.py" ]] || vlarch_die "missing scripts/generate-nord-theme.py"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -83,8 +82,10 @@ vlarch_run "install vlarch-overrides" \
 vlarch_run "install vlarch-theme-generate" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /usr/local/bin/vlarch-theme-generate
 
-vlarch_run "install theme generator script" \
-  install -Dm0755 "${VLARCH_SCRIPT_DIR}/scripts/generate-nord-theme.py" /usr/local/share/vlarch/generate-nord-theme.py
+if [[ -f /usr/local/share/vlarch/generate-nord-theme.py ]]; then
+  vlarch_run "remove legacy theme generator script" \
+    rm -f /usr/local/share/vlarch/generate-nord-theme.py
+fi
 
 vlarch_run "install overrides library" \
   install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /usr/local/share/vlarch/overrides.sh
