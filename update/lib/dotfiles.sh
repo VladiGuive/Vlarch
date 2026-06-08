@@ -2,6 +2,69 @@
 # Dotfile deploy helpers. Sourced - no set -e here.
 # Syncs only repo-managed paths; never mirrors or deletes all of ~/.config.
 
+vlarch_user_active_theme() {
+  local user="$1" home="/home/${user}" active
+  if [[ -f "${home}/.config/vlarch/active-theme" ]]; then
+    active="$(<"${home}/.config/vlarch/active-theme")"
+    if [[ -f "$active" ]]; then
+      printf '%s' "$active"
+      return 0
+    fi
+  fi
+  if [[ -f "${home}/.config/themes/nord.json" ]]; then
+    printf '%s/.config/themes/nord.json' "$home"
+    return 0
+  fi
+  return 1
+}
+
+vlarch_theme_generate_bin() {
+  if [[ -n "${VLARCH_BIN_DIR:-}" && -x "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]]; then
+    printf '%s/vlarch-theme-generate' "$VLARCH_BIN_DIR"
+    return 0
+  fi
+  if [[ -x /usr/local/bin/vlarch-theme-generate ]]; then
+    printf '%s' /usr/local/bin/vlarch-theme-generate
+    return 0
+  fi
+  return 1
+}
+
+# Copy repo dotfiles, bake the user's active theme and ~/.overrides, return staging dir.
+vlarch_prepare_dotfiles_staging() {
+  local user="$1" src_dir="$2"
+  local stage home theme theme_bin
+
+  [[ -d "$src_dir" ]] || return 1
+  home="/home/${user}"
+  [[ -d "$home" ]] || return 1
+
+  stage="$(mktemp -d /tmp/vlarch-dotfiles-stage.XXXXXX)"
+  rsync -a "${src_dir}/" "${stage}/"
+
+  theme="$(vlarch_user_active_theme "$user" 2>/dev/null || true)"
+  if [[ -z "$theme" && -f "${stage}/.config/themes/nord.json" ]]; then
+    theme="${stage}/.config/themes/nord.json"
+  fi
+
+  if [[ -n "$theme" ]]; then
+    theme_bin="$(vlarch_theme_generate_bin)" || return 1
+    "$theme_bin" --output "${stage}/.config" --no-refresh --no-persist "$theme"
+  fi
+
+  if declare -F vlarch_apply_overrides_at_root >/dev/null 2>&1; then
+    vlarch_apply_overrides_at_root "$user" "$stage"
+  fi
+
+  printf '%s' "$stage"
+}
+
+vlarch_run_prepare_dotfiles_staging() {
+  local user="$1" src_dir="$2"
+  VLARCH_DOTFILES_STAGE="$(vlarch_prepare_dotfiles_staging "$user" "$src_dir")"
+  [[ -n "$VLARCH_DOTFILES_STAGE" && -d "$VLARCH_DOTFILES_STAGE" ]]
+}
+
 vlarch_deploy_dotfiles() {
   local user="$1"
   local src_dir="$2"

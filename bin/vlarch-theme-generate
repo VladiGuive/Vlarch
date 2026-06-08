@@ -540,7 +540,8 @@ PY
 }
 
 main() {
-  local self="${BASH_SOURCE[0]:-}" theme_arg="" self_dir theme_path output_root
+  local self="${BASH_SOURCE[0]:-}" theme_arg="" self_dir theme_path output_root=""
+  local no_refresh=0 no_persist=0
 
   while (($#)); do
     case "$1" in
@@ -548,10 +549,17 @@ main() {
         cat <<'USAGE'
 vlarch-theme-generate - apply a ~/.config/themes/*.json palette to dotfile colors
 
-Usage: vlarch-theme-generate [theme.json]
+Usage: vlarch-theme-generate [--output DIR] [--no-refresh] [--no-persist] [theme.json]
 USAGE
         exit 0
         ;;
+      --output)
+        [[ $# -ge 2 ]] || _die "--output requires a directory"
+        output_root="$2"
+        shift 2
+        ;;
+      --no-refresh) no_refresh=1; shift ;;
+      --no-persist) no_persist=1; shift ;;
       --) shift; theme_arg="${1:-}"; break ;;
       -*) _die "unknown option: $1" ;;
       *) theme_arg="$1"; shift; break ;;
@@ -560,11 +568,13 @@ USAGE
 
   self_dir="$(_vlarch_theme_self_dir "$self")"
   theme_path="$(_vlarch_theme_resolve_theme "$theme_arg" "$self_dir")"
-  output_root="$(_vlarch_theme_resolve_output "$self_dir")"
+  if [[ -z "$output_root" ]]; then
+    output_root="$(_vlarch_theme_resolve_output "$self_dir")"
+  fi
 
-  _vlarch_theme_persist_active "$theme_path"
+  (( ! no_persist )) && _vlarch_theme_persist_active "$theme_path"
   _vlarch_theme_generate "$theme_path" "$output_root"
-  _vlarch_theme_refresh
+  (( ! no_refresh )) && _vlarch_theme_refresh
 }
 
 main "$@"

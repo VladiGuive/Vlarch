@@ -270,13 +270,11 @@ vlarch_override_apply_append() {
   } >>"$target"
 }
 
-vlarch_override_apply_one() {
-  local user="$1" override_file="$2"
-  local home="/home/${user}"
-  local overrides_dir="${home}/.overrides"
+vlarch_override_apply_one_at() {
+  local root="$1" overrides_dir="$2" override_file="$3" chown_user="${4:-}"
   local target replace_lines=() append_lines=()
 
-  target="$(vlarch_override_target_for "$home" "$overrides_dir" "$override_file")" || return 1
+  target="$(vlarch_override_target_for "$root" "$overrides_dir" "$override_file")" || return 1
   [[ -f "$target" ]] || {
     if declare -F vlarch_warn >/dev/null 2>&1; then
       vlarch_warn "override skipped (target missing): ${target}"
@@ -289,7 +287,43 @@ vlarch_override_apply_one() {
 
   vlarch_override_apply_replace "$target" replace_lines
   vlarch_override_apply_append "$target" append_lines
-  chown "$user:$user" "$target"
+  if [[ -n "$chown_user" ]]; then
+    chown "$chown_user:$chown_user" "$target"
+  fi
+  return 0
+}
+
+vlarch_override_apply_one() {
+  local user="$1" override_file="$2"
+  local home="/home/${user}"
+  local overrides_dir="${home}/.overrides"
+
+  vlarch_override_apply_one_at "$home" "$overrides_dir" "$override_file" "$user"
+}
+
+vlarch_apply_overrides_at_root() {
+  local user="$1" root="$2"
+  local home overrides_dir file applied=0 chown_user=""
+
+  [[ -n "$user" && -n "$root" ]] || return 1
+  home="/home/${user}"
+  overrides_dir="${home}/.overrides"
+  [[ -d "$overrides_dir" ]] || return 0
+
+  if [[ "$root" == "$home" ]]; then
+    chown_user="$user"
+    vlarch_override_bootstrap_dir "$user"
+  fi
+
+  while IFS= read -r -d '' file; do
+    if vlarch_override_apply_one_at "$root" "$overrides_dir" "$file" "$chown_user"; then
+      applied=$((applied + 1))
+    fi
+  done < <(find "$overrides_dir" -type f -print0)
+
+  if declare -F vlarch_info >/dev/null 2>&1; then
+    vlarch_info "overrides: applied ${applied} file(s) at ${root}"
+  fi
   return 0
 }
 
@@ -317,20 +351,19 @@ vlarch_overrides_reload_hyprland() {
 }
 
 vlarch_apply_overrides() {
-  local user="$1"
-  local home="/home/${user}"
-  local overrides_dir="${home}/.overrides"
-  local file applied=0 hypr_touched=0 target
+  local user="$1" home="/home/${user}" overrides_dir file target hypr_touched=0
 
   [[ -n "$user" ]] || return 1
   [[ -d "$home" ]] || return 1
 
+  overrides_dir="${home}/.overrides"
+  [[ -d "$overrides_dir" ]] || return 0
+
   vlarch_override_bootstrap_dir "$user"
 
   while IFS= read -r -d '' file; do
-    if vlarch_override_apply_one "$user" "$file"; then
-      applied=$((applied + 1))
-      target="$(vlarch_override_target_for "$home" "$overrides_dir" "$file" 2>/dev/null || true)"
+    target="$(vlarch_override_target_for "$home" "$overrides_dir" "$file" 2>/dev/null || true)"
+    if vlarch_override_apply_one_at "$home" "$overrides_dir" "$file" "$user"; then
       [[ "$target" == "${home}/.config/hypr/"* ]] && hypr_touched=1
     fi
   done < <(find "$overrides_dir" -type f -print0)
@@ -339,9 +372,8 @@ vlarch_apply_overrides() {
     vlarch_overrides_reload_hyprland "$user"
   fi
 
-  if declare -F vlarch_info >/dev/null 2>&1; then
-    vlarch_info "overrides: applied ${applied} file(s) from ${overrides_dir}"
-    ((hypr_touched)) && vlarch_info "overrides: reloaded Hyprland config"
+  if declare -F vlarch_info >/dev/null 2>&1 && ((hypr_touched)); then
+    vlarch_info "overrides: reloaded Hyprland config"
   fi
   return 0
 }

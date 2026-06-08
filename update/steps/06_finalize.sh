@@ -82,9 +82,6 @@ vlarch_run "install vlarch-overrides" \
 vlarch_run "install vlarch-theme-generate" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /usr/local/bin/vlarch-theme-generate
 
-vlarch_run "regenerate active theme" \
-  vlarch_regenerate_active_theme "$VLARCH_USER"
-
 vlarch_run "restart walker service" \
   vlarch_restart_walker_if_session "$VLARCH_USER"
 

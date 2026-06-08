@@ -133,23 +133,13 @@ vlarch_sync_tmux_plugins() {
   return 0
 }
 
-vlarch_regenerate_active_theme() {
-  local user="$1" home active theme_bin
-  home="$(vlarch_user_home "$user")"
-  [[ -f "${home}/.config/vlarch/active-theme" ]] || return 0
-  active="$(<"${home}/.config/vlarch/active-theme")"
-  [[ -f "$active" ]] || return 0
+vlarch_refresh_desktop_shell() {
+  local user="$1"
 
-  if [[ -x /usr/local/bin/vlarch-theme-generate ]]; then
-    theme_bin=/usr/local/bin/vlarch-theme-generate
-  elif [[ -n "${VLARCH_BIN_DIR:-}" && -x "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]]; then
-    theme_bin="${VLARCH_BIN_DIR}/vlarch-theme-generate"
-  else
-    return 0
+  vlarch_overrides_reload_hyprland "$user"
+  if pgrep -x waybar >/dev/null 2>&1; then
+    pkill -SIGUSR2 waybar 2>/dev/null || killall -SIGUSR2 waybar 2>/dev/null || true
   fi
-
-  vlarch_run_user "$user" "regenerate active theme" "'${theme_bin}'" || return 1
-  return 0
 }
 
 vlarch_restart_walker_if_session() {
