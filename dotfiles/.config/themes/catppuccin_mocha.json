@@ -1,0 +1,22 @@
+{
+  "name": "catppuccin mocha",
+  "background_opacity": 0.85,
+  "palette": {
+    "polar_night_0": "#1E1E2E",
+    "polar_night_1": "#181825",
+    "polar_night_2": "#313244",
+    "polar_night_3": "#45475A",
+    "snow_storm_0": "#CDD6F4",
+    "snow_storm_1": "#BAC2DE",
+    "snow_storm_2": "#A6ADC8",
+    "frost_0": "#94E2D5",
+    "frost_1": "#89DCEB",
+    "frost_2": "#89B4FA",
+    "frost_3": "#74C7EC",
+    "aurora_red": "#F38BA8",
+    "aurora_orange": "#FAB387",
+    "aurora_yellow": "#F9E2AF",
+    "aurora_green": "#A6E3A1",
+    "aurora_purple": "#CBA6F7"
+  }
+}

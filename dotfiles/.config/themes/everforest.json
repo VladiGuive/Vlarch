@@ -1,0 +1,22 @@
+{
+  "name": "everforest",
+  "background_opacity": 0.85,
+  "palette": {
+    "polar_night_0": "#2D353B",
+    "polar_night_1": "#272E33",
+    "polar_night_2": "#3D484D",
+    "polar_night_3": "#4F585E",
+    "snow_storm_0": "#D3C6AA",
+    "snow_storm_1": "#A7B0A1",
+    "snow_storm_2": "#EBDBB2",
+    "frost_0": "#7FBBB3",
+    "frost_1": "#7FBBB3",
+    "frost_2": "#7FBBB3",
+    "frost_3": "#5C6F6B",
+    "aurora_red": "#E67E80",
+    "aurora_orange": "#E69875",
+    "aurora_yellow": "#DBBC7F",
+    "aurora_green": "#A7C080",
+    "aurora_purple": "#D699B6"
+  }
+}

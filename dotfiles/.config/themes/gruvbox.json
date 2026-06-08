@@ -1,0 +1,22 @@
+{
+  "name": "gruvbox",
+  "background_opacity": 0.85,
+  "palette": {
+    "polar_night_0": "#282828",
+    "polar_night_1": "#3C3836",
+    "polar_night_2": "#504945",
+    "polar_night_3": "#665C54",
+    "snow_storm_0": "#EBDBB2",
+    "snow_storm_1": "#D5C4A1",
+    "snow_storm_2": "#FBF1C7",
+    "frost_0": "#83A598",
+    "frost_1": "#8EC07C",
+    "frost_2": "#83A598",
+    "frost_3": "#458588",
+    "aurora_red": "#FB4934",
+    "aurora_orange": "#FE8019",
+    "aurora_yellow": "#FABD2F",
+    "aurora_green": "#B8BB26",
+    "aurora_purple": "#D3869B"
+  }
+}
