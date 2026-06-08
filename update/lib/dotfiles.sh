@@ -19,8 +19,9 @@ vlarch_user_active_theme() {
 }
 
 vlarch_theme_generate_bin() {
-  if [[ -n "${VLARCH_BIN_DIR:-}" && -x "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]]; then
-    printf '%s/vlarch-theme-generate' "$VLARCH_BIN_DIR"
+  local bin="${VLARCH_BIN_DIR:-}/vlarch-theme-generate"
+  if [[ -n "${VLARCH_BIN_DIR:-}" && -x "$bin" ]]; then
+    printf '%s' "$bin"
     return 0
   fi
   if [[ -x /usr/local/bin/vlarch-theme-generate ]]; then
@@ -30,10 +31,24 @@ vlarch_theme_generate_bin() {
   return 1
 }
 
+vlarch_theme_generate_staged() {
+  local theme_file="$1" output_root="$2"
+  local theme_bin
+
+  theme_bin="$(vlarch_theme_generate_bin)" || return 1
+  if ! "$theme_bin" --help 2>&1 | grep -q -- '--output'; then
+    if declare -F vlarch_die >/dev/null 2>&1; then
+      vlarch_die "vlarch-theme-generate is too old for staged dotfiles (missing --output); update vlarch first"
+    fi
+    return 1
+  fi
+  "$theme_bin" --output "$output_root" --no-refresh --no-persist "$theme_file"
+}
+
 # Copy repo dotfiles, bake the user's active theme and ~/.overrides, return staging dir.
 vlarch_prepare_dotfiles_staging() {
   local user="$1" src_dir="$2"
-  local stage home theme theme_bin
+  local stage home theme
 
   [[ -d "$src_dir" ]] || return 1
   home="/home/${user}"
@@ -48,8 +63,8 @@ vlarch_prepare_dotfiles_staging() {
   fi
 
   if [[ -n "$theme" ]]; then
-    theme_bin="$(vlarch_theme_generate_bin)" || return 1
-    "$theme_bin" --output "${stage}/.config" --no-refresh --no-persist "$theme"
+    vlarch_theme_generate_staged "$theme" "${stage}/.config" \
+      || return 1
   fi
 
   if declare -F vlarch_apply_overrides_at_root >/dev/null 2>&1; then

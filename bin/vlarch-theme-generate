@@ -572,9 +572,13 @@ USAGE
     output_root="$(_vlarch_theme_resolve_output "$self_dir")"
   fi
 
-  (( ! no_persist )) && _vlarch_theme_persist_active "$theme_path"
+  if (( ! no_persist )); then
+    _vlarch_theme_persist_active "$theme_path"
+  fi
   _vlarch_theme_generate "$theme_path" "$output_root"
-  (( ! no_refresh )) && _vlarch_theme_refresh
+  if (( ! no_refresh )); then
+    _vlarch_theme_refresh
+  fi
 }
 
 main "$@"
