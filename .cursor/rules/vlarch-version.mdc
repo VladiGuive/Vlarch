@@ -1,8 +1,0 @@
----
-description: Bump version.txt when shipping Vlarch changes
-alwaysApply: true
----
-
-# Vlarch release version
-
-When you finish a change, bump the repo root `version.txt` (patch increment, e.g. `0.0.111` → `0.0.112`) in the same commit, then commit and push to the current branch unless the user explicitly says not to push or to skip versioning.
