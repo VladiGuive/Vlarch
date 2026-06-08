@@ -13,6 +13,8 @@ set -euo pipefail
 : "${VLARCH_INFO_FILE:=/etc/vlarch/install-info}"
 : "${VLARCH_FORCE_UPDATE:=0}"
 VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-update-bootstrap.log}"
+VLARCH_STATE_DIR="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+VLARCH_UPDATE_LOCK="${VLARCH_STATE_DIR}/update.lock"
 
 _VLARCH_ESC_RESET=$'\033[0m'
 _VLARCH_NORD_FG=$'\033[38;5;253m'
@@ -32,6 +34,15 @@ _die() {
     printf '[vlarch] full log: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
   fi
   exit 1
+}
+
+_acquire_update_lock() {
+  install -d -m 0755 "$VLARCH_STATE_DIR" \
+    || _die "cannot create state dir ${VLARCH_STATE_DIR}"
+  exec {VLARCH_UPDATE_LOCK_FD}>>"$VLARCH_UPDATE_LOCK"
+  if ! flock -n "$VLARCH_UPDATE_LOCK_FD"; then
+    _die "another update is already running"
+  fi
 }
 
 _ui_print_logo() {
@@ -194,7 +205,7 @@ _run_main() {
   else
     export VLARCH_UI=0
   fi
-  exec bash "${root}/update/main.sh" "$@"
+  bash "${root}/update/main.sh" "$@"
 }
 
 # Parse bootstrap-level flags first (consumed here; rest pass through to main).
@@ -242,6 +253,8 @@ if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
 fi
 
 export VLARCH_VERBOSE VLARCH_CDN_BASE VLARCH_FORCE_UPDATE
+
+_acquire_update_lock
 
 # When update.sh is run directly from a checked-out repo, reuse it.
 if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/main.sh" ]]; then

@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 # Installed-system runtime helpers. Sourced - no set -e here.
 
+vlarch_update_lock_path() {
+  local state_dir="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+  printf '%s/update.lock' "$state_dir"
+}
+
+vlarch_acquire_update_lock() {
+  local lock_path="${1:-$(vlarch_update_lock_path)}"
+  local state_dir
+  state_dir="$(dirname -- "$lock_path")"
+  install -d -m 0755 "$state_dir" || return 1
+  exec {VLARCH_UPDATE_LOCK_FD}>>"$lock_path"
+  flock -n "$VLARCH_UPDATE_LOCK_FD"
+}
+
 vlarch_cdn_base_for_branch() {
   local branch="${1:-main}"
   branch="${branch//\//-}"
