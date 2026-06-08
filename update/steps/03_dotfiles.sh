@@ -41,6 +41,9 @@ vlarch_run "apply dotfile overrides" \
 vlarch_run "reload Hyprland config" \
   vlarch_overrides_reload_hyprland "$VLARCH_USER"
 
+vlarch_run "reload tmux config" \
+  vlarch_reload_tmux_config "$VLARCH_USER"
+
 _user_apps="/home/${VLARCH_USER}/.local/share/applications"
 for _stale in microsoft-edge-stable.desktop vlarch-edge.desktop; do
   if [[ -f "${_user_apps}/${_stale}" ]]; then

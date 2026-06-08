@@ -309,14 +309,16 @@ _with_update_lock
 # Restart walker after the update lock is released. Starting walker during the
 # locked section inherits flock(2) on the lock fd and pins it until logout.
 _vlarch_restart_walker_if_session() {
-  local user=""
+  local user uid runtime
   [[ -f "$VLARCH_INFO_FILE" ]] || return 0
   user="$(grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
   [[ -n "$user" ]] || return 0
   command -v vlarch-walker-services >/dev/null 2>&1 || return 0
-  runuser -u "$user" -- bash -lc '[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" || -d "${XDG_RUNTIME_DIR:-}/hypr" ]]' 2>/dev/null \
-    || return 0
-  runuser -u "$user" -- vlarch-walker-services || true
+  uid="$(id -u "$user")"
+  runtime="/run/user/${uid}"
+  [[ -d "${runtime}/hypr" ]] || return 0
+  runuser -u "$user" -- bash -lc \
+    "export XDG_RUNTIME_DIR='${runtime}'; vlarch-walker-services" || true
 }
 
 _vlarch_restart_walker_if_session

@@ -95,6 +95,25 @@ vlarch_ensure_tpm() {
   return 0
 }
 
+vlarch_tmux_server_socket() {
+  local user="$1" uid
+  uid="$(id -u "$user")"
+  printf '/tmp/tmux-%s/default' "$uid"
+}
+
+vlarch_reload_tmux_config() {
+  local user="$1" conf sock
+
+  command -v tmux >/dev/null 2>&1 || return 0
+  conf="$(vlarch_tmux_conf_for_user "$user")" || return 0
+  sock="$(vlarch_tmux_server_socket "$user")"
+  [[ -S "$sock" ]] || return 0
+
+  vlarch_run_user "$user" "tmux reload config" \
+    "tmux source-file '${conf}' && tmux refresh-client -a" || true
+  return 0
+}
+
 vlarch_sync_tmux_plugins() {
   local user="$1" conf home tpm_install plugins_dir
 
@@ -110,10 +129,34 @@ vlarch_sync_tmux_plugins() {
   vlarch_run_user "$user" "tmux install plugins" \
     "export TMUX_PLUGIN_MANAGER_PATH='${plugins_dir}'; '${tpm_install}'" || return 1
 
-  if runuser -u "$user" -- bash -lc "export HOME='${home}'; tmux list-sessions >/dev/null 2>&1"; then
-    vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || true
+  vlarch_reload_tmux_config "$user"
+  return 0
+}
+
+vlarch_regenerate_active_theme() {
+  local user="$1" home active theme_bin
+  home="$(vlarch_user_home "$user")"
+  [[ -f "${home}/.config/vlarch/active-theme" ]] || return 0
+  active="$(<"${home}/.config/vlarch/active-theme")"
+  [[ -f "$active" ]] || return 0
+
+  if [[ -x /usr/local/bin/vlarch-theme-generate ]]; then
+    theme_bin=/usr/local/bin/vlarch-theme-generate
+  elif [[ -n "${VLARCH_BIN_DIR:-}" && -x "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]]; then
+    theme_bin="${VLARCH_BIN_DIR}/vlarch-theme-generate"
+  else
+    return 0
   fi
 
+  vlarch_run_user "$user" "regenerate active theme" "'${theme_bin}'" || return 1
+  return 0
+}
+
+vlarch_restart_walker_if_session() {
+  local user="$1"
+  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
+  vlarch_hyprland_session_for_user "$user" || return 0
+  vlarch_run_user "$user" "restart walker service" "vlarch-walker-services" || true
   return 0
 }
 
