@@ -91,10 +91,14 @@ archlinuxpkgs = [
   { action = "show_installed", label = "show installed", bind = "ctrl i", after = "AsyncClearReload" },
 ]
 todo = [
-  { action = "save", default = true, bind = "Return", after = "ClearReload" },
-  { action = "delete", bind = "ctrl d", after = "ClearReload" },
-  { action = "active", bind = "Return", after = "ClearReload" },
-  { action = "inactive", bind = "Return", after = "ClearReload" },
-  { action = "done", bind = "ctrl f", after = "ClearReload" },
-  { action = "clear", bind = "ctrl x", after = "ClearReload", global = true },
+  { action = "save", default = true, bind = "Return", after = "AsyncClearReload" },
+  { action = "save_next", label = "save & new", bind = "shift Return", after = "AsyncClearReload" },
+  { action = "delete", bind = "ctrl d", after = "AsyncClearReload" },
+  { action = "active", default = true, bind = "Return", after = "Nothing" },
+  { action = "inactive", default = true, bind = "Return", after = "Nothing" },
+  { action = "done", bind = "ctrl f", after = "Nothing" },
+  { action = "change_category", bind = "ctrl y", label = "change category", after = "Nothing" },
+  { action = "clear", bind = "ctrl x", after = "AsyncClearReload" },
+  { action = "create", bind = "ctrl a", after = "AsyncClearReload" },
+  { action = "search", bind = "ctrl a", after = "AsyncClearReload" },
 ]
