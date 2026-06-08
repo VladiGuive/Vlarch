@@ -71,6 +71,12 @@ start_walker_service() {
   pkill -f '[w]alker --gapplication-service' 2>/dev/null || true
   sleep 0.2
 
+  # Drop inherited fds (e.g. vlarch update.lock flock) before daemonizing.
+  local fd
+  for fd in $(seq 3 255); do
+    eval "exec ${fd}>&-" 2>/dev/null || true
+  done
+
   walker --gapplication-service >>"$LOG" 2>&1 &
   log 'started walker --gapplication-service'
 
