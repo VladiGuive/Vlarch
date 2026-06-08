@@ -131,6 +131,13 @@ button {
   animation: vlarch-update-pulse 1.6s ease-in-out infinite alternate;
 }
 
+#custom-vlarch-update.failed {
+  color: @subtext0;
+  background-color: alpha(@red, 0.35);
+  border: 1px solid alpha(@red, 0.65);
+  font-weight: bold;
+}
+
 @keyframes vlarch-update-pulse {
   from {
     color: @subtext0;

@@ -4,6 +4,8 @@
 set -euo pipefail
 
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+VLARCH_STATE_DIR="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+VLARCH_WAYBAR_UPDATE_FAILED_FILE="${VLARCH_WAYBAR_UPDATE_FAILED_FILE:-${VLARCH_STATE_DIR}/update-failed}"
 # Must match "signal" on custom/vlarch-update in waybar config.jsonc.
 VLARCH_WAYBAR_UPDATE_SIGNAL="${VLARCH_WAYBAR_UPDATE_SIGNAL:-1}"
 
@@ -88,8 +90,57 @@ _vlarch_json_escape() {
   printf '%s' "$s"
 }
 
+_vlarch_waybar_clear_failed() {
+  sudo rm -f "$VLARCH_WAYBAR_UPDATE_FAILED_FILE" 2>/dev/null || true
+}
+
+_vlarch_waybar_mark_failed() {
+  local msg="$1"
+  sudo install -d -m 0755 "${VLARCH_WAYBAR_UPDATE_FAILED_FILE%/*}" 2>/dev/null \
+    || return 0
+  printf '%s\n' "$msg" | sudo tee "$VLARCH_WAYBAR_UPDATE_FAILED_FILE" >/dev/null 2>&1 \
+    || true
+}
+
+_vlarch_waybar_failed_message() {
+  [[ -r "$VLARCH_WAYBAR_UPDATE_FAILED_FILE" ]] || return 1
+  head -1 "$VLARCH_WAYBAR_UPDATE_FAILED_FILE" 2>/dev/null
+}
+
+vlarch_waybar_show_error() {
+  local msg="$1"
+  local width=50 lines=10
+
+  if [[ -t 1 ]]; then
+    stty cols "$width" rows "$lines" 2>/dev/null || true
+    printf '\033[8;%d;%dt' "$lines" "$width"
+    clear || true
+  fi
+
+  printf '%b' '\033[38;5;109m'
+  cat <<'LOGO'
+ _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/
+LOGO
+  printf '%b' '\033[0m\n'
+  printf '%b%b%b\n' '\033[35m' "$msg" '\033[0m'
+  printf '\n'
+  printf '%bUpdate failed%b\n' '\033[38;5;174m' '\033[0m'
+  printf 'Try: vlarch update --verbose\n'
+  printf '\n'
+  printf '%bEsc%b → close.\n' '\033[92m' '\033[0m'
+  printf '%b\033[%d;1H\033[?25l' '\033[0m' "$lines"
+}
+
 vlarch_waybar_status() {
-  local remote_ver
+  local remote_ver failed_msg
+  if failed_msg="$(_vlarch_waybar_failed_message)"; then
+    printf '{"text":"V󰚰","tooltip":"%s","class":"failed"}\n' \
+      "$(_vlarch_json_escape "$failed_msg")"
+    return 0
+  fi
   if ! _vlarch_update_available; then
     printf '{"text":""}\n'
     return 0
@@ -107,9 +158,31 @@ vlarch_waybar_refresh() {
 }
 
 vlarch_waybar_session() {
-  local key
+  local key rc=0 err_msg
 
-  sudo VLARCH_CDN_BASE="$VLARCH_CDN_BASE" vlarch update || true
+  _vlarch_waybar_clear_failed
+  sudo VLARCH_CDN_BASE="$VLARCH_CDN_BASE" vlarch update || rc=$?
+  vlarch_waybar_refresh
+
+  if ((rc != 0)); then
+    err_msg="Update failed (exit ${rc})"
+    _vlarch_waybar_mark_failed "$err_msg"
+    vlarch_waybar_refresh
+    vlarch_waybar_show_error "$err_msg"
+    stty -echo -icanon time 0 min 0 2>/dev/null || true
+    while true; do
+      IFS= read -rsn1 key </dev/tty 2>/dev/null || break
+      if [[ "$key" == $'\e' ]]; then
+        read -rsn2 -t 0.01 _ </dev/tty 2>/dev/null || true
+        break
+      fi
+    done
+    stty sane 2>/dev/null || true
+    printf '%b' '\033[?25h'
+    return "$rc"
+  fi
+
+  _vlarch_waybar_clear_failed
   vlarch_waybar_refresh
 
   # Prompts are drawn by vlarch_ui_show_complete; only read keys here.
