@@ -96,12 +96,7 @@ _local_branch() {
 
 _cdn_base_for_branch() {
   local branch="${1:-main}"
-  branch="${branch//\//-}"
-  if [[ "$branch" == main ]]; then
-    printf 'https://vlarch.vladi.tech'
-  else
-    printf 'https://vlarch-%s.vladi.tech' "$branch"
-  fi
+  printf 'https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/%s' "$branch"
 }
 
 _fetch_remote_version() {

@@ -25,12 +25,7 @@ vlarch_with_update_lock() {
 
 vlarch_cdn_base_for_branch() {
   local branch="${1:-main}"
-  branch="${branch//\//-}"
-  if [[ "$branch" == main ]]; then
-    printf 'https://vlarch.vladi.tech'
-  else
-    printf 'https://vlarch-%s.vladi.tech' "$branch"
-  fi
+  printf 'https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/%s' "$branch"
 }
 
 vlarch_install_info_branch() {
