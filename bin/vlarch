@@ -40,6 +40,51 @@ _cdn_base_for_branch() {
   fi
 }
 
+_vlarch_source_version_lib() {
+  local lib share="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+  lib="${share}/version.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  local self_root=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    self_root="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+    lib="${self_root}/../lib/version.sh"
+    if [[ -f "$lib" ]]; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      return 0
+    fi
+  fi
+
+  if [[ -n "${VLARCH_CDN_BASE:-}" ]]; then
+    lib="$(mktemp)"
+    if curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/lib/version.sh" -o "$lib" 2>/dev/null; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      rm -f "$lib"
+      return 0
+    fi
+    rm -f "$lib"
+  fi
+
+  return 1
+}
+
+_install_info_version() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^version=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_fetch_remote_version() {
+  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+}
+
 _install_info_set_branch() {
   local branch="$1" path="$VLARCH_INFO_FILE" tmp
   [[ -f "$path" ]] || _die "$path not found"
@@ -250,16 +295,27 @@ cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
   local -a args=()
-  local arg has_branch=0
+  local arg has_branch=0 has_force=0
+  local local_ver remote_ver
   for arg in "$@"; do
     case "$arg" in
       --verbose|-v) VLARCH_VERBOSE=1 ;;
+      --force) has_force=1 ;;
       --branch) has_branch=1; args+=("$arg") ;;
       *) args+=("$arg") ;;
     esac
   done
   if ((!has_branch)); then
     args=(--branch "$(_install_info_branch)" "${args[@]}")
+  fi
+  if ((!has_force)) && _vlarch_source_version_lib; then
+    local_ver="$(_install_info_version)" || true
+    remote_ver="$(_fetch_remote_version)" || true
+    if [[ -n "$local_ver" && -n "$remote_ver" ]] \
+      && vlarch_version_up_to_date "$local_ver" "$remote_ver"; then
+      _log "already up to date (${local_ver})"
+      return 0
+    fi
   fi
   if ((VLARCH_VERBOSE)); then
     _vlog "Fetching update bootstrap from ${url}"

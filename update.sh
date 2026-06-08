@@ -106,6 +106,48 @@ _fetch_remote_version() {
   curl -fsSL "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
 }
 
+_vlarch_source_version_lib() {
+  local lib share="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+  lib="${share}/version.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]]; then
+    # shellcheck disable=SC1090
+    source "${VLARCH_SCRIPT_DIR}/lib/version.sh"
+    return 0
+  fi
+
+  local self_root=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    self_root="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+    lib="${self_root}/lib/version.sh"
+    if [[ -f "$lib" ]]; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      return 0
+    fi
+  fi
+
+  if [[ -n "${VLARCH_CDN_BASE:-}" ]]; then
+    lib="$(mktemp)"
+    if curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/lib/version.sh" -o "$lib" 2>/dev/null; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      rm -f "$lib"
+      return 0
+    fi
+    rm -f "$lib"
+  fi
+
+  return 1
+}
+
 _check_version_gate() {
   if ((VLARCH_FORCE_UPDATE)); then
     _log "Skipping version check (--force)"
@@ -124,9 +166,11 @@ _check_version_gate() {
   remote="$(_fetch_remote_version)" || _die "could not fetch remote version from ${VLARCH_CDN_BASE}/version.txt"
   [[ -n "$remote" ]] || _die "remote version from ${VLARCH_CDN_BASE}/version.txt is empty"
 
+  _vlarch_source_version_lib || _die "version library unavailable"
+
   local_ver="$(_local_version "$VLARCH_INFO_FILE")"
-  if [[ -n "$local_ver" && "$local_ver" == "$remote" ]]; then
-    printf '[vlarch] already up to date (%s)\n' "$remote"
+  if [[ -n "$local_ver" ]] && vlarch_version_up_to_date "$local_ver" "$remote"; then
+    printf '[vlarch] already up to date (%s)\n' "$local_ver"
     exit 0
   fi
 

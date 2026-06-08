@@ -28,6 +28,42 @@ if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
   VLARCH_CDN_BASE="$(_vlarch_cdn_base_for_branch "$(_vlarch_install_branch)")"
 fi
 
+_vlarch_source_version_lib() {
+  local lib share="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+  lib="${share}/version.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  local self_root=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    self_root="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+    lib="${self_root}/../lib/version.sh"
+    if [[ -f "$lib" ]]; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      return 0
+    fi
+  fi
+
+  if [[ -n "${VLARCH_CDN_BASE:-}" ]]; then
+    lib="$(mktemp)"
+    if curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/lib/version.sh" -o "$lib" 2>/dev/null; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      rm -f "$lib"
+      return 0
+    fi
+    rm -f "$lib"
+  fi
+
+  return 1
+}
+
 _vlarch_local_version() {
   [[ -f "$VLARCH_INFO_FILE" ]] || return 1
   grep -E '^version=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
@@ -38,13 +74,11 @@ _vlarch_remote_version() {
 }
 
 _vlarch_update_available() {
-  local local_ver remote_ver newest
+  local local_ver remote_ver
   local_ver="$(_vlarch_local_version)" || return 1
   remote_ver="$(_vlarch_remote_version)" || return 1
-  [[ -n "$local_ver" && -n "$remote_ver" ]] || return 1
-  [[ "$local_ver" == "$remote_ver" ]] && return 1
-  newest="$(printf '%s\n%s\n' "$local_ver" "$remote_ver" | sort -V | tail -1)"
-  [[ "$newest" == "$remote_ver" ]]
+  _vlarch_source_version_lib || return 1
+  vlarch_update_available "$local_ver" "$remote_ver"
 }
 
 _vlarch_json_escape() {

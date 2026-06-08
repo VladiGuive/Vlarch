@@ -29,6 +29,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
+[[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
 if ((VLARCH_DRY_RUN)); then
   vlarch_update_note "finalize: dry-run (would install bin scripts and bump version to ${VLARCH_VERSION})"
@@ -79,6 +80,9 @@ vlarch_run "install vlarch-overrides" \
 
 vlarch_run "install overrides library" \
   install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /usr/local/share/vlarch/overrides.sh
+
+vlarch_run "install version library" \
+  install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /usr/local/share/vlarch/version.sh
 
 if [[ -e /usr/local/bin/vlarch-elephant-start ]]; then
   rm -f /usr/local/bin/vlarch-elephant-start

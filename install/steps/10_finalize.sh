@@ -29,6 +29,7 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
+[[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
 mountpoint -q /mnt || vlarch_die "/mnt not mounted; cannot finalize install"
 [[ -f "${VLARCH_ASSETS_DIR}/background.png" ]] || vlarch_die "missing wallpaper asset: ${VLARCH_ASSETS_DIR}/background.png"
@@ -49,6 +50,7 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /mnt/usr/local/bin/vlarc
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-edge" /mnt/usr/local/bin/vlarch-edge
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-overrides" /mnt/usr/local/bin/vlarch-overrides
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
+install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
 
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {
