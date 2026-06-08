@@ -57,6 +57,7 @@ mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
   printf 'disk=%s\n'         "${VLARCH_DISK}"
   printf 'timezone=%s\n'     "${VLARCH_TIMEZONE}"
   printf 'locale=%s\n'       "${VLARCH_LOCALE}"
+  printf 'branch=%s\n'       "${VLARCH_GIT_BRANCH:-main}"
   if [[ -f "${VLARCH_SCRIPT_DIR}/version.txt" ]]; then
     printf 'version=%s\n' "$(tr -d '[:space:]' <"${VLARCH_SCRIPT_DIR}/version.txt")"
   fi

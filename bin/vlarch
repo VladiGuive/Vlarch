@@ -23,6 +23,35 @@ _vlog() {
 _warn() { printf '[vlarch] warning: %s\n' "$*" >&2; }
 _die()  { printf '[vlarch] error: %s\n' "$*" >&2; exit 1; }
 
+_install_info_branch() {
+  local branch=""
+  [[ -f "$VLARCH_INFO_FILE" ]] || { printf '%s' main; return 0; }
+  branch="$(grep -E '^branch=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+  printf '%s' "${branch:-main}"
+}
+
+_install_info_set_branch() {
+  local branch="$1" path="$VLARCH_INFO_FILE" tmp
+  [[ -f "$path" ]] || _die "$path not found"
+  [[ -n "$branch" ]] || _die "branch name cannot be empty"
+  [[ "$branch" != *$'\n'* && "$branch" != *' '* && "$branch" != *'='* ]] \
+    || _die "invalid branch name: $branch"
+
+  tmp="$(mktemp)"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == branch=* ]]; then
+      printf 'branch=%s\n' "$branch"
+    else
+      printf '%s\n' "$line"
+    fi
+  done <"$path" >"$tmp"
+  if ! grep -q '^branch=' "$tmp"; then
+    printf 'branch=%s\n' "$branch" >>"$tmp"
+  fi
+  install -m 0644 "$tmp" "$path"
+  rm -f "$tmp"
+}
+
 _load_runtime_env() {
   if [[ -f "$VLARCH_RUNTIME_ENV" ]]; then
     # shellcheck disable=SC1090
@@ -169,11 +198,29 @@ cmd_first_boot() {
 
 # vlarch:summary=Print install metadata recorded at install time.
 cmd_version() {
-  if [[ -f "$VLARCH_INFO_FILE" ]]; then
-    cat "$VLARCH_INFO_FILE"
-  else
+  if [[ ! -f "$VLARCH_INFO_FILE" ]]; then
     _die "$VLARCH_INFO_FILE not found"
   fi
+  if grep -q '^branch=' "$VLARCH_INFO_FILE"; then
+    cat "$VLARCH_INFO_FILE"
+  else
+    cat "$VLARCH_INFO_FILE"
+    printf 'branch=main\n'
+  fi
+}
+
+# vlarch:summary=Show or set the git branch used for vlarch update.
+cmd_branch() {
+  if [[ ! -f "$VLARCH_INFO_FILE" ]]; then
+    _die "$VLARCH_INFO_FILE not found"
+  fi
+  if (($# == 0)); then
+    printf 'branch=%s\n' "$(_install_info_branch)"
+    return 0
+  fi
+  (($# == 1)) || _die "usage: vlarch branch [name]"
+  _install_info_set_branch "$1"
+  _log "branch set to $1"
 }
 
 : "${VLARCH_CDN_BASE:=https://vlarch.vladi.tech}"
@@ -190,13 +237,17 @@ cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
   local -a args=()
-  local arg
+  local arg has_branch=0
   for arg in "$@"; do
     case "$arg" in
       --verbose|-v) VLARCH_VERBOSE=1 ;;
+      --branch) has_branch=1; args+=("$arg") ;;
       *) args+=("$arg") ;;
     esac
   done
+  if ((!has_branch)); then
+    args=(--branch "$(_install_info_branch)" "${args[@]}")
+  fi
   if ((VLARCH_VERBOSE)); then
     _vlog "Fetching update bootstrap from ${url}"
   else
@@ -242,7 +293,7 @@ _summary_for() {
 
 _needs_root() {
   case "${1:-}" in
-    update|post-install|first-boot|overrides) return 0 ;;
+    update|post-install|first-boot|overrides|branch) return 0 ;;
     *) return 1 ;;
   esac
 }

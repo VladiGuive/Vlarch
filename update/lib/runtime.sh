@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 # Installed-system runtime helpers. Sourced - no set -e here.
 
+vlarch_install_info_branch() {
+  local path="${1:-${VLARCH_INFO_FILE:-/etc/vlarch/install-info}}"
+  local branch=""
+  [[ -f "$path" ]] || { printf '%s' main; return 0; }
+  branch="$(grep -E '^branch=' "$path" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+  printf '%s' "${branch:-main}"
+}
+
 vlarch_load_install_info() {
   local path="${1:-${VLARCH_INFO_FILE:-/etc/vlarch/install-info}}"
   VLARCH_USER=""
   VLARCH_INSTALLED_VERSION=""
+  VLARCH_INSTALL_BRANCH=""
   [[ -f "$path" ]] || return 1
 
   local line key value
@@ -15,9 +24,11 @@ vlarch_load_install_info() {
     case "$key" in
       user) VLARCH_USER="$value" ;;
       version) VLARCH_INSTALLED_VERSION="$value" ;;
+      branch) VLARCH_INSTALL_BRANCH="$value" ;;
     esac
   done <"$path"
-  export VLARCH_USER VLARCH_INSTALLED_VERSION
+  [[ -n "$VLARCH_INSTALL_BRANCH" ]] || VLARCH_INSTALL_BRANCH="main"
+  export VLARCH_USER VLARCH_INSTALLED_VERSION VLARCH_INSTALL_BRANCH
   [[ -n "$VLARCH_USER" ]]
 }
 
@@ -50,4 +61,30 @@ vlarch_write_install_info_version() {
   rm -f "$tmp"
   VLARCH_INSTALLED_VERSION="$version"
   export VLARCH_INSTALLED_VERSION
+}
+
+vlarch_write_install_info_branch() {
+  local branch="$1"
+  local path="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+  local tmp
+  [[ -f "$path" ]] || return 1
+  [[ -n "$branch" ]] || return 1
+
+  tmp="$(mktemp)"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == branch=* ]]; then
+      printf 'branch=%s\n' "$branch"
+    else
+      printf '%s\n' "$line"
+    fi
+  done <"$path" >"$tmp"
+
+  if ! grep -q '^branch=' "$tmp"; then
+    printf 'branch=%s\n' "$branch" >>"$tmp"
+  fi
+
+  install -m 0644 "$tmp" "$path"
+  rm -f "$tmp"
+  VLARCH_INSTALL_BRANCH="$branch"
+  export VLARCH_INSTALL_BRANCH
 }

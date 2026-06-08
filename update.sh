@@ -85,6 +85,14 @@ _local_version() {
   grep -E '^version=' "$path" | head -1 | cut -d= -f2- | tr -d '[:space:]'
 }
 
+_local_branch() {
+  local path="$1"
+  local branch=""
+  [[ -f "$path" ]] || { printf '%s' main; return 0; }
+  branch="$(grep -E '^branch=' "$path" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+  printf '%s' "${branch:-main}"
+}
+
 _fetch_remote_version() {
   curl -fsSL "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
 }
@@ -200,17 +208,17 @@ command -v curl >/dev/null 2>&1 || _die "curl not found"
 
 _check_version_gate
 
+if [[ -z "${VLARCH_GIT_BRANCH}" ]]; then
+  VLARCH_GIT_BRANCH="$(_local_branch "$VLARCH_INFO_FILE")"
+  export VLARCH_GIT_BRANCH
+fi
+
 WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
 [[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 rm -rf "${WORKDIR}"
 
-if [[ -n "${VLARCH_GIT_BRANCH}" ]]; then
-  _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
-    git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
-else
-  _run "git clone ${VLARCH_GIT_URL}" \
-    git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
-fi
+_run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
+  git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
 
 _run_main "${WORKDIR}" "${ARGS[@]}"
