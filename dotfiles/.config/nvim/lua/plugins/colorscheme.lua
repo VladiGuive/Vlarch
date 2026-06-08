@@ -1,4 +1,4 @@
--- Nord palette — keep in sync with ~/.config/kitty/theme.conf
+-- Nord colorscheme — palette in ~/.config/themes/*.json (vlarch-theme-generate / Walker $ themes)
 return {
   {
     "shaunsingh/nord.nvim",

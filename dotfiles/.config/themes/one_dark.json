@@ -1,0 +1,23 @@
+{
+  "name": "one dark",
+  "background_opacity": 0.85,
+  "roundness": 0,
+  "palette": {
+    "polar_night_0": "#282C34",
+    "polar_night_1": "#21252B",
+    "polar_night_2": "#2C323C",
+    "polar_night_3": "#3E4451",
+    "snow_storm_0": "#ABB2BF",
+    "snow_storm_1": "#828997",
+    "snow_storm_2": "#D7DAE0",
+    "frost_0": "#56B6C2",
+    "frost_1": "#61AFEF",
+    "frost_2": "#61AFEF",
+    "frost_3": "#528BBA",
+    "aurora_red": "#E06C75",
+    "aurora_orange": "#D19A66",
+    "aurora_yellow": "#E5C07B",
+    "aurora_green": "#98C379",
+    "aurora_purple": "#C678DD"
+  }
+}

@@ -21,10 +21,6 @@ VLARCH_NORD_CYAN=$'\033[38;5;109m'
 VLARCH_NORD_MAGENTA=$'\033[38;5;176m'
 VLARCH_NORD_WHITE=$'\033[38;5;255m'
 
-VLARCH_TERM_MAGENTA=$'\033[35m'
-VLARCH_TERM_GREEN=$'\033[32m'
-VLARCH_TERM_BRIGHT_GREEN=$'\033[92m'
-VLARCH_TERM_BRIGHT_BLACK=$'\033[90m'
 VLARCH_ESC_HIDE_CURSOR=$'\033[?25l'
 VLARCH_ESC_SHOW_CURSOR=$'\033[?25h'
 
@@ -257,7 +253,7 @@ vlarch_ui_render_frame() {
 
   # Line 5: target version
   ver_line="$(vlarch_ui_version_line "${to_ver:-${VLARCH_VERSION:-update}}")"
-  vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
+  vlarch_ui_say "${VLARCH_NORD_MAGENTA}" "$ver_line"
 
   # Line 6: blank
   printf '\n'
@@ -266,18 +262,18 @@ vlarch_ui_render_frame() {
   local frac_w suffix_w
   frac_w=$(vlarch_ui_state_read frac_field_width 5)
   suffix_w=$(vlarch_ui_state_read suffix_width 8)
-  vlarch_ui_row_lr "$title" "$(vlarch_ui_step_suffix "$step_idx" "$step_total" "$frac_w")" "$width" "${VLARCH_TERM_GREEN}" "$suffix_w"
+  vlarch_ui_row_lr "$title" "$(vlarch_ui_step_suffix "$step_idx" "$step_total" "$frac_w")" "$width" "${VLARCH_NORD_FG}" "$suffix_w"
 
   # Line 8: substep (blank when no op_label); cur/tot aligns under step fraction
   if [[ -n "$op_label" ]]; then
-    vlarch_ui_row_lr_sub "▸ ${op_label}" "$(vlarch_ui_run_suffix "$current" "$total" "$frac_w")" "$width" "${VLARCH_TERM_BRIGHT_GREEN}" "$suffix_w"
+    vlarch_ui_row_lr_sub "▸ ${op_label}" "$(vlarch_ui_run_suffix "$current" "$total" "$frac_w")" "$width" "${VLARCH_NORD_GREEN}" "$suffix_w"
   else
     printf '\n'
   fi
 
   # Line 9: last log line
   if [[ -n "$last_log" ]]; then
-    vlarch_ui_say "${VLARCH_TERM_BRIGHT_BLACK}" "$(vlarch_ui_truncate "$last_log" "$width")"
+    vlarch_ui_say "${VLARCH_NORD_DIM}" "$(vlarch_ui_truncate "$last_log" "$width")"
   else
     printf '\n'
   fi
@@ -369,11 +365,11 @@ vlarch_ui_show_complete() {
   fi
   vlarch_ui_print_logo || true
   ver_line="$(vlarch_ui_version_line "${VLARCH_VERSION:-}")"
-  vlarch_ui_say "${VLARCH_TERM_MAGENTA}" "$ver_line"
+  vlarch_ui_say "${VLARCH_NORD_MAGENTA}" "$ver_line"
   printf '\n'
-  vlarch_ui_say "${VLARCH_TERM_GREEN}" "Update complete"
-  printf '%bEnter%b → reboot.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
-  printf '%bEsc%b → close.\n' "${VLARCH_TERM_BRIGHT_GREEN}" "${VLARCH_ESC_RESET}"
+  vlarch_ui_say "${VLARCH_NORD_GREEN}" "Update complete"
+  printf '%bEnter%b → reboot.\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}"
+  printf '%bEsc%b → close.\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}"
   vlarch_ui_draw_bar 100
   vlarch_ui_finish_frame
 }

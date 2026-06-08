@@ -1,0 +1,23 @@
+{
+  "name": "tokyo night",
+  "background_opacity": 0.85,
+  "roundness": 0,
+  "palette": {
+    "polar_night_0": "#1A1B26",
+    "polar_night_1": "#16161E",
+    "polar_night_2": "#24283B",
+    "polar_night_3": "#414868",
+    "snow_storm_0": "#C0CAF5",
+    "snow_storm_1": "#A9B1D6",
+    "snow_storm_2": "#9AA5CE",
+    "frost_0": "#73DACA",
+    "frost_1": "#7DCFFF",
+    "frost_2": "#7AA2F7",
+    "frost_3": "#2AC3DE",
+    "aurora_red": "#F7768E",
+    "aurora_orange": "#FF9E64",
+    "aurora_yellow": "#E0AF68",
+    "aurora_green": "#9ECE6A",
+    "aurora_purple": "#BB9AF7"
+  }
+}

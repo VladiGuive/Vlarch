@@ -1,16 +1,17 @@
+# Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
 version = 3
 final_space = true
 
 [secondary_prompt]
   template = '❯❯ '
-  foreground = '#B48EAD'
+  foreground = '#8A4E78'
   background = 'transparent'
 
 [transient_prompt]
   template = '❯ '
   background = 'transparent'
-  foreground_templates = ['{{if gt .Code 0}}#BF616A{{end}}', '{{if eq .Code 0}}#B48EAD{{end}}']
+  foreground_templates = ['{{if gt .Code 0}}#C03828{{end}}', '{{if eq .Code 0}}#8A4E78{{end}}']
 
 [[blocks]]
   type = 'prompt'
@@ -19,7 +20,7 @@ final_space = true
 
   [[blocks.segments]]
     template = '{{ .Path }}'
-    foreground = '#81A1C1'
+    foreground = '#8A6408'
     background = 'transparent'
     type = 'path'
     style = 'plain'
@@ -29,8 +30,8 @@ final_space = true
       style = 'full'
 
   [[blocks.segments]]
-    template = ' {{ .HEAD }}{{ if or (.Working.Changed) (.Staging.Changed) }}*{{ end }} <#8FBCBB>{{ if gt .Behind 0 }}⇣{{ end }}{{ if gt .Ahead 0 }}⇡{{ end }}</>'
-    foreground = '#4C566A'
+    template = ' {{ .HEAD }}{{ if or (.Working.Changed) (.Staging.Changed) }}*{{ end }} <#E0B828>{{ if gt .Behind 0 }}⇣{{ end }}{{ if gt .Ahead 0 }}⇡{{ end }}</>'
+    foreground = '#A08850'
     background = 'transparent'
     type = 'git'
     style = 'plain'
@@ -47,7 +48,7 @@ final_space = true
 
   [[blocks.segments]]
     template = '{{ .FormattedMs }}'
-    foreground = '#EBCB8B'
+    foreground = '#9A7008'
     background = 'transparent'
     type = 'executiontime'
     style = 'plain'
@@ -66,7 +67,7 @@ final_space = true
     background = 'transparent'
     type = 'text'
     style = 'plain'
-    foreground_templates = ['{{if gt .Code 0}}#BF616A{{end}}', '{{if eq .Code 0}}#B48EAD{{end}}']
+    foreground_templates = ['{{if gt .Code 0}}#C03828{{end}}', '{{if eq .Code 0}}#8A4E78{{end}}']
 
     [blocks.segments.properties]
       cache_duration = 'none'

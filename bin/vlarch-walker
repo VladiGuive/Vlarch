@@ -3,9 +3,9 @@
 
 set -euo pipefail
 
-_walker_sock() {
-  printf '%s/walker/walker.sock' "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-}
+# Match vlarch-nord layout.xml box-wrapper width/height requests.
+VLARCH_WALKER_WIDTH="${VLARCH_WALKER_WIDTH:-600}"
+VLARCH_WALKER_HEIGHT="${VLARCH_WALKER_HEIGHT:-570}"
 
 _service_running() {
   pgrep -f '[w]alker --gapplication-service' >/dev/null 2>&1
@@ -23,13 +23,19 @@ _ensure_service() {
   return 1
 }
 
-if [[ $# -eq 0 ]]; then
-  sock="$(_walker_sock)"
-  if [[ -S "$sock" ]] && command -v nc >/dev/null 2>&1; then
-    nc -U "$sock"
-    exit 0
-  fi
-fi
+_close_walker_ui() {
+  command -v walker >/dev/null 2>&1 || return 0
+  walker -q 2>/dev/null || true
+}
 
 _ensure_service || true
+
+if [[ $# -eq 0 ]]; then
+  # Always open the default launcher at theme dimensions. Socket toggle kept
+  # stale provider layouts (e.g. menus:keybinds preview width) after an update.
+  _close_walker_ui
+  exec walker --width "$VLARCH_WALKER_WIDTH" --height "$VLARCH_WALKER_HEIGHT"
+fi
+
+_close_walker_ui
 exec walker "$@"

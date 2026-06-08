@@ -2,21 +2,21 @@
 # steam is in pacman.txt (multilib), not here.
 oh-my-posh-bin
 nordic-theme-git
-# Walker + elephant stack — source packages only, one yay transaction (never mix with *-bin).
-walker
-elephant
-elephant-providerlist
-elephant-desktopapplications
-elephant-files
-elephant-runner
-elephant-calc
-elephant-symbols
-elephant-websearch
-elephant-clipboard
-elephant-menus
-elephant-todo
-elephant-archlinuxpkgs
+# Walker + elephant stack — *-bin packages, one yay transaction to keep versions aligned.
+walker-bin
+elephant-bin
+elephant-providerlist-bin
+elephant-desktopapplications-bin
+elephant-files-bin
+elephant-runner-bin
+elephant-calc-bin
+elephant-symbols-bin
+elephant-websearch-bin
+elephant-clipboard-bin
+elephant-menus-bin
+elephant-todo-bin
+elephant-archlinuxpkgs-bin
 timeshift-autosnap
 xwaylandvideobridge
-obsidian
+obsidian-bin
 zen-browser-bin

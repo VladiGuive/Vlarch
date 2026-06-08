@@ -95,6 +95,25 @@ vlarch_ensure_tpm() {
   return 0
 }
 
+vlarch_tmux_server_socket() {
+  local user="$1" uid
+  uid="$(id -u "$user")"
+  printf '/tmp/tmux-%s/default' "$uid"
+}
+
+vlarch_reload_tmux_config() {
+  local user="$1" conf sock
+
+  command -v tmux >/dev/null 2>&1 || return 0
+  conf="$(vlarch_tmux_conf_for_user "$user")" || return 0
+  sock="$(vlarch_tmux_server_socket "$user")"
+  [[ -S "$sock" ]] || return 0
+
+  vlarch_run_user "$user" "tmux reload config" \
+    "tmux source-file '${conf}' && tmux refresh-client -a" || true
+  return 0
+}
+
 vlarch_sync_tmux_plugins() {
   local user="$1" conf home tpm_install plugins_dir
 
@@ -110,10 +129,24 @@ vlarch_sync_tmux_plugins() {
   vlarch_run_user "$user" "tmux install plugins" \
     "export TMUX_PLUGIN_MANAGER_PATH='${plugins_dir}'; '${tpm_install}'" || return 1
 
-  if runuser -u "$user" -- bash -lc "export HOME='${home}'; tmux list-sessions >/dev/null 2>&1"; then
-    vlarch_run_user "$user" "tmux source-file" "tmux source-file '${conf}'" || true
-  fi
+  vlarch_reload_tmux_config "$user"
+  return 0
+}
 
+vlarch_refresh_desktop_shell() {
+  local user="$1"
+
+  vlarch_overrides_reload_hyprland "$user"
+  if pgrep -x waybar >/dev/null 2>&1; then
+    pkill -SIGUSR2 waybar 2>/dev/null || killall -SIGUSR2 waybar 2>/dev/null || true
+  fi
+}
+
+vlarch_restart_walker_if_session() {
+  local user="$1"
+  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
+  vlarch_hyprland_session_for_user "$user" || return 0
+  vlarch_run_user "$user" "restart walker service" "vlarch-walker-services" || true
   return 0
 }
 

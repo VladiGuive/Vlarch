@@ -1,0 +1,23 @@
+{
+  "name": "kanagawa",
+  "background_opacity": 0.85,
+  "roundness": 0,
+  "palette": {
+    "polar_night_0": "#1F1F28",
+    "polar_night_1": "#16161D",
+    "polar_night_2": "#2A2A37",
+    "polar_night_3": "#363646",
+    "snow_storm_0": "#DCD7BA",
+    "snow_storm_1": "#C8C093",
+    "snow_storm_2": "#E6E0C2",
+    "frost_0": "#7E9CD8",
+    "frost_1": "#7FB4CA",
+    "frost_2": "#7E9CD8",
+    "frost_3": "#658594",
+    "aurora_red": "#C34043",
+    "aurora_orange": "#FFA066",
+    "aurora_yellow": "#E6C384",
+    "aurora_green": "#76946A",
+    "aurora_purple": "#957FB8"
+  }
+}

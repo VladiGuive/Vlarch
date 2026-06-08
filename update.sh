@@ -13,6 +13,8 @@ set -euo pipefail
 : "${VLARCH_INFO_FILE:=/etc/vlarch/install-info}"
 : "${VLARCH_FORCE_UPDATE:=0}"
 VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-update-bootstrap.log}"
+VLARCH_STATE_DIR="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+VLARCH_UPDATE_LOCK="${VLARCH_STATE_DIR}/update.lock"
 
 _VLARCH_ESC_RESET=$'\033[0m'
 _VLARCH_NORD_FG=$'\033[38;5;253m'
@@ -94,16 +96,53 @@ _local_branch() {
 
 _cdn_base_for_branch() {
   local branch="${1:-main}"
-  branch="${branch//\//-}"
-  if [[ "$branch" == main ]]; then
-    printf 'https://vlarch.vladi.tech'
-  else
-    printf 'https://vlarch-%s.vladi.tech' "$branch"
-  fi
+  printf 'https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/%s' "$branch"
 }
 
 _fetch_remote_version() {
   curl -fsSL "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+}
+
+_vlarch_source_version_lib() {
+  local lib share="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+  lib="${share}/version.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]]; then
+    # shellcheck disable=SC1090
+    source "${VLARCH_SCRIPT_DIR}/lib/version.sh"
+    return 0
+  fi
+
+  local self_root=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    self_root="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+    lib="${self_root}/lib/version.sh"
+    if [[ -f "$lib" ]]; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      return 0
+    fi
+  fi
+
+  if [[ -n "${VLARCH_CDN_BASE:-}" ]]; then
+    lib="$(mktemp)"
+    if curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/lib/version.sh" -o "$lib" 2>/dev/null; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      rm -f "$lib"
+      return 0
+    fi
+    rm -f "$lib"
+  fi
+
+  return 1
 }
 
 _check_version_gate() {
@@ -124,9 +163,11 @@ _check_version_gate() {
   remote="$(_fetch_remote_version)" || _die "could not fetch remote version from ${VLARCH_CDN_BASE}/version.txt"
   [[ -n "$remote" ]] || _die "remote version from ${VLARCH_CDN_BASE}/version.txt is empty"
 
+  _vlarch_source_version_lib || _die "version library unavailable"
+
   local_ver="$(_local_version "$VLARCH_INFO_FILE")"
-  if [[ -n "$local_ver" && "$local_ver" == "$remote" ]]; then
-    printf '[vlarch] already up to date (%s)\n' "$remote"
+  if [[ -n "$local_ver" ]] && vlarch_version_up_to_date "$local_ver" "$remote"; then
+    printf '[vlarch] already up to date (%s)\n' "$local_ver"
     exit 0
   fi
 
@@ -150,7 +191,66 @@ _run_main() {
   else
     export VLARCH_UI=0
   fi
-  exec bash "${root}/update/main.sh" "$@"
+  bash "${root}/update/main.sh" "$@"
+}
+
+_vlarch_update_locked() {
+  # When update.sh is run directly from a checked-out repo, reuse it.
+  if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/main.sh" ]]; then
+    _check_version_gate
+    _run_main "${VLARCH_SCRIPT_DIR}" "${ARGS[@]}"
+    return 0
+  fi
+
+  local _self _root
+  _self="${BASH_SOURCE[0]:-}"
+  if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
+    _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
+    if [[ -f "${_root}/update/main.sh" ]]; then
+      export VLARCH_SCRIPT_DIR="$_root"
+      _check_version_gate
+      _run_main "${_root}" "${ARGS[@]}"
+      return 0
+    fi
+  fi
+
+  [[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: vlarch update)"
+
+  command -v git >/dev/null 2>&1 || _die "git not found"
+  command -v curl >/dev/null 2>&1 || _die "curl not found"
+
+  _check_version_gate
+
+  if [[ -z "${VLARCH_GIT_BRANCH}" ]]; then
+    VLARCH_GIT_BRANCH="$(_local_branch "$VLARCH_INFO_FILE")"
+    export VLARCH_GIT_BRANCH
+  fi
+
+  local WORKDIR
+  WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
+  [[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
+  # Quote path now: WORKDIR is local and unset before this EXIT trap runs.
+  trap 'rm -rf '"$(printf '%q' "$WORKDIR")"' 2>/dev/null || true' EXIT
+  rm -rf "${WORKDIR}"
+
+  _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
+    git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
+
+  _run_main "${WORKDIR}" "${ARGS[@]}"
+}
+
+_with_update_lock() {
+  install -d -m 0755 "$VLARCH_STATE_DIR" \
+    || _die "cannot create state dir ${VLARCH_STATE_DIR}"
+  local rc=0
+  (
+    flock -n 9 || exit 111
+    _vlarch_update_locked
+  ) 9>>"$VLARCH_UPDATE_LOCK" || rc=$?
+  if ((rc == 111)); then
+    _die "another update is already running"
+  fi
+  ((rc == 0)) || exit "$rc"
 }
 
 # Parse bootstrap-level flags first (consumed here; rest pass through to main).
@@ -199,39 +299,21 @@ fi
 
 export VLARCH_VERBOSE VLARCH_CDN_BASE VLARCH_FORCE_UPDATE
 
-# When update.sh is run directly from a checked-out repo, reuse it.
-if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/update/main.sh" ]]; then
-  _check_version_gate
-  _run_main "${VLARCH_SCRIPT_DIR}" "${ARGS[@]}"
-fi
-_self="${BASH_SOURCE[0]:-}"
-if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
-  _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
-  if [[ -f "${_root}/update/main.sh" ]]; then
-    export VLARCH_SCRIPT_DIR="$_root"
-    _check_version_gate
-    _run_main "${_root}" "${ARGS[@]}"
-  fi
-fi
+_with_update_lock
 
-[[ "$(id -u)" -eq 0 ]] || _die "update must run as root (try: vlarch update)"
+# Restart walker after the update lock is released. Starting walker during the
+# locked section inherits flock(2) on the lock fd and pins it until logout.
+_vlarch_restart_walker_if_session() {
+  local user uid runtime
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 0
+  user="$(grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+  [[ -n "$user" ]] || return 0
+  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
+  uid="$(id -u "$user")"
+  runtime="/run/user/${uid}"
+  [[ -d "${runtime}/hypr" ]] || return 0
+  runuser -u "$user" -- bash -lc \
+    "export XDG_RUNTIME_DIR='${runtime}'; vlarch-walker-services" || true
+}
 
-command -v git >/dev/null 2>&1 || _die "git not found"
-command -v curl >/dev/null 2>&1 || _die "curl not found"
-
-_check_version_gate
-
-if [[ -z "${VLARCH_GIT_BRANCH}" ]]; then
-  VLARCH_GIT_BRANCH="$(_local_branch "$VLARCH_INFO_FILE")"
-  export VLARCH_GIT_BRANCH
-fi
-
-WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-update.XXXXXX)}"
-[[ "$WORKDIR" == /tmp/vlarch-update.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-update.*"
-trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
-rm -rf "${WORKDIR}"
-
-_run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
-  git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
-
-_run_main "${WORKDIR}" "${ARGS[@]}"
+_vlarch_restart_walker_if_session

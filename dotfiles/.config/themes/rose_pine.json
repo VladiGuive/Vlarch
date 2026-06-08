@@ -1,0 +1,23 @@
+{
+  "name": "rose pine",
+  "background_opacity": 0.85,
+  "roundness": 0,
+  "palette": {
+    "polar_night_0": "#191724",
+    "polar_night_1": "#1F1D2E",
+    "polar_night_2": "#26233A",
+    "polar_night_3": "#393552",
+    "snow_storm_0": "#E0DEF4",
+    "snow_storm_1": "#908CAA",
+    "snow_storm_2": "#C4A7E7",
+    "frost_0": "#9CCFD8",
+    "frost_1": "#31748F",
+    "frost_2": "#9CCFD8",
+    "frost_3": "#286983",
+    "aurora_red": "#EB6F92",
+    "aurora_orange": "#F6C177",
+    "aurora_yellow": "#F6C177",
+    "aurora_green": "#9CCFD8",
+    "aurora_purple": "#C4A7E7"
+  }
+}

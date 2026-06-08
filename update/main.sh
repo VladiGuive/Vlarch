@@ -41,12 +41,9 @@ while (($#)); do
     --help|-h)
       cat <<USAGE
 Vlarch update
-Usage: update.sh [--quiet|--verbose] [--dry-run] [--force] [--cdn-base URL] [--repo URL] [--branch REF]
+Usage: update.sh [--quiet|--verbose] [--dry-run] [--force]
 USAGE
       exit 0
-      ;;
-    --cdn-base|--repo|--branch)
-      shift 2
       ;;
     *) vlarch_die "unknown option: $1" ;;
   esac

@@ -13,6 +13,7 @@ VLARCH_VERBOSE="${VLARCH_VERBOSE:-0}"
 VLARCH_FIRST_BOOT_MARKER="${VLARCH_STATE_DIR}/first-boot.pending"
 VLARCH_POST_INSTALL_MARKER="${VLARCH_STATE_DIR}/post-install.done"
 VLARCH_RUNTIME_ENV="${VLARCH_STATE_DIR}/runtime.env"
+VLARCH_TIMESHIFT_COMMENT="vlarch pre-update"
 
 _log()  { printf '[vlarch] %s\n' "$*"; }
 _vlog() {
@@ -32,12 +33,52 @@ _install_info_branch() {
 
 _cdn_base_for_branch() {
   local branch="${1:-main}"
-  branch="${branch//\//-}"
-  if [[ "$branch" == main ]]; then
-    printf 'https://vlarch.vladi.tech'
-  else
-    printf 'https://vlarch-%s.vladi.tech' "$branch"
+  printf 'https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/%s' "$branch"
+}
+
+_vlarch_source_version_lib() {
+  local lib share="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+  lib="${share}/version.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
   fi
+
+  local self_root=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    self_root="$(cd -- "$(dirname -- "$self")" && pwd -P)"
+    lib="${self_root}/../lib/version.sh"
+    if [[ -f "$lib" ]]; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      return 0
+    fi
+  fi
+
+  if [[ -n "${VLARCH_CDN_BASE:-}" ]]; then
+    lib="$(mktemp)"
+    if curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/lib/version.sh" -o "$lib" 2>/dev/null; then
+      # shellcheck disable=SC1090
+      source "$lib"
+      rm -f "$lib"
+      return 0
+    fi
+    rm -f "$lib"
+  fi
+
+  return 1
+}
+
+_install_info_version() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^version=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_fetch_remote_version() {
+  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
 }
 
 _install_info_set_branch() {
@@ -74,7 +115,7 @@ _wifi_device() {
 }
 
 _has_network() {
-  if curl -fsS --max-time 5 -o /dev/null "${VLARCH_CDN_BASE:-https://vlarch.vladi.tech}/version.txt" 2>/dev/null; then
+  if curl -fsS --max-time 5 -o /dev/null "${VLARCH_CDN_BASE:-https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/main}/version.txt" 2>/dev/null; then
     return 0
   fi
   local connectivity
@@ -238,6 +279,83 @@ if [[ -z "${VLARCH_CDN_BASE:-}" ]]; then
 fi
 export VLARCH_CDN_BASE
 
+_timeshift_pre_update_lines() {
+  command -v timeshift >/dev/null 2>&1 || return 1
+  timeshift --list-snapshots --btrfs 2>&1 \
+    | grep -F "$VLARCH_TIMESHIFT_COMMENT" \
+    || true
+}
+
+_timeshift_snapshot_name_from_line() {
+  grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}' <<<"$1" | head -1
+}
+
+_timeshift_latest_pre_update_snapshot() {
+  local line name=""
+  line="$(_timeshift_pre_update_lines | tail -1)"
+  [[ -n "$line" ]] || return 1
+  name="$(_timeshift_snapshot_name_from_line "$line")"
+  [[ -n "$name" ]] || return 1
+  printf '%s' "$name"
+}
+
+# vlarch:summary=Restore the latest pre-update Timeshift snapshot.
+cmd_rollback() {
+  local snapshot="" list=0 yes=0
+  while (($#)); do
+    case "$1" in
+      --list) list=1; shift ;;
+      --yes|-y) yes=1; shift ;;
+      --snapshot) snapshot="${2:-}"; shift 2 ;;
+      *) _die "unknown option: $1 (try 'vlarch help rollback')" ;;
+    esac
+  done
+
+  command -v timeshift >/dev/null 2>&1 \
+    || _die "timeshift not installed; install it with: vlarch update"
+
+  if ((list)); then
+    local lines=() line name
+    mapfile -t lines < <(_timeshift_pre_update_lines)
+    if ((${#lines[@]} == 0)); then
+      _warn "no pre-update snapshots found (updates create them best-effort in preflight)"
+      return 1
+    fi
+    _log "Pre-update snapshots (newest last):"
+    for line in "${lines[@]}"; do
+      name="$(_timeshift_snapshot_name_from_line "$line")"
+      printf '  %s\n' "${name:-$line}"
+    done
+    return 0
+  fi
+
+  if [[ -z "$snapshot" ]]; then
+    snapshot="$(_timeshift_latest_pre_update_snapshot)" \
+      || _die "no pre-update snapshot found; last update may have skipped Timeshift (run with --verbose next time)"
+  fi
+
+  _log "Selected snapshot: ${snapshot} (${VLARCH_TIMESHIFT_COMMENT})"
+
+  if ((!yes)); then
+    printf 'Restore %s and reboot? This reverts changes since that snapshot. [y/N] ' "$snapshot"
+    local answer=""
+    read -r answer
+    case "$answer" in
+      y|Y|yes|YES) ;;
+      *) _log "rollback cancelled"; return 0 ;;
+    esac
+  fi
+
+  _log "Restoring Timeshift snapshot ${snapshot}..."
+  local -a ts_args=(--restore --snapshot "$snapshot" --btrfs --scripted)
+  if ((yes)); then
+    ts_args+=(--yes)
+  fi
+  timeshift "${ts_args[@]}" || _die "timeshift restore failed for ${snapshot}"
+
+  _log "Restore complete; reboot to finish rollback."
+}
+
 # vlarch:summary=Apply ~/.overrides to managed dotfiles without a full update.
 cmd_overrides() {
   command -v vlarch-overrides >/dev/null 2>&1 \
@@ -250,16 +368,27 @@ cmd_update() {
   local url="${VLARCH_CDN_BASE}/update.sh"
   local rc=0
   local -a args=()
-  local arg has_branch=0
+  local arg has_branch=0 has_force=0
+  local local_ver remote_ver
   for arg in "$@"; do
     case "$arg" in
       --verbose|-v) VLARCH_VERBOSE=1 ;;
+      --force) has_force=1 ;;
       --branch) has_branch=1; args+=("$arg") ;;
       *) args+=("$arg") ;;
     esac
   done
   if ((!has_branch)); then
     args=(--branch "$(_install_info_branch)" "${args[@]}")
+  fi
+  if ((!has_force)) && _vlarch_source_version_lib; then
+    local_ver="$(_install_info_version)" || true
+    remote_ver="$(_fetch_remote_version)" || true
+    if [[ -n "$local_ver" && -n "$remote_ver" ]] \
+      && vlarch_version_up_to_date "$local_ver" "$remote_ver"; then
+      _log "already up to date (${local_ver})"
+      return 0
+    fi
   fi
   if ((VLARCH_VERBOSE)); then
     _vlog "Fetching update bootstrap from ${url}"
@@ -306,7 +435,7 @@ _summary_for() {
 
 _needs_root() {
   case "${1:-}" in
-    update|post-install|first-boot|overrides|branch) return 0 ;;
+    update|post-install|first-boot|overrides|branch|rollback) return 0 ;;
     *) return 1 ;;
   esac
 }

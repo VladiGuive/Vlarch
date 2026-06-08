@@ -1,0 +1,20 @@
+-- Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate
+return {
+  dotfile = "#E0B828",
+  polar_night_0 = "#EBE0B8",
+  polar_night_1 = "#E2D6A8",
+  polar_night_2 = "#D4C490",
+  polar_night_3 = "#A08850",
+  snow_storm_0 = "#3A2810",
+  snow_storm_1 = "#584430",
+  snow_storm_2 = "#241808",
+  frost_0 = "#E0B828",
+  frost_1 = "#C89810",
+  frost_2 = "#8A6408",
+  frost_3 = "#684808",
+  aurora_red = "#C03828",
+  aurora_orange = "#CC5010",
+  aurora_yellow = "#9A7008",
+  aurora_green = "#4A7028",
+  aurora_purple = "#8A4E78",
+}

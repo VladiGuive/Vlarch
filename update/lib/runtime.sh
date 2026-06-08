@@ -1,14 +1,31 @@
 #!/usr/bin/env bash
 # Installed-system runtime helpers. Sourced - no set -e here.
 
+vlarch_update_lock_path() {
+  local state_dir="${VLARCH_STATE_DIR:-/var/lib/vlarch}"
+  printf '%s/update.lock' "$state_dir"
+}
+
+vlarch_with_update_lock() {
+  local lock_path="${1:-$(vlarch_update_lock_path)}"
+  local state_dir rc=0
+  shift
+  ((${#@})) || return 1
+  state_dir="$(dirname -- "$lock_path")"
+  install -d -m 0755 "$state_dir" || return 1
+  (
+    flock -n 9 || exit 111
+    "$@"
+  ) 9>>"$lock_path" || rc=$?
+  if ((rc == 111)); then
+    return 111
+  fi
+  return "$rc"
+}
+
 vlarch_cdn_base_for_branch() {
   local branch="${1:-main}"
-  branch="${branch//\//-}"
-  if [[ "$branch" == main ]]; then
-    printf 'https://vlarch.vladi.tech'
-  else
-    printf 'https://vlarch-%s.vladi.tech' "$branch"
-  fi
+  printf 'https://raw.githubusercontent.com/VladiGuive/Vlarch/refs/heads/%s' "$branch"
 }
 
 vlarch_install_info_branch() {
