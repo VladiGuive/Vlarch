@@ -58,6 +58,10 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /mnt/usr/local/bin/vlarch-agent
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
 
+# Pacman hook: restart walker service after walker-bin is updated.
+install -Dm0755 "${VLARCH_ASSETS_DIR}/vlarch-walker-hook" /mnt/usr/local/bin/vlarch-walker-hook
+install -Dm0644 "${VLARCH_ASSETS_DIR}/walker.hook" /mnt/etc/pacman.d/hooks/walker.hook
+
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {
   printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
