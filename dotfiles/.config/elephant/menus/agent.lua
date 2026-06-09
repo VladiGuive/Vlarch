@@ -3,6 +3,7 @@ local L = dofile(os.getenv("HOME") .. "/.config/elephant/utils/locale.lua")
 
 Name = "agent"
 NamePretty = L.t("Vlarch Agent", "Agente Vlarch")
+Icon = "vlarch-agent"
 Cache = false
 FixedOrder = true
 Action = "lua:Activate"
