@@ -1,7 +1,7 @@
 import { Box, Text, useStdout } from '@hermes/ink'
 import { useState } from 'react'
 
-import { artWidth, caduceus, logo, LOGO_WIDTH } from '../banner.js'
+import { artWidth, logo, LOGO_WIDTH } from '../banner.js'
 import { flat } from '../lib/text.js'
 import type { Theme } from '../theme.js'
 import type { PanelSection, SessionInfo } from '../types.js'
@@ -123,10 +123,8 @@ function CollapseToggle({
 export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
   const term = useStdout().stdout?.columns ?? 100
   const cols = Math.max(20, Math.min(term, maxWidth ?? term))
-  const heroLines = caduceus(t.color, t.bannerHero || undefined)
-  const leftW = Math.min((artWidth(heroLines) || LOGO_WIDTH) + 4, Math.floor(cols * 0.4))
-  const wide = cols >= 90 && leftW + 40 < cols
-  const w = Math.max(20, wide ? cols - leftW - 14 : cols - 12)
+  const wide = cols >= 90
+  const w = Math.max(20, cols - 12)
 
   // ── Local collapse state for remaining sections ──
   const [systemOpen, setSystemOpen] = useState(false)
@@ -170,10 +168,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
   return (
     <Box borderColor={t.color.border} borderStyle="round" marginBottom={1} paddingX={2} paddingY={1}>
       {wide && (
-        <Box flexDirection="column" marginRight={2} width={leftW}>
-          <ArtLines lines={heroLines} />
-          <Text />
-
+        <Box flexDirection="column" marginRight={2}>
           <Text color={t.color.accent}>
             {info.model.split('/').pop()}
           </Text>

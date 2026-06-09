@@ -69850,7 +69850,7 @@ function parseRichMarkup(markup) {
   }
   return lines;
 }
-var RICH_RE, LOGO_ART, LOGO_GRADIENT, colorize3, LOGO_WIDTH, logo, caduceus, artWidth;
+var RICH_RE, LOGO_ART, LOGO_GRADIENT, colorize3, LOGO_WIDTH, logo, artWidth;
 var init_banner = __esm({
   "src/banner.ts"() {
     "use strict";
@@ -69870,7 +69870,6 @@ var init_banner = __esm({
     };
     LOGO_WIDTH = Math.max(...LOGO_ART.map((line) => line.length));
     logo = (c, customLogo) => customLogo ? parseRichMarkup(customLogo) : colorize3(LOGO_ART, LOGO_GRADIENT, c);
-    caduceus = logo;
     artWidth = (lines) => lines.reduce((m, [, t]) => Math.max(m, t.length), 0);
   }
 });
@@ -69932,10 +69931,8 @@ function CollapseToggle({
 function SessionPanel({ info, maxWidth, sid, t }) {
   const term = useStdout().stdout?.columns ?? 100;
   const cols = Math.max(20, Math.min(term, maxWidth ?? term));
-  const heroLines = caduceus(t.color, t.bannerHero || void 0);
-  const leftW = Math.min((artWidth(heroLines) || LOGO_WIDTH) + 4, Math.floor(cols * 0.4));
-  const wide = cols >= 90 && leftW + 40 < cols;
-  const w = Math.max(20, wide ? cols - leftW - 14 : cols - 12);
+  const wide = cols >= 90;
+  const w = Math.max(20, cols - 12);
   const [systemOpen, setSystemOpen] = (0, import_react87.useState)(false);
   const [mcpOpen, setMcpOpen] = (0, import_react87.useState)(false);
   const mcpBody = () => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_jsx_runtime28.Fragment, { children: (info.mcp_servers ?? []).map((s) => /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Text, { wrap: "truncate", children: [
@@ -69956,9 +69953,7 @@ function SessionPanel({ info, maxWidth, sid, t }) {
     return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Text, { color: t.color.muted, children: info.system_prompt });
   };
   return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Box_default, { borderColor: t.color.border, borderStyle: "round", marginBottom: 1, paddingX: 2, paddingY: 1, children: [
-    wide && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Box_default, { flexDirection: "column", marginRight: 2, width: leftW, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ArtLines, { lines: heroLines }),
-      /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Text, {}),
+    wide && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Box_default, { flexDirection: "column", marginRight: 2, children: [
       /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Text, { color: t.color.accent, children: info.model.split("/").pop() }),
       /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Text, { color: t.color.muted, wrap: "truncate-end", children: info.cwd || process.cwd() }),
       sid && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Text, { children: [

@@ -65,9 +65,6 @@ export const LOGO_WIDTH = Math.max(...LOGO_ART.map(line => line.length))
 export const logo = (c: ThemeColors, customLogo?: string): Line[] =>
   customLogo ? parseRichMarkup(customLogo) : colorize(LOGO_ART, LOGO_GRADIENT, c)
 
-// caduceus kept as alias for backward compat — returns the logo instead
-export const caduceus = logo
-
 export const artWidth = (lines: Line[]) => lines.reduce((m, [, t]) => Math.max(m, t.length), 0)
 
 type Line = [string, string]

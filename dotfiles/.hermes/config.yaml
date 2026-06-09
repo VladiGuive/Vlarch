@@ -210,7 +210,7 @@ display:
   resume_skip_tool_only: true
   busy_input_mode: interrupt
   interface: tui
-  tui_auto_resume_recent: true
+  tui_auto_resume_recent: false
   tui_agents_nudge: false
   bell_on_complete: false
   show_reasoning: false
