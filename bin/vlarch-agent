@@ -181,7 +181,18 @@ _vlarch_agent_chat() {
   if [[ -n "$query" ]]; then
     hermes --yolo chat -q "$query"
   else
-    hermes --yolo chat
+    # Start Hermes inside a PTY (via script) so we can inject /voice on
+    # automatically after startup, enabling voice mode by default.
+    if command -v script >/dev/null 2>&1; then
+      exec 3<&0
+      {
+        sleep 2
+        printf '/voice on\r'
+        cat <&3
+      } | script -q -e -f -c "hermes --yolo chat" /dev/null 2>/dev/null
+    else
+      hermes --yolo chat
+    fi
   fi
 }
 
