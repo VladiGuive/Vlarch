@@ -7,11 +7,11 @@ set -euo pipefail
 VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 HERMES_HOME="${HOME:?}/.hermes"
 HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
+VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
 
 _vlarch_log() {
-  local log="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
-  mkdir -p "$(dirname "$log")"
-  printf '%s %s\n' "$(date -Iseconds)" "$*" >>"$log"
+  mkdir -p "$(dirname "$VLARCH_HERMES_ENSURE_LOG")"
+  printf '%s %s\n' "$(date -Iseconds)" "$*" >>"$VLARCH_HERMES_ENSURE_LOG"
 }
 
 _vlarch_installed_user() {
@@ -34,21 +34,50 @@ _vlarch_setup_env() {
   runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
 
   export HOME="$home" USER="$install_user" XDG_RUNTIME_DIR="$runtime"
-  export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
+  export PATH="${HOME}/.local/bin:${HERMES_HOME}/hermes-agent/venv/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
   HERMES_HOME="${HOME}/.hermes"
   HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
+  VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
+}
+
+_vlarch_hermes_bin() {
+  local candidate
+
+  if command -v hermes >/dev/null 2>&1; then
+    command -v hermes
+    return 0
+  fi
+
+  for candidate in \
+    "${HOME}/.local/bin/hermes" \
+    "${HERMES_HOME}/hermes-agent/venv/bin/hermes"; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 _vlarch_hermes_path() {
-  command -v hermes >/dev/null 2>&1 && return 0
-  [[ -x "${HOME}/.local/bin/hermes" ]] && export PATH="${HOME}/.local/bin:${PATH}"
+  local bin dir
+
+  bin="$(_vlarch_hermes_bin)" || return 1
+  dir="$(dirname "$bin")"
+  export PATH="${dir}:${PATH}"
   command -v hermes >/dev/null 2>&1
 }
 
 _vlarch_hermes_python() {
   local py="${HERMES_HOME}/hermes-agent/venv/bin/python"
+
   [[ -x "$py" ]] || return 1
   readlink -f "$py"
+}
+
+_vlarch_ensure_complete() {
+  [[ -f "$HERMES_OK" ]] && _vlarch_hermes_path
 }
 
 _vlarch_hermes_gateway_install() {
@@ -56,7 +85,7 @@ _vlarch_hermes_gateway_install() {
 
   _vlarch_log "hermes gateway install"
   set +o pipefail
-  yes | hermes gateway install
+  yes | hermes gateway install >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
   rc=$?
   set -o pipefail
   if ((rc != 0 && rc != 141)); then
@@ -85,19 +114,20 @@ _vlarch_mark_complete() {
 }
 
 _vlarch_run_setup() {
-  if [[ -f "$HERMES_OK" ]]; then
+  if _vlarch_ensure_complete; then
     _vlarch_log "already complete (${HERMES_OK})"
     return 0
   fi
 
-  if [[ ! -d "$HERMES_HOME" ]]; then
+  if ! _vlarch_hermes_path; then
     command -v curl >/dev/null 2>&1 || {
       _vlarch_log "curl not found"
       return 1
     }
 
     _vlarch_log "installing hermes via curl"
-    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup
+    curl -fsSL https://hermes-agent.nousresearch.com/install.sh \
+      | bash -s -- --skip-setup >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
   fi
 
   _vlarch_hermes_path || {
@@ -106,12 +136,14 @@ _vlarch_run_setup() {
   }
 
   _vlarch_log "hermes setup --non-interactive"
-  hermes setup --non-interactive
+  hermes setup --non-interactive >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
 
   _vlarch_hermes_gateway_install
 
   _vlarch_log "hermes gateway start"
-  hermes gateway start
+  hermes gateway start >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1 || {
+    _vlarch_log "hermes gateway start returned non-zero (continuing)"
+  }
 
   _vlarch_mark_complete
   _vlarch_apply_setcap
@@ -120,7 +152,7 @@ _vlarch_run_setup() {
 
 _vlarch_setup_env "$@"
 
-if [[ -f "$HERMES_OK" ]]; then
+if _vlarch_ensure_complete; then
   exit 0
 fi
 
