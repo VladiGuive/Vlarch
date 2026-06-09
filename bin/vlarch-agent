@@ -23,23 +23,36 @@ _vlarch_require_hermes() {
   }
 }
 
+_vlarch_quote_cmd() {
+  local out="" arg
+  for arg in "$@"; do
+    out+="$(printf '%q ' "$arg")"
+  done
+  printf '%s' "${out% }"
+}
+
 _vlarch_hermes_until() {
   local label="$1"
   local pattern="$2"
   shift 2
-  local log rc
+  local log rc quoted
 
   while true; do
     printf '\n[vlarch-agent] %s\n' "$label"
     log="$(mktemp)"
+    quoted="$(_vlarch_quote_cmd "$@")"
     set +e
-    set +o pipefail
-    "$@" 2>&1 | tee "$log"
-    rc="${PIPESTATUS[0]}"
-    set -o pipefail
+    if command -v script >/dev/null 2>&1; then
+      # script keeps a pty so hermes model/whatsapp stay interactive (arrows, menus).
+      script -q -e -f -c "$quoted" "$log"
+      rc=$?
+    else
+      "$@"
+      rc=$?
+    fi
     set -e
 
-    if grep -qF "$pattern" "$log"; then
+    if grep -qF "$pattern" "$log" 2>/dev/null; then
       rm -f "$log"
       return 0
     fi
@@ -121,8 +134,8 @@ _vlarch_agent_open_kitty() {
 
   kitty --title 'vlarch-agent' \
     -o remember_window_size=no \
-    -o initial_window_width=600 \
-    -o initial_window_height=570 \
+    -o initial_window_width=700 \
+    -o initial_window_height=650 \
     -o window_padding_width=0 \
     -o window_margin_width=0 \
     -o cursor_trail=0 \
