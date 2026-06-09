@@ -1,18 +1,80 @@
 #!/usr/bin/env bash
-# vlarch-agent - wrap hermes chat; opens kitty on current workspace when not on a TTY.
+# vlarch-agent - wrap hermes chat; first-run WhatsApp/model setup; kitty when not on a TTY.
 
 set -euo pipefail
 
-query="$*"
-[[ -n "$query" ]] || {
-  printf 'usage: %s <query>\n' "$(basename "$0")" >&2
-  exit 1
-}
+VLARCH_AGENT_OK="${HOME}/.config/vlarch/hermes-agent.ok"
 
 export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
 
-_hermes_chat() {
+_vlarch_agent_ready() {
+  [[ -f "$VLARCH_AGENT_OK" ]]
+}
+
+_vlarch_agent_mark_ready() {
+  mkdir -p "$(dirname "$VLARCH_AGENT_OK")"
+  : >"$VLARCH_AGENT_OK"
+}
+
+_vlarch_require_hermes() {
+  command -v hermes >/dev/null 2>&1 || {
+    printf 'hermes not found\n' >&2
+    exit 1
+  }
+}
+
+_vlarch_hermes_until() {
+  local label="$1"
+  local pattern="$2"
+  shift 2
+  local log rc
+
+  while true; do
+    printf '\n[vlarch-agent] %s\n' "$label"
+    log="$(mktemp)"
+    set +e
+    set +o pipefail
+    "$@" 2>&1 | tee "$log"
+    rc="${PIPESTATUS[0]}"
+    set -o pipefail
+    set -e
+
+    if grep -qF "$pattern" "$log"; then
+      rm -f "$log"
+      return 0
+    fi
+
+    rm -f "$log"
+    printf '[vlarch-agent] Expected %q in output (exit %s).\n' "$pattern" "$rc"
+    read -r -p 'Press Enter to retry, or Ctrl+C to abort...'
+  done
+}
+
+_vlarch_agent_first_run() {
+  _vlarch_agent_ready && return 0
+
+  _vlarch_hermes_until \
+    'Pair WhatsApp (scan QR in terminal); waiting for success...' \
+    'WhatsApp paired successfully!' \
+    hermes whatsapp
+
+  _vlarch_hermes_until \
+    'Configure model provider; waiting for success...' \
+    'Default model set to' \
+    hermes model
+
+  _vlarch_agent_mark_ready
+  hermes gateway restart
+}
+
+_vlarch_agent_chat() {
   exec hermes --yolo chat -q "$query"
+}
+
+_vlarch_agent_run() {
+  _vlarch_require_hermes
+  _vlarch_agent_first_run
+  _vlarch_agent_chat
 }
 
 _vlarch_hypr_active_workspace() {
@@ -39,46 +101,58 @@ _vlarch_hypr_focus_agent_window() {
   hyprctl dispatch centerwindow 2>/dev/null || true
 }
 
-if [[ -t 0 && -t 1 ]]; then
-  command -v hermes >/dev/null 2>&1 || {
-    printf 'hermes not found\n' >&2
+_vlarch_agent_open_kitty() {
+  local ws addr
+
+  command -v kitty >/dev/null 2>&1 || {
+    printf 'kitty not found\n' >&2
     exit 1
   }
-  _hermes_chat
-fi
 
-command -v kitty >/dev/null 2>&1 || {
-  printf 'kitty not found\n' >&2
-  exit 1
-}
-
-command -v hermes >/dev/null 2>&1 || {
-  printf 'hermes not found\n' >&2
-  exit 1
-}
-
-ws=""
-addr=""
-if command -v hyprctl >/dev/null 2>&1; then
-  ws="$(_vlarch_hypr_active_workspace 2>/dev/null || true)"
-  addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
-  if [[ -n "$addr" ]]; then
-    _vlarch_hypr_focus_agent_window "$ws" "$addr"
-    exit 0
+  ws=""
+  if command -v hyprctl >/dev/null 2>&1; then
+    ws="$(_vlarch_hypr_active_workspace 2>/dev/null || true)"
+    addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
+    if [[ -n "$addr" ]]; then
+      _vlarch_hypr_focus_agent_window "$ws" "$addr"
+      return 0
+    fi
   fi
+
+  kitty --title 'vlarch-agent' \
+    -o remember_window_size=no \
+    -o initial_window_width=600 \
+    -o initial_window_height=570 \
+    -o window_padding_width=0 \
+    -o window_margin_width=0 \
+    -o cursor_trail=0 \
+    -e vlarch-agent --session "$query" &
+  sleep 0.3
+
+  if command -v hyprctl >/dev/null 2>&1; then
+    addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
+    _vlarch_hypr_focus_agent_window "$ws" "$addr"
+  fi
+}
+
+if [[ "${1:-}" == --session ]]; then
+  shift
+  query="$*"
+  [[ -n "$query" ]] || {
+    printf 'usage: %s --session <query>\n' "$(basename "$0")" >&2
+    exit 1
+  }
+  _vlarch_agent_run
 fi
 
-kitty --title 'vlarch-agent' \
-  -o remember_window_size=no \
-  -o initial_window_width=600 \
-  -o initial_window_height=570 \
-  -o window_padding_width=0 \
-  -o window_margin_width=0 \
-  -o cursor_trail=0 \
-  -e hermes --yolo chat -q "$query" &
-sleep 0.3
+query="$*"
+[[ -n "$query" ]] || {
+  printf 'usage: %s <query>\n' "$(basename "$0")" >&2
+  exit 1
+}
 
-if command -v hyprctl >/dev/null 2>&1; then
-  addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
-  _vlarch_hypr_focus_agent_window "$ws" "$addr"
+if [[ -t 0 && -t 1 ]]; then
+  _vlarch_agent_run
 fi
+
+_vlarch_agent_open_kitty
