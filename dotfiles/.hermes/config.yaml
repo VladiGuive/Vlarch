@@ -223,7 +223,7 @@ display:
   file_mutation_verifier: true
   turn_completion_explainer: false
   show_cost: false
-  skin: default
+  skin: vlarch
   language: en
   tui_status_indicator: unicode
   user_message_preview:
