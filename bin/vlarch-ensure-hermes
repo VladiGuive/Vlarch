@@ -8,6 +8,7 @@ VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
 HERMES_HOME="${HOME:?}/.hermes"
 HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
 VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
+HERMES_VENV_BIN="${HERMES_HOME}/hermes-agent/venv/bin/hermes"
 
 _vlarch_log() {
   mkdir -p "$(dirname "$VLARCH_HERMES_ENSURE_LOG")"
@@ -38,32 +39,23 @@ _vlarch_setup_env() {
   HERMES_HOME="${HOME}/.hermes"
   HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
   VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
+  HERMES_VENV_BIN="${HERMES_HOME}/hermes-agent/venv/bin/hermes"
 }
 
-_vlarch_hermes_bin() {
-  local candidate
-
-  if command -v hermes >/dev/null 2>&1; then
-    command -v hermes
-    return 0
-  fi
-
-  for candidate in \
-    "${HOME}/.local/bin/hermes" \
-    "${HERMES_HOME}/hermes-agent/venv/bin/hermes"; do
-    if [[ -x "$candidate" ]]; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done
-
-  return 1
+_vlarch_hermes_install_ok() {
+  [[ -x "$HERMES_VENV_BIN" ]]
 }
 
 _vlarch_hermes_path() {
   local bin dir
 
-  bin="$(_vlarch_hermes_bin)" || return 1
+  _vlarch_hermes_install_ok || return 1
+
+  bin="${HERMES_VENV_BIN}"
+  if [[ -x "${HOME}/.local/bin/hermes" ]]; then
+    bin="${HOME}/.local/bin/hermes"
+  fi
+
   dir="$(dirname "$bin")"
   export PATH="${dir}:${PATH}"
   command -v hermes >/dev/null 2>&1
@@ -77,7 +69,7 @@ _vlarch_hermes_python() {
 }
 
 _vlarch_ensure_complete() {
-  [[ -f "$HERMES_OK" ]] && _vlarch_hermes_path
+  [[ -f "$HERMES_OK" ]] && _vlarch_hermes_install_ok
 }
 
 _vlarch_hermes_gateway_install() {
@@ -113,25 +105,33 @@ _vlarch_mark_complete() {
   : >"$HERMES_OK"
 }
 
+_vlarch_install_hermes() {
+  command -v curl >/dev/null 2>&1 || {
+    _vlarch_log "curl not found"
+    return 1
+  }
+
+  if ! _vlarch_hermes_install_ok; then
+    rm -f "${HOME}/.local/bin/hermes" "$HERMES_OK"
+  fi
+
+  _vlarch_log "installing hermes via curl"
+  curl -fsSL https://hermes-agent.nousresearch.com/install.sh \
+    | bash -s -- --skip-setup >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
+}
+
 _vlarch_run_setup() {
   if _vlarch_ensure_complete; then
     _vlarch_log "already complete (${HERMES_OK})"
     return 0
   fi
 
-  if ! _vlarch_hermes_path; then
-    command -v curl >/dev/null 2>&1 || {
-      _vlarch_log "curl not found"
-      return 1
-    }
-
-    _vlarch_log "installing hermes via curl"
-    curl -fsSL https://hermes-agent.nousresearch.com/install.sh \
-      | bash -s -- --skip-setup >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
+  if ! _vlarch_hermes_install_ok; then
+    _vlarch_install_hermes
   fi
 
   _vlarch_hermes_path || {
-    _vlarch_log "hermes not on PATH after install"
+    _vlarch_log "hermes venv binary missing after install (${HERMES_VENV_BIN})"
     return 1
   }
 

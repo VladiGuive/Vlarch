@@ -33,6 +33,14 @@ vlarch_run_user() {
     printf 'cmd: %s\n' "$wrapped"
   } >>"$log"
   runuser -u "$user" -- bash -lc "$wrapped" >>"$log" 2>&1 || rc=$?
+  if ((rc != 0)); then
+    local step_log
+    step_log="$(vlarch_log_path step)"
+    {
+      printf '\n--- vlarch_run_user failed: %s (exit %s) ---\n' "$label" "$rc"
+      tail -n 40 "$log"
+    } >>"$step_log" 2>/dev/null || true
+  fi
   if ((rc == 0)) && declare -F vlarch_ui_tick >/dev/null 2>&1; then
     vlarch_ui_tick "$label"
   fi
