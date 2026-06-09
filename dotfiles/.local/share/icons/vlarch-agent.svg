@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E3440"/>
+      <stop offset="100%" stop-color="#3B4252"/>
+    </linearGradient>
+    <linearGradient id="sparkle1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#88C0D0"/>
+      <stop offset="100%" stop-color="#81A1C1"/>
+    </linearGradient>
+    <linearGradient id="sparkle2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8FBCBB"/>
+      <stop offset="100%" stop-color="#5E81AC"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bg)" stroke="#4C566A" stroke-width="2"/>
+  <!-- Main sparkle star (4-pointed) -->
+  <path d="M64 20 L70 54 L104 60 L70 66 L64 100 L58 66 L24 60 L58 54 Z"
+        fill="url(#sparkle1)" opacity="0.95"/>
+  <!-- Inner sparkle highlight -->
+  <path d="M64 32 L67 57 L92 60 L67 63 L64 88 L61 63 L36 60 L61 57 Z"
+        fill="url(#sparkle2)" opacity="0.8"/>
+  <!-- Small sparkle dots -->
+  <circle cx="36" cy="36" r="3" fill="#88C0D0" opacity="0.7"/>
+  <circle cx="92" cy="36" r="3" fill="#88C0D0" opacity="0.7"/>
+  <circle cx="36" cy="92" r="3" fill="#88C0D0" opacity="0.7"/>
+  <circle cx="92" cy="92" r="3" fill="#88C0D0" opacity="0.7"/>
+  <!-- Small accent dots -->
+  <circle cx="28" cy="60" r="2" fill="#EBCB8B" opacity="0.6"/>
+  <circle cx="100" cy="60" r="2" fill="#EBCB8B" opacity="0.6"/>
+  <circle cx="64" cy="16" r="2" fill="#EBCB8B" opacity="0.6"/>
+  <circle cx="64" cy="112" r="2" fill="#EBCB8B" opacity="0.6"/>
+</svg>
