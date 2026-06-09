@@ -100,7 +100,7 @@ _cdn_base_for_branch() {
 }
 
 _fetch_remote_version() {
-  curl -fsSL "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+  curl -fsSL "${VLARCH_CDN_BASE}/version.txt?t=$(date +%s)" | tr -d '[:space:]'
 }
 
 _vlarch_source_version_lib() {
