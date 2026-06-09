@@ -177,6 +177,11 @@ _vlarch_agent_first_run() {
 }
 
 _vlarch_agent_chat() {
+  # Enable voice mode on startup via env var — respected by both TUI (ui-tui)
+  # and the Python CLI gateway. TUI reads HERMES_VOICE=1 in useConfigSync.ts;
+  # the gateway reads it in tui_gateway/server.py _voice_mode_enabled().
+  export HERMES_VOICE=1
+
   # -q sends the Walker query once; without -q opens interactive session.
   if [[ -n "$query" ]]; then
     hermes --yolo chat -q "$query"
