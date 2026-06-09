@@ -153,8 +153,8 @@ config_path.write_text("\n".join(remove_model_block(lines)).rstrip() + "\n")
 PY
 
   [[ -f "$override" ]] || return 0
-  vlarch_override_apply_one_at "$HOME" "${HOME}/.overrides" "$override" "$user" \
-    || printf '[vlarch-agent] warning: could not apply hermes overrides\n' >&2
+  vlarch_override_apply_one_at "$HOME" "${HOME}/.overrides" "$override" "$user" ||
+    printf '[vlarch-agent] warning: could not apply hermes overrides\n' >&2
 }
 
 _vlarch_agent_first_run() {
@@ -179,7 +179,6 @@ _vlarch_agent_first_run() {
 _vlarch_agent_chat() {
   # -q sends the Walker query once; --continue reopens the same session interactively.
   hermes --yolo chat -q "$query"
-  exec hermes --yolo chat --continue --cli
 }
 
 _vlarch_agent_run() {
@@ -236,8 +235,7 @@ _vlarch_agent_open_kitty() {
     -o initial_window_height=650 \
     -o window_padding_width=0 \
     -o window_margin_width=0 \
-    -o cursor_trail=0 \
-    -e vlarch-agent --session "$query" &
+    -o cursor_trail=0 &
   sleep 0.3
 
   if command -v hyprctl >/dev/null 2>&1; then
@@ -254,6 +252,7 @@ if [[ "${1:-}" == --session ]]; then
     exit 1
   }
   _vlarch_agent_run
+  exit 0
 fi
 
 query="$*"
@@ -264,6 +263,7 @@ query="$*"
 
 if [[ -t 0 && -t 1 ]]; then
   _vlarch_agent_run
+  exit 0
 fi
 
 _vlarch_agent_open_kitty
