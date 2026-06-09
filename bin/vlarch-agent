@@ -215,13 +215,23 @@ _vlarch_hypr_focus_agent_window() {
   hyprctl dispatch centerwindow 2>/dev/null || true
 }
 
+_vlarch_hypr_focus_window() {
+  local addr="$1"
+
+  [[ -n "$addr" ]] || return 0
+  hyprctl dispatch focuswindow "address:${addr}" 2>/dev/null || true
+}
+
 _vlarch_agent_open_kitty() {
-  local ws addr
+  local ws addr self
 
   command -v kitty >/dev/null 2>&1 || {
     printf 'kitty not found\n' >&2
     exit 1
   }
+
+  # Resolve our own path for the -e invocation inside Kitty
+  self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "$0" 2>/dev/null || printf '%s' "/usr/local/bin/vlarch-agent")"
 
   ws=""
   if command -v hyprctl >/dev/null 2>&1; then
@@ -240,12 +250,12 @@ _vlarch_agent_open_kitty() {
     -o window_padding_width=0 \
     -o window_margin_width=0 \
     -o cursor_trail=0 \
-    -e vlarch-agent --session "$query" &
-  sleep 0.3
+    -e "$self" --session "$query" &
+  sleep 0.5
 
   if command -v hyprctl >/dev/null 2>&1; then
     addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
-    _vlarch_hypr_focus_agent_window "$ws" "$addr"
+    _vlarch_hypr_focus_window "$addr"
   fi
 }
 
