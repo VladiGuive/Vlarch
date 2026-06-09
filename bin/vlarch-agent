@@ -81,7 +81,9 @@ _vlarch_agent_first_run() {
 }
 
 _vlarch_agent_chat() {
-  exec hermes --yolo chat -q "$query"
+  # -q sends the Walker query once; --continue reopens the same session interactively.
+  hermes --yolo chat -q "$query"
+  exec hermes --yolo chat --continue --cli
 }
 
 _vlarch_agent_run() {
