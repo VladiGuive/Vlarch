@@ -558,17 +558,6 @@ decoration {{
             lines.append(f"  {key}: \"{self.c(palette_key)}\"")
         lines.extend([
             "",
-            "spinner:",
-            "  waiting_faces:",
-            '    - "(⟃)"',
-            '    - "(⟄)"',
-            "  thinking_faces:",
-            '    - "(⌁)"',
-            '    - "(⚙)"',
-            "  wings:",
-            '    - ["⟪◈", "◈⟫"]',
-            '    - ["⟪◇", "◇⟫"]',
-            "",
             "branding:",
             '  agent_name: "Vlarch Agent"',
             '  welcome: "Bienvenido"',
@@ -576,6 +565,23 @@ decoration {{
             '  prompt_symbol: "❯"',
             "",
         ])
+        # Banner logo with Nord colors (Rich markup format)
+        f1 = self.c("frost_1")
+        f2 = self.c("frost_2")
+        f3 = self.c("frost_3")
+        pn3 = self.c("polar_night_3")
+        banner_logo = (
+            f"[bold {f2}] _   ____             __     ___                __ [/]\n"
+            f"[bold {f1}]| | / / /__ _________/ /    / _ |___ ____ ___  / /_[/]\n"
+            f"[{f2}]| |/ / / _` / __/ __/ _ \\  / __ / _` / -_) _ \\/ __/[/]\n"
+            f"[{f3}]|___/_/\\_,_/_/  \\__/_//_/ /_/ |_\\_, /\\__/_//_/\\__/ [/]\n"
+            f"[{pn3}]                                /___/[/]"
+        )
+        lines.append(f"banner_logo: |")
+        for logo_line in banner_logo.split("\n"):
+            lines.append(f"  {logo_line}")
+        lines.append("")
+
         (hermes_skins / "vlarch.yaml").write_text("\n".join(lines), encoding="utf-8")
 
     def run(self) -> None:
