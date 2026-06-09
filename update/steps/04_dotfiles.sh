@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 04 - dotfiles: sync managed paths only (.zprofile, .config/, etc.).
+# 04 - dotfiles: sync all top-level paths under dotfiles/ to $HOME.
 set -euo pipefail
 
 # shellcheck disable=SC1091
