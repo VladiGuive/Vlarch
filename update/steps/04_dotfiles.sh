@@ -46,9 +46,6 @@ vlarch_run "deploy dotfiles" \
 vlarch_run "reload desktop shell" \
   vlarch_refresh_desktop_shell "$VLARCH_USER"
 
-vlarch_run "restart walker service" \
-  vlarch_restart_walker_if_session "$VLARCH_USER"
-
 vlarch_run "reload tmux config" \
   vlarch_reload_tmux_config "$VLARCH_USER"
 

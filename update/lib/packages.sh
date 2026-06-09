@@ -93,7 +93,7 @@ vlarch_yay_install_manifests() {
   local pac_manifest="$2"
   local aur_manifest="$3"
   local pac_pkgs aur_pkgs
-  local -a all_aur_pkgs walker_stack_pkgs other_pkgs=()
+  local -a all_aur_pkgs other_pkgs=()
   local pkg
 
   pac_pkgs="$(vlarch_manifest_to_space_list "$pac_manifest")"
@@ -107,16 +107,10 @@ vlarch_yay_install_manifests() {
     read -r -a all_aur_pkgs <<< "$aur_pkgs"
     for pkg in "${all_aur_pkgs[@]}"; do
       case "$pkg" in
-        walker|walker-bin|elephant|elephant-*) walker_stack_pkgs+=("$pkg") ;;
         *) other_pkgs+=("$pkg") ;;
       esac
     done
 
-    if ((${#walker_stack_pkgs[@]})); then
-      vlarch_remove_conflicting_src_pkgs "$user" "${walker_stack_pkgs[@]}"
-      # One yay transaction keeps walker, elephant, and plugins on the same version.
-      vlarch_yay_sync_manifest_pkgs "$user" "${walker_stack_pkgs[@]}"
-    fi
     if ((${#other_pkgs[@]})); then
       vlarch_yay_sync_manifest_pkgs "$user" "${other_pkgs[@]}"
     fi

@@ -150,14 +150,6 @@ vlarch_refresh_desktop_shell() {
   fi
 }
 
-vlarch_restart_walker_if_session() {
-  local user="$1"
-  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
-  vlarch_hyprland_session_for_user "$user" || return 0
-  vlarch_run_user "$user" "restart walker service" "vlarch-walker-services" || true
-  return 0
-}
-
 vlarch_verify_desktop_readiness() {
   local user="$1" home plugin_count
   home="$(vlarch_user_home "$user")"

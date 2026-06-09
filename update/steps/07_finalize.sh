@@ -17,8 +17,6 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch" ]] || vlarch_die "missing bin/vlarch"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
-[[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
-[[ -f "${VLARCH_BIN_DIR}/vlarch-walker" ]] || vlarch_die "missing bin/vlarch-walker"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" ]] || vlarch_die "missing bin/vlarch-waybar-wifi"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-battery" ]] || vlarch_die "missing bin/vlarch-waybar-battery"
@@ -48,12 +46,6 @@ vlarch_run "install vlarch-tty-login" \
 
 vlarch_run "install vlarch-hyprpm-sync" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" /usr/local/bin/vlarch-hyprpm-sync
-
-vlarch_run "install vlarch-walker-services" \
-  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker-services" /usr/local/bin/vlarch-walker-services
-
-vlarch_run "install vlarch-walker" \
-  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker" /usr/local/bin/vlarch-walker
 
 vlarch_run "install vlarch-waybar-update" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /usr/local/bin/vlarch-waybar-update
@@ -94,12 +86,6 @@ vlarch_run "install vlarch-hermes-dashboard" \
 vlarch_run "install vlarch-agent" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /usr/local/bin/vlarch-agent
 
-# Pacman hook: restart walker service after walker-bin is updated.
-vlarch_run "install walker pacman hook script" \
-  install -Dm0755 "${VLARCH_ASSETS_DIR}/vlarch-walker-hook" /usr/local/bin/vlarch-walker-hook
-vlarch_run "install walker pacman hook" \
-  install -Dm0644 "${VLARCH_ASSETS_DIR}/walker.hook" /etc/pacman.d/hooks/walker.hook
-
 _hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
 if [[ -x "$_hermes_bin" ]]; then
   PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
@@ -109,9 +95,6 @@ elif command -v hermes >/dev/null 2>&1; then
     hermes gateway restart || true
 fi
 unset _hermes_bin
-
-vlarch_run "restart walker service" \
-  vlarch_restart_walker_if_session "$VLARCH_USER"
 
 if [[ -f /usr/local/share/vlarch/generate-nord-theme.py ]]; then
   vlarch_run "remove legacy theme generator script" \
