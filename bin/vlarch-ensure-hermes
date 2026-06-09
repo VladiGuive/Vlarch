@@ -105,6 +105,18 @@ _vlarch_mark_complete() {
   : >"$HERMES_OK"
 }
 
+_vlarch_ensure_voice_deps() {
+  local py pip
+  py="$(_vlarch_hermes_python)" || return 0
+  pip="${py%/*}/pip"
+  if [[ -x "$pip" ]]; then
+    _vlarch_log "ensuring voice deps (sounddevice, numpy)"
+    "$pip" install --quiet sounddevice numpy >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1 || {
+      _vlarch_log "voice deps install failed (non-fatal)"
+    }
+  fi
+}
+
 _vlarch_install_hermes() {
   command -v curl >/dev/null 2>&1 || {
     _vlarch_log "curl not found"
@@ -134,6 +146,8 @@ _vlarch_run_setup() {
     _vlarch_log "hermes venv binary missing after install (${HERMES_VENV_BIN})"
     return 1
   }
+
+  _vlarch_ensure_voice_deps
 
   _vlarch_log "hermes setup --non-interactive"
   hermes setup --non-interactive >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
