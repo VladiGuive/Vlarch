@@ -94,8 +94,16 @@ vlarch_run "install vlarch-hermes-dashboard" \
 vlarch_run "install vlarch-agent" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /usr/local/bin/vlarch-agent
 
-vlarch_run "restart hermes gateway" \
-  hermes gateway restart
+local _hermes_bin
+_hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
+if [[ -x "$_hermes_bin" ]]; then
+  PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
+    hermes gateway restart || true
+elif command -v hermes >/dev/null 2>&1; then
+  vlarch_run "restart hermes gateway" \
+    hermes gateway restart || true
+fi
+unset _hermes_bin
 
 vlarch_run "restart walker service" \
   vlarch_restart_walker_if_session "$VLARCH_USER"
