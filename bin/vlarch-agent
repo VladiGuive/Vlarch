@@ -235,7 +235,8 @@ _vlarch_agent_open_kitty() {
     -o initial_window_height=650 \
     -o window_padding_width=0 \
     -o window_margin_width=0 \
-    -o cursor_trail=0 &
+    -o cursor_trail=0 \
+    -e vlarch-agent --session "$query" &
   sleep 0.3
 
   if command -v hyprctl >/dev/null 2>&1; then
