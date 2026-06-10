@@ -1,0 +1,281 @@
+#!/usr/bin/env bash
+# vlarch-agent - wrap hermes chat; first-run WhatsApp/model setup; kitty when not on a TTY.
+
+set -euo pipefail
+
+VLARCH_AGENT_OK="${HOME}/.config/vlarch/hermes-agent.ok"
+VLARCH_SHARE_DIR="${VLARCH_SHARE_DIR:-/usr/local/share/vlarch}"
+
+export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
+
+_vlarch_agent_ready() {
+  [[ -f "$VLARCH_AGENT_OK" ]]
+}
+
+_vlarch_agent_mark_ready() {
+  mkdir -p "$(dirname "$VLARCH_AGENT_OK")"
+  : >"$VLARCH_AGENT_OK"
+}
+
+_vlarch_require_hermes() {
+  command -v hermes >/dev/null 2>&1 || {
+    printf 'hermes not found\n' >&2
+    exit 1
+  }
+}
+
+_vlarch_quote_cmd() {
+  local out="" arg
+  for arg in "$@"; do
+    out+="$(printf '%q ' "$arg")"
+  done
+  printf '%s' "${out% }"
+}
+
+_vlarch_hermes_until() {
+  local label="$1"
+  local pattern="$2"
+  shift 2
+  local log rc quoted
+
+  while true; do
+    printf '\n[vlarch-agent] %s\n' "$label"
+    log="$(mktemp)"
+    quoted="$(_vlarch_quote_cmd "$@")"
+    set +e
+    if command -v script >/dev/null 2>&1; then
+      # script keeps a pty so hermes model/whatsapp stay interactive (arrows, menus).
+      script -q -e -f -c "$quoted" "$log"
+      rc=$?
+    else
+      "$@"
+      rc=$?
+    fi
+    set -e
+
+    if grep -qF "$pattern" "$log" 2>/dev/null; then
+      rm -f "$log"
+      return 0
+    fi
+
+    rm -f "$log"
+    printf '[vlarch-agent] Expected %q in output (exit %s).\n' "$pattern" "$rc"
+    read -r -p 'Press Enter to retry, or Ctrl+C to abort...'
+  done
+}
+
+_vlarch_agent_load_overrides_lib() {
+  local lib="${VLARCH_SHARE_DIR}/overrides.sh"
+
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  lib="$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/../update/lib/overrides.sh"
+  if [[ -f "$lib" ]]; then
+    # shellcheck disable=SC1090
+    source "$lib"
+    return 0
+  fi
+
+  printf '[vlarch-agent] overrides library missing; run: vlarch update\n' >&2
+  return 1
+}
+
+_vlarch_agent_migrate_model_overrides() {
+  local config="${HOME}/.hermes/config.yaml"
+  local override="${HOME}/.overrides/.hermes/config.yaml"
+  local user="${USER:-}"
+
+  [[ -f "$config" ]] || return 0
+  _vlarch_agent_load_overrides_lib || return 0
+
+  if [[ -n "$user" ]]; then
+    vlarch_override_bootstrap_dir "$user"
+  fi
+
+  python3 - "$config" "$override" <<'PY'
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+override_path = Path(sys.argv[2])
+
+if not config_path.is_file():
+    sys.exit(0)
+
+lines = config_path.read_text().splitlines()
+
+def extract_model_block(src_lines):
+    model_lines = []
+    in_model = False
+    for line in src_lines:
+        if not in_model and line.startswith("model:"):
+            in_model = True
+            model_lines.append(line)
+            continue
+        if in_model:
+            if line and not line[0].isspace() and not line.startswith("#"):
+                break
+            model_lines.append(line)
+    return model_lines
+
+def remove_model_block(src_lines):
+    out = []
+    skip = False
+    for line in src_lines:
+        if not skip and line.startswith("model:"):
+            skip = True
+            continue
+        if skip:
+            if line and not line[0].isspace() and not line.startswith("#"):
+                skip = False
+            else:
+                continue
+        out.append(line)
+    return out
+
+if override_path.is_file():
+    existing = override_path.read_text()
+    if "@@@" in existing and "model:" in existing:
+        sys.exit(2)
+
+model_lines = extract_model_block(lines)
+if not model_lines:
+    sys.exit(0)
+
+override_path.parent.mkdir(parents=True, exist_ok=True)
+override_path.write_text("@@@\n" + "\n".join(model_lines) + "\n")
+
+config_path.write_text("\n".join(remove_model_block(lines)).rstrip() + "\n")
+PY
+
+  [[ -f "$override" ]] || return 0
+  vlarch_override_apply_one_at "$HOME" "${HOME}/.overrides" "$override" "$user" ||
+    printf '[vlarch-agent] warning: could not apply hermes overrides\n' >&2
+}
+
+_vlarch_agent_first_run() {
+  _vlarch_agent_ready && return 0
+
+  _vlarch_hermes_until \
+    'Pair WhatsApp (scan QR in terminal); waiting for success...' \
+    'WhatsApp paired successfully!' \
+    hermes whatsapp
+
+  _vlarch_hermes_until \
+    'Configure model provider; waiting for success...' \
+    'Default model set to' \
+    hermes model
+
+  _vlarch_agent_migrate_model_overrides
+
+  _vlarch_agent_mark_ready
+  hermes gateway restart
+}
+
+_vlarch_agent_chat() {
+  # Enable voice mode on startup via env var — respected by both TUI (ui-tui)
+  # and the Python CLI gateway. TUI reads HERMES_VOICE=1 in useConfigSync.ts;
+  # the gateway reads it in tui_gateway/server.py _voice_mode_enabled().
+  export HERMES_VOICE=1
+
+  # -q sends the Walker query once; without -q opens interactive session.
+  if [[ -n "$query" ]]; then
+    hermes --yolo chat -q "$query"
+  else
+    hermes --yolo chat
+  fi
+}
+
+_vlarch_agent_run() {
+  _vlarch_require_hermes
+  _vlarch_agent_first_run
+  _vlarch_agent_chat
+}
+
+_vlarch_hypr_active_workspace() {
+  hyprctl activeworkspace -j 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])'
+}
+
+_vlarch_hypr_agent_window_addr() {
+  hyprctl clients -j 2>/dev/null | python3 -c '
+import json, sys
+for c in json.load(sys.stdin):
+    if c.get("title") == "vlarch-agent":
+        print(c["address"])
+        break
+'
+}
+
+_vlarch_hypr_focus_agent_window() {
+  local ws="$1"
+  local addr="$2"
+
+  [[ -n "$ws" && -n "$addr" ]] || return 0
+  hyprctl dispatch movetoworkspacesilent "${ws},address:${addr}" 2>/dev/null || true
+  hyprctl dispatch focuswindow "address:${addr}" 2>/dev/null || true
+  hyprctl dispatch centerwindow 2>/dev/null || true
+}
+
+_vlarch_hypr_focus_window() {
+  local addr="$1"
+
+  [[ -n "$addr" ]] || return 0
+  hyprctl dispatch focuswindow "address:${addr}" 2>/dev/null || true
+}
+
+_vlarch_agent_open_kitty() {
+  local ws addr self
+
+  command -v kitty >/dev/null 2>&1 || {
+    printf 'kitty not found\n' >&2
+    exit 1
+  }
+
+  # Resolve our own path for the -e invocation inside Kitty
+  self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "$0" 2>/dev/null || printf '%s' "/usr/local/bin/vlarch-agent")"
+
+  ws=""
+  if command -v hyprctl >/dev/null 2>&1; then
+    ws="$(_vlarch_hypr_active_workspace 2>/dev/null || true)"
+    addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
+    if [[ -n "$addr" ]]; then
+      _vlarch_hypr_focus_agent_window "$ws" "$addr"
+      return 0
+    fi
+  fi
+
+  kitty --title 'vlarch-agent' \
+    -o remember_window_size=no \
+    -o initial_window_width=700 \
+    -o initial_window_height=650 \
+    -o window_padding_width=0 \
+    -o window_margin_width=0 \
+    -o cursor_trail=0 \
+    -e "$self" --session "$query" &
+  sleep 0.5
+
+  if command -v hyprctl >/dev/null 2>&1; then
+    addr="$(_vlarch_hypr_agent_window_addr 2>/dev/null || true)"
+    _vlarch_hypr_focus_window "$addr"
+  fi
+}
+
+if [[ "${1:-}" == --session ]]; then
+  shift
+  query="$*"
+  _vlarch_agent_run
+  exit 0
+fi
+
+query="$*"
+
+if [[ -t 0 && -t 1 ]]; then
+  _vlarch_agent_run
+  exit 0
+fi
+
+_vlarch_agent_open_kitty

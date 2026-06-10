@@ -67,7 +67,7 @@ _vlarch_local_version() {
 }
 
 _vlarch_remote_version() {
-  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt?t=$(date +%s)" | tr -d '[:space:]'
 }
 
 _vlarch_update_available() {
@@ -148,7 +148,10 @@ vlarch_waybar_status() {
 vlarch_waybar_refresh() {
   pgrep -x waybar >/dev/null 2>&1 || return 0
   pkill "-SIGRTMIN+${VLARCH_WAYBAR_UPDATE_SIGNAL}" waybar 2>/dev/null \
-    || killall -SIGUSR2 waybar 2>/dev/null \
+    || pkill -SIGUSR2 waybar 2>/dev/null \
+    || true
+  # Force a second signal after a brief pause in case the first was missed.
+  sleep 0.1 && pkill "-SIGRTMIN+${VLARCH_WAYBAR_UPDATE_SIGNAL}" waybar 2>/dev/null \
     || true
 }
 

@@ -78,7 +78,7 @@ _install_info_version() {
 }
 
 _fetch_remote_version() {
-  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt" | tr -d '[:space:]'
+  curl -fsSL --max-time 10 "${VLARCH_CDN_BASE}/version.txt?t=$(date +%s)" | tr -d '[:space:]'
 }
 
 _install_info_set_branch() {
@@ -373,7 +373,7 @@ cmd_update() {
   for arg in "$@"; do
     case "$arg" in
       --verbose|-v) VLARCH_VERBOSE=1 ;;
-      --force) has_force=1 ;;
+      --force) has_force=1; args+=("$arg") ;;
       --branch) has_branch=1; args+=("$arg") ;;
       *) args+=("$arg") ;;
     esac
@@ -449,7 +449,7 @@ main() {
   shift
   local fn="cmd_${sub//-/_}"
   if ! declare -F "$fn" >/dev/null 2>&1; then
-    _die "unknown subcommand: $sub (try 'vlarch help')"
+    exec vlarch-agent "$sub" "$@"
   fi
   local -a args=()
   local arg

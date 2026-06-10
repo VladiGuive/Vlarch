@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 05 - grub_snapshots: Timeshift btrfs + grub-btrfs menu entries (LUKS-aware).
+# 06 - grub_snapshots: Timeshift btrfs + grub-btrfs menu entries (LUKS-aware).
 set -euo pipefail
 
 # shellcheck disable=SC1091

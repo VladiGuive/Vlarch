@@ -33,6 +33,14 @@ vlarch_run_user() {
     printf 'cmd: %s\n' "$wrapped"
   } >>"$log"
   runuser -u "$user" -- bash -lc "$wrapped" >>"$log" 2>&1 || rc=$?
+  if ((rc != 0)); then
+    local step_log
+    step_log="$(vlarch_log_path step)"
+    {
+      printf '\n--- vlarch_run_user failed: %s (exit %s) ---\n' "$label" "$rc"
+      tail -n 40 "$log"
+    } >>"$step_log" 2>/dev/null || true
+  fi
   if ((rc == 0)) && declare -F vlarch_ui_tick >/dev/null 2>&1; then
     vlarch_ui_tick "$label"
   fi
@@ -140,14 +148,6 @@ vlarch_refresh_desktop_shell() {
   if pgrep -x waybar >/dev/null 2>&1; then
     pkill -SIGUSR2 waybar 2>/dev/null || killall -SIGUSR2 waybar 2>/dev/null || true
   fi
-}
-
-vlarch_restart_walker_if_session() {
-  local user="$1"
-  command -v vlarch-walker-services >/dev/null 2>&1 || return 0
-  vlarch_hyprland_session_for_user "$user" || return 0
-  vlarch_run_user "$user" "restart walker service" "vlarch-walker-services" || true
-  return 0
 }
 
 vlarch_verify_desktop_readiness() {

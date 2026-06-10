@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 03 - dotfiles: sync managed paths only (.zprofile, .config/, etc.).
+# 04 - dotfiles: sync all top-level paths under dotfiles/ to $HOME.
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -45,9 +45,6 @@ vlarch_run "deploy dotfiles" \
 
 vlarch_run "reload desktop shell" \
   vlarch_refresh_desktop_shell "$VLARCH_USER"
-
-vlarch_run "restart walker service" \
-  vlarch_restart_walker_if_session "$VLARCH_USER"
 
 vlarch_run "reload tmux config" \
   vlarch_reload_tmux_config "$VLARCH_USER"
