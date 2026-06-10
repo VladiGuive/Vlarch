@@ -449,7 +449,7 @@ main() {
   shift
   local fn="cmd_${sub//-/_}"
   if ! declare -F "$fn" >/dev/null 2>&1; then
-    _die "unknown subcommand: $sub (try 'vlarch help')"
+    exec vlarch-agent "$sub" "$@"
   fi
   local -a args=()
   local arg
