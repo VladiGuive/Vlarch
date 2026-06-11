@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Post-pacman hook for walker-bin: kill stale gapplication service so the next
+# vlarch-walker invocation spawns a fresh one with the updated binary.
+#
+# Invoked by /etc/pacman.d/hooks/walker.hook after walker-bin is upgraded.
+# Runs as root; reads the Vlarch user from /etc/vlarch/install-info.
+
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+
+[[ -f "$VLARCH_INFO_FILE" ]] || exit 0
+
+user="$(grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+[[ -n "$user" ]] || exit 0
+
+# Kill all walker --gapplication-service processes for this user.
+# Use pkill with -U to target only processes owned by the user.
+pkill -U "$(id -u "$user")" -f '[w]alker --gapplication-service' 2>/dev/null || true
+
+# Clean up the socket so the next walker start doesn't trip on stale state.
+uid="$(id -u "$user")"
+runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+rm -f "${runtime}/walker/walker.sock" 2>/dev/null || true
+
+# The service will be auto-restarted on the next Super+Space invocation via
+# vlarch-walker's _ensure_service; no need to start it here.

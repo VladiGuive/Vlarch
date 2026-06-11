@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 07 - getty: restore tty1 autologin drop-in if missing or overwritten.
+# 08 - getty: restore tty1 autologin drop-in if missing or overwritten.
 set -euo pipefail
 
 # shellcheck disable=SC1091

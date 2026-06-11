@@ -512,6 +512,78 @@ decoration {{
         lines.extend(["}", ""])
         self.write("nvim/lua/config/theme-palette.lua", "\n".join(lines))
 
+    HERMES_COLORS = {
+        "banner_border": "frost_2",
+        "banner_title": "snow_storm_0",
+        "banner_accent": "frost_1",
+        "banner_dim": "polar_night_3",
+        "banner_text": "snow_storm_0",
+        "ui_accent": "frost_1",
+        "ui_label": "frost_2",
+        "ui_ok": "aurora_green",
+        "ui_error": "aurora_red",
+        "ui_warn": "aurora_yellow",
+        "prompt": "snow_storm_0",
+        "input_rule": "frost_3",
+        "response_border": "frost_1",
+        "status_bar_bg": "polar_night_0",
+        "status_bar_text": "snow_storm_0",
+        "status_bar_strong": "frost_1",
+        "status_bar_dim": "polar_night_3",
+        "status_bar_good": "aurora_green",
+        "status_bar_warn": "aurora_yellow",
+        "status_bar_bad": "aurora_red",
+        "status_bar_critical": "aurora_red",
+        "session_label": "frost_2",
+        "session_border": "polar_night_3",
+        "voice_status_bg": "polar_night_1",
+        "selection_bg": "polar_night_2",
+        "completion_menu_bg": "polar_night_0",
+        "completion_menu_current_bg": "polar_night_2",
+        "completion_menu_meta_bg": "polar_night_1",
+        "completion_menu_meta_current_bg": "polar_night_2",
+    }
+
+    def generate_hermes_skin(self) -> None:
+        hermes_skins = self.output_root.parent / ".hermes" / "skins"
+        hermes_skins.mkdir(parents=True, exist_ok=True)
+        lines = [
+            f"# {self.generated}",
+            "name: vlarch",
+            "description: Auto-generated from Vlarch theme — run vlarch-theme-generate to rebuild",
+            "",
+            "colors:",
+        ]
+        for key, palette_key in self.HERMES_COLORS.items():
+            lines.append(f"  {key}: \"{self.c(palette_key)}\"")
+        lines.extend([
+            "",
+            "branding:",
+            '  agent_name: "Vlarch Agent"',
+            '  welcome: "Bienvenido"',
+            '  response_label: " ⚡ Vlarch "',
+            '  prompt_symbol: "❯"',
+            "",
+        ])
+        # Banner logo with Nord colors (Rich markup format)
+        f1 = self.c("frost_1")
+        f2 = self.c("frost_2")
+        f3 = self.c("frost_3")
+        pn3 = self.c("polar_night_3")
+        banner_logo = (
+            f"[bold {f2}] _   ____             __     ___                __ [/]\n"
+            f"[bold {f1}]| | / / /__ _________/ /    / _ |___ ____ ___  / /_[/]\n"
+            f"[{f2}]| |/ / / _` / __/ __/ _ \\  / __ / _` / -_) _ \\/ __/[/]\n"
+            f"[{f3}]|___/_/\\_,_/_/  \\__/_//_/ /_/ |_\\_, /\\__/_//_/\\__/ [/]\n"
+            f"[{pn3}]                                /___/[/]"
+        )
+        lines.append(f"banner_logo: |")
+        for logo_line in banner_logo.split("\n"):
+            lines.append(f"  {logo_line}")
+        lines.append("")
+
+        (hermes_skins / "vlarch.yaml").write_text("\n".join(lines), encoding="utf-8")
+
     def run(self) -> None:
         self.generate_kitty()
         self.generate_waybar()
@@ -521,6 +593,7 @@ decoration {{
         self.generate_ohmyposh()
         self.generate_hypr_colors()
         self.generate_nvim_palette()
+        self.generate_hermes_skin()
 
 
 theme_file = os.environ.get("VLARCH_THEME_FILE", "")

@@ -1,22 +1,22 @@
-/* Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate */
+/* Generated from ~/.config/themes/sakura.json — do not edit; run: vlarch-theme-generate */
 /* VLARCH_BG_OPACITY=0.85 in kitty/walker */
 
-@define-color base #EBE0B8;
-@define-color surface0 #E2D6A8;
-@define-color surface1 #D4C490;
-@define-color surface2 #A08850;
-@define-color text #3A2810;
-@define-color subtext1 #584430;
-@define-color subtext0 #241808;
-@define-color lavender #8A4E78;
-@define-color blue #8A6408;
-@define-color sky #C89810;
-@define-color sapphire #684808;
-@define-color green #4A7028;
-@define-color yellow #9A7008;
-@define-color red #C03828;
-@define-color maroon #8A4E78;
-@define-color pink #8A4E78;
-@define-color mauve #8A4E78;
+@define-color base #1A1218;
+@define-color surface0 #261820;
+@define-color surface1 #3D2A35;
+@define-color surface2 #5A4150;
+@define-color text #F5E6EC;
+@define-color subtext1 #F8EEF2;
+@define-color subtext0 #FFF5F8;
+@define-color lavender #C9A0DC;
+@define-color blue #D4A5C9;
+@define-color sky #F4B8C6;
+@define-color sapphire #9B6B8A;
+@define-color green #A8C9A0;
+@define-color yellow #F5D5A0;
+@define-color red #E85D75;
+@define-color maroon #C9A0DC;
+@define-color pink #C9A0DC;
+@define-color mauve #C9A0DC;
 @define-color update_bg alpha(@sapphire, 0.42);
 @define-color update_border alpha(@sky, 0.55);

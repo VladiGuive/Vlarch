@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# vlarch-hermes-dashboard - start Hermes dashboard on port 80 for the session.
+# Called from hyprland.conf exec-once after vlarch-ensure-hermes.
+
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+HERMES_HOME="${HOME:?}/.hermes"
+
+_vlarch_log() {
+  local log="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-dashboard.log"
+  mkdir -p "$(dirname "$log")"
+  printf '%s %s\n' "$(date -Iseconds)" "$*" >>"$log"
+}
+
+_vlarch_installed_user() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_vlarch_setup_env() {
+  local install_user uid home runtime
+
+  install_user="$(_vlarch_installed_user)" || install_user="${USER:-}"
+  [[ -n "$install_user" ]] || return 1
+
+  if [[ "$(id -un)" != "$install_user" ]] && id "$install_user" &>/dev/null 2>&1; then
+    exec runuser -u "$install_user" -- "$0" "$@"
+  fi
+
+  uid="$(id -u)"
+  home="${HOME:-/home/${install_user}}"
+  runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+
+  export HOME="$home" USER="$install_user" XDG_RUNTIME_DIR="$runtime"
+  export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
+  HERMES_HOME="${HOME}/.hermes"
+}
+
+_vlarch_hermes_path() {
+  command -v hermes >/dev/null 2>&1 && return 0
+  [[ -x "${HOME}/.local/bin/hermes" ]] && export PATH="${HOME}/.local/bin:${PATH}"
+  command -v hermes >/dev/null 2>&1
+}
+
+_vlarch_dashboard_running() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -q ':80 '
+    return $?
+  fi
+  pgrep -f '[h]ermes dashboard' >/dev/null 2>&1
+}
+
+_vlarch_start_dashboard() {
+  if [[ ! -d "$HERMES_HOME" ]]; then
+    _vlarch_log "skip: ${HERMES_HOME} missing"
+    exit 0
+  fi
+
+  _vlarch_hermes_path || {
+    _vlarch_log "skip: hermes not found"
+    exit 0
+  }
+
+  if _vlarch_dashboard_running; then
+    _vlarch_log "skip: dashboard already running"
+    exit 0
+  fi
+
+  _vlarch_log "starting dashboard"
+  nohup hermes dashboard --no-open --port 80 --host vlarch --insecure >>"${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-dashboard.log" 2>&1 &
+  disown 2>/dev/null || true
+}
+
+_vlarch_setup_env "$@"
+
+if [[ "${1:-}" != --no-bg ]]; then
+  (sleep 3; exec "$0" --no-bg) &
+  exit 0
+fi
+
+_vlarch_start_dashboard

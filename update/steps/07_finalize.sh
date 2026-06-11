@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 06 - finalize: reinstall vlarch CLI and bump install-info version.
+# 07 - finalize: reinstall vlarch CLI and bump install-info version.
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -17,8 +17,6 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch" ]] || vlarch_die "missing bin/vlarch"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-tty-login" ]] || vlarch_die "missing bin/vlarch-tty-login"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" ]] || vlarch_die "missing bin/vlarch-hyprpm-sync"
-[[ -f "${VLARCH_BIN_DIR}/vlarch-walker-services" ]] || vlarch_die "missing bin/vlarch-walker-services"
-[[ -f "${VLARCH_BIN_DIR}/vlarch-walker" ]] || vlarch_die "missing bin/vlarch-walker"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-update" ]] || vlarch_die "missing bin/vlarch-waybar-update"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-wifi" ]] || vlarch_die "missing bin/vlarch-waybar-wifi"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-waybar-battery" ]] || vlarch_die "missing bin/vlarch-waybar-battery"
@@ -29,6 +27,9 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-edge" ]] || vlarch_die "missing bin/vlarch-edge"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-overrides" ]] || vlarch_die "missing bin/vlarch-overrides"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-theme-generate" ]] || vlarch_die "missing bin/vlarch-theme-generate"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" ]] || vlarch_die "missing bin/vlarch-ensure-hermes"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" ]] || vlarch_die "missing bin/vlarch-hermes-dashboard"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-agent" ]] || vlarch_die "missing bin/vlarch-agent"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -45,12 +46,6 @@ vlarch_run "install vlarch-tty-login" \
 
 vlarch_run "install vlarch-hyprpm-sync" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hyprpm-sync" /usr/local/bin/vlarch-hyprpm-sync
-
-vlarch_run "install vlarch-walker-services" \
-  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker-services" /usr/local/bin/vlarch-walker-services
-
-vlarch_run "install vlarch-walker" \
-  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-walker" /usr/local/bin/vlarch-walker
 
 vlarch_run "install vlarch-waybar-update" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-waybar-update" /usr/local/bin/vlarch-waybar-update
@@ -82,8 +77,24 @@ vlarch_run "install vlarch-overrides" \
 vlarch_run "install vlarch-theme-generate" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /usr/local/bin/vlarch-theme-generate
 
-vlarch_run "restart walker service" \
-  vlarch_restart_walker_if_session "$VLARCH_USER"
+vlarch_run "install vlarch-ensure-hermes" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" /usr/local/bin/vlarch-ensure-hermes
+
+vlarch_run "install vlarch-hermes-dashboard" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" /usr/local/bin/vlarch-hermes-dashboard
+
+vlarch_run "install vlarch-agent" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /usr/local/bin/vlarch-agent
+
+_hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
+if [[ -x "$_hermes_bin" ]]; then
+  PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
+    hermes gateway restart || true
+elif command -v hermes >/dev/null 2>&1; then
+  vlarch_run "restart hermes gateway" \
+    hermes gateway restart || true
+fi
+unset _hermes_bin
 
 if [[ -f /usr/local/share/vlarch/generate-nord-theme.py ]]; then
   vlarch_run "remove legacy theme generator script" \
