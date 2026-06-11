@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Vlarch Agent
+Name[es]=Vlarch Agent
+Comment=AI assistant powered by Hermes Agent
+Comment[es]=Asistente IA impulsado por Hermes Agent
+Exec=vlarch-agent
+Icon=vlarch-agent
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupNotify=true

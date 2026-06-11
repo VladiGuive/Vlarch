@@ -1,0 +1,23 @@
+{
+  "name": "dawn",
+  "background_opacity": 0.92,
+  "roundness": 1,
+  "palette": {
+    "polar_night_0": "#FBF9F6",
+    "polar_night_1": "#F5F2ED",
+    "polar_night_2": "#EBE5DA",
+    "polar_night_3": "#D5CDBE",
+    "snow_storm_0": "#2D2830",
+    "snow_storm_1": "#555160",
+    "snow_storm_2": "#8B8794",
+    "frost_0": "#4186B5",
+    "frost_1": "#41A98A",
+    "frost_2": "#7A6FB5",
+    "frost_3": "#A86BA6",
+    "aurora_red": "#D65C6C",
+    "aurora_orange": "#D4915E",
+    "aurora_yellow": "#DFB95E",
+    "aurora_green": "#7DAB6A",
+    "aurora_purple": "#B572A5"
+  }
+}

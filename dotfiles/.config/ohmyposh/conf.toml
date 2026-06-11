@@ -1,17 +1,17 @@
-# Generated from ~/.config/themes/marigold.json — do not edit; run: vlarch-theme-generate
+# Generated from ~/.config/themes/sakura.json — do not edit; run: vlarch-theme-generate
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
 version = 3
 final_space = true
 
 [secondary_prompt]
   template = '❯❯ '
-  foreground = '#8A4E78'
+  foreground = '#C9A0DC'
   background = 'transparent'
 
 [transient_prompt]
   template = '❯ '
   background = 'transparent'
-  foreground_templates = ['{{if gt .Code 0}}#C03828{{end}}', '{{if eq .Code 0}}#8A4E78{{end}}']
+  foreground_templates = ['{{if gt .Code 0}}#E85D75{{end}}', '{{if eq .Code 0}}#C9A0DC{{end}}']
 
 [[blocks]]
   type = 'prompt'
@@ -20,7 +20,7 @@ final_space = true
 
   [[blocks.segments]]
     template = '{{ .Path }}'
-    foreground = '#8A6408'
+    foreground = '#D4A5C9'
     background = 'transparent'
     type = 'path'
     style = 'plain'
@@ -30,8 +30,8 @@ final_space = true
       style = 'full'
 
   [[blocks.segments]]
-    template = ' {{ .HEAD }}{{ if or (.Working.Changed) (.Staging.Changed) }}*{{ end }} <#E0B828>{{ if gt .Behind 0 }}⇣{{ end }}{{ if gt .Ahead 0 }}⇡{{ end }}</>'
-    foreground = '#A08850'
+    template = ' {{ .HEAD }}{{ if or (.Working.Changed) (.Staging.Changed) }}*{{ end }} <#E8A4B8>{{ if gt .Behind 0 }}⇣{{ end }}{{ if gt .Ahead 0 }}⇡{{ end }}</>'
+    foreground = '#5A4150'
     background = 'transparent'
     type = 'git'
     style = 'plain'
@@ -48,7 +48,7 @@ final_space = true
 
   [[blocks.segments]]
     template = '{{ .FormattedMs }}'
-    foreground = '#9A7008'
+    foreground = '#F5D5A0'
     background = 'transparent'
     type = 'executiontime'
     style = 'plain'
@@ -67,7 +67,7 @@ final_space = true
     background = 'transparent'
     type = 'text'
     style = 'plain'
-    foreground_templates = ['{{if gt .Code 0}}#C03828{{end}}', '{{if eq .Code 0}}#8A4E78{{end}}']
+    foreground_templates = ['{{if gt .Code 0}}#E85D75{{end}}', '{{if eq .Code 0}}#C9A0DC{{end}}']
 
     [blocks.segments.properties]
       cache_duration = 'none'

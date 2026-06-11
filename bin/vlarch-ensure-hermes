@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# vlarch-ensure-hermes - bootstrap Hermes agent when ~/.hermes is missing.
+# Called from update/steps/03_hermes.sh (--foreground) and hyprland.conf exec-once.
+
+set -euo pipefail
+
+VLARCH_INFO_FILE="${VLARCH_INFO_FILE:-/etc/vlarch/install-info}"
+HERMES_HOME="${HOME:?}/.hermes"
+HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
+VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
+HERMES_VENV_BIN="${HERMES_HOME}/hermes-agent/venv/bin/hermes"
+
+_vlarch_log() {
+  mkdir -p "$(dirname "$VLARCH_HERMES_ENSURE_LOG")"
+  printf '%s %s\n' "$(date -Iseconds)" "$*" >>"$VLARCH_HERMES_ENSURE_LOG"
+}
+
+_vlarch_installed_user() {
+  [[ -f "$VLARCH_INFO_FILE" ]] || return 1
+  grep -E '^user=' "$VLARCH_INFO_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]'
+}
+
+_vlarch_setup_env() {
+  local install_user uid home runtime
+
+  install_user="$(_vlarch_installed_user)" || install_user="${USER:-}"
+  [[ -n "$install_user" ]] || return 1
+
+  if [[ "$(id -un)" != "$install_user" ]] && id "$install_user" &>/dev/null 2>&1; then
+    exec runuser -u "$install_user" -- "$0" "$@"
+  fi
+
+  uid="$(id -u)"
+  home="${HOME:-/home/${install_user}}"
+  runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+
+  export HOME="$home" USER="$install_user" XDG_RUNTIME_DIR="$runtime"
+  export PATH="${HOME}/.local/bin:${HERMES_HOME}/hermes-agent/venv/bin:/usr/local/bin:/usr/bin:${PATH:-/bin}"
+  HERMES_HOME="${HOME}/.hermes"
+  HERMES_OK="${HOME}/.config/vlarch/hermes-ensure.ok"
+  VLARCH_HERMES_ENSURE_LOG="${XDG_CACHE_HOME:-${HOME}/.cache}/vlarch/hermes-ensure.log"
+  HERMES_VENV_BIN="${HERMES_HOME}/hermes-agent/venv/bin/hermes"
+}
+
+_vlarch_hermes_install_ok() {
+  [[ -x "$HERMES_VENV_BIN" ]]
+}
+
+_vlarch_hermes_path() {
+  local bin dir
+
+  _vlarch_hermes_install_ok || return 1
+
+  bin="${HERMES_VENV_BIN}"
+  if [[ -x "${HOME}/.local/bin/hermes" ]]; then
+    bin="${HOME}/.local/bin/hermes"
+  fi
+
+  dir="$(dirname "$bin")"
+  export PATH="${dir}:${PATH}"
+  command -v hermes >/dev/null 2>&1
+}
+
+_vlarch_hermes_python() {
+  local py="${HERMES_HOME}/hermes-agent/venv/bin/python"
+
+  [[ -x "$py" ]] || return 1
+  readlink -f "$py"
+}
+
+_vlarch_ensure_complete() {
+  [[ -f "$HERMES_OK" ]] && _vlarch_hermes_install_ok
+}
+
+_vlarch_hermes_gateway_install() {
+  local rc
+
+  _vlarch_log "hermes gateway install"
+  set +o pipefail
+  yes | hermes gateway install >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
+  rc=$?
+  set -o pipefail
+  if ((rc != 0 && rc != 141)); then
+    _vlarch_log "hermes gateway install failed (rc=${rc})"
+    return "$rc"
+  fi
+}
+
+_vlarch_apply_setcap() {
+  local py
+  py="$(_vlarch_hermes_python)" || return 0
+  if [[ "$(id -u)" -ne 0 ]]; then
+    _vlarch_log "setcap skipped (not root)"
+    return 0
+  fi
+  if setcap 'cap_net_bind_service=+ep' "$py" 2>/dev/null; then
+    _vlarch_log "setcap ok on ${py}"
+  else
+    _vlarch_log "setcap failed on ${py}"
+  fi
+}
+
+_vlarch_mark_complete() {
+  mkdir -p "$(dirname "$HERMES_OK")"
+  : >"$HERMES_OK"
+}
+
+_vlarch_ensure_voice_deps() {
+  local py pip
+  py="$(_vlarch_hermes_python)" || return 0
+  pip="${py%/*}/pip"
+  if [[ -x "$pip" ]]; then
+    _vlarch_log "ensuring voice deps (sounddevice, numpy)"
+    "$pip" install --quiet sounddevice numpy >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1 || {
+      _vlarch_log "voice deps install failed (non-fatal)"
+    }
+  fi
+}
+
+_vlarch_install_hermes() {
+  command -v curl >/dev/null 2>&1 || {
+    _vlarch_log "curl not found"
+    return 1
+  }
+
+  if ! _vlarch_hermes_install_ok; then
+    rm -f "${HOME}/.local/bin/hermes" "$HERMES_OK"
+  fi
+
+  _vlarch_log "installing hermes via curl"
+  curl -fsSL https://hermes-agent.nousresearch.com/install.sh \
+    | bash -s -- --skip-setup >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
+}
+
+_vlarch_run_setup() {
+  if _vlarch_ensure_complete; then
+    _vlarch_log "already complete (${HERMES_OK})"
+    return 0
+  fi
+
+  if ! _vlarch_hermes_install_ok; then
+    _vlarch_install_hermes
+  fi
+
+  _vlarch_hermes_path || {
+    _vlarch_log "hermes venv binary missing after install (${HERMES_VENV_BIN})"
+    return 1
+  }
+
+  _vlarch_ensure_voice_deps
+
+  _vlarch_log "hermes setup --non-interactive"
+  hermes setup --non-interactive >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1
+
+  _vlarch_hermes_gateway_install
+
+  _vlarch_log "hermes gateway start"
+  hermes gateway start >>"$VLARCH_HERMES_ENSURE_LOG" 2>&1 || {
+    _vlarch_log "hermes gateway start returned non-zero (continuing)"
+  }
+
+  _vlarch_mark_complete
+  _vlarch_apply_setcap
+  _vlarch_log "setup complete"
+}
+
+_vlarch_setup_env "$@"
+
+if _vlarch_ensure_complete; then
+  exit 0
+fi
+
+case "${1:-}" in
+  --foreground)
+    _vlarch_run_setup
+    ;;
+  --no-bg)
+    _vlarch_run_setup
+    ;;
+  *)
+    (sleep 1; exec "$0" --no-bg) &
+    exit 0
+    ;;
+esac
