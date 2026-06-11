@@ -27,6 +27,14 @@ local BINDS = {
 		keywords = "theme colors palette walker temas colores",
 	},
 	{
+		keys = "!>",
+		desc = L.t(
+			"Add a todo in Walker (!> task name, then Enter)",
+			"Añadir tarea en Walker (!> nombre, luego Enter)"
+		),
+		keywords = "todo task list walker tareas",
+	},
+	{
 		keys = "Super + Enter",
 		desc = L.t("Open terminal", "Abrir terminal"),
 		keywords = "kitty tmux shell terminal",

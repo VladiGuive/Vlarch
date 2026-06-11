@@ -25,7 +25,7 @@ quick_activate = []
 "default" = { input = "Search...", list = "No Results" }
 "menus:agent" = { input = "Search...", list = "Vlarch Agent" }
 "archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
-"todo" = { input = "Todo", list = "No todos" }
+"todo" = { input = "!> type a task…", list = "No todos — type !> task name, then Enter (or Ctrl+A, type, Enter)" }
 "menus:themes" = { input = "Themes...", list = "No themes found" }
 
 [providers]
