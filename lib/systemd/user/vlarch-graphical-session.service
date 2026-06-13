@@ -1,0 +1,15 @@
+[Unit]
+Description=Pull in graphical-session.target for xdg-desktop-portal
+# Hyprland never activates graphical-session.target via PartOf= alone.
+# This oneshot uses Wants= to pull it in so xdg-desktop-portal.service
+# (which has Requisite=graphical-session.target) can start.
+Wants=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

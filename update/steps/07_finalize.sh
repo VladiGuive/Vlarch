@@ -68,6 +68,18 @@ vlarch_run "install vlarch-workspace" \
 vlarch_run "install vlarch-portal-start" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /usr/local/bin/vlarch-portal-start
 
+# Screen share hotfix: ensure graphical-session.target is active for xdg-desktop-portal
+_user_systemd="/home/${VLARCH_USER}/.config/systemd/user"
+vlarch_run "install vlarch-graphical-session.service" \
+  install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" \
+    "${VLARCH_SCRIPT_DIR}/lib/systemd/user/vlarch-graphical-session.service" \
+    "${_user_systemd}/vlarch-graphical-session.service"
+vlarch_run "install xdg-desktop-portal drop-in" \
+  install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" \
+    "${VLARCH_SCRIPT_DIR}/lib/systemd/user/xdg-desktop-portal.service.d/override.conf" \
+    "${_user_systemd}/xdg-desktop-portal.service.d/override.conf"
+unset _user_systemd
+
 vlarch_run "install vlarch-edge" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-edge" /usr/local/bin/vlarch-edge
 
@@ -88,9 +100,13 @@ vlarch_run "install vlarch-agent" \
 
 _hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
 if [[ -x "$_hermes_bin" ]]; then
+  PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "update hermes agent" \
+    hermes update || true
   PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
     hermes gateway restart || true
 elif command -v hermes >/dev/null 2>&1; then
+  vlarch_run "update hermes agent" \
+    hermes update || true
   vlarch_run "restart hermes gateway" \
     hermes gateway restart || true
 fi
