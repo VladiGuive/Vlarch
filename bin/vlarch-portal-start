@@ -40,6 +40,10 @@ fi
 
 sleep 0.3
 
+# Pull in graphical-session.target so xdg-desktop-portal.service can start.
+systemctl --user start vlarch-graphical-session.service >/dev/null 2>&1 || true
+sleep 0.3
+
 if command -v systemctl >/dev/null 2>&1; then
   systemctl --user restart xdg-desktop-portal-hyprland.service >/dev/null 2>&1 \
     || systemctl --user start xdg-desktop-portal-hyprland.service >/dev/null 2>&1 \

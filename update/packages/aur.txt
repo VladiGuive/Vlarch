@@ -6,16 +6,3 @@ timeshift-autosnap
 xwaylandvideobridge
 obsidian-bin
 zen-browser-bin
-walker-bin
-elephant-bin
-elephant-providerlist-bin
-elephant-desktopapplications-bin
-elephant-files-bin
-elephant-runner-bin
-elephant-calc-bin
-elephant-symbols-bin
-elephant-websearch-bin
-elephant-clipboard-bin
-elephant-menus-bin
-elephant-todo-bin
-elephant-archlinuxpkgs-bin

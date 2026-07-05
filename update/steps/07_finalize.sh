@@ -30,6 +30,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" ]] || vlarch_die "missing bin/vlarch-ensure-hermes"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" ]] || vlarch_die "missing bin/vlarch-hermes-dashboard"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-agent" ]] || vlarch_die "missing bin/vlarch-agent"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-wallpaper" ]] || vlarch_die "missing bin/vlarch-wallpaper"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -68,6 +69,18 @@ vlarch_run "install vlarch-workspace" \
 vlarch_run "install vlarch-portal-start" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-portal-start" /usr/local/bin/vlarch-portal-start
 
+# Screen share hotfix: ensure graphical-session.target is active for xdg-desktop-portal
+_user_systemd="/home/${VLARCH_USER}/.config/systemd/user"
+vlarch_run "install vlarch-graphical-session.service" \
+  install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" \
+    "${VLARCH_SCRIPT_DIR}/lib/systemd/user/vlarch-graphical-session.service" \
+    "${_user_systemd}/vlarch-graphical-session.service"
+vlarch_run "install xdg-desktop-portal drop-in" \
+  install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" \
+    "${VLARCH_SCRIPT_DIR}/lib/systemd/user/xdg-desktop-portal.service.d/override.conf" \
+    "${_user_systemd}/xdg-desktop-portal.service.d/override.conf"
+unset _user_systemd
+
 vlarch_run "install vlarch-edge" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-edge" /usr/local/bin/vlarch-edge
 
@@ -86,11 +99,18 @@ vlarch_run "install vlarch-hermes-dashboard" \
 vlarch_run "install vlarch-agent" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /usr/local/bin/vlarch-agent
 
+vlarch_run "install vlarch-wallpaper" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-wallpaper" /usr/local/bin/vlarch-wallpaper
+
 _hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
 if [[ -x "$_hermes_bin" ]]; then
+  PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "update hermes agent" \
+    hermes update || true
   PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
     hermes gateway restart || true
 elif command -v hermes >/dev/null 2>&1; then
+  vlarch_run "update hermes agent" \
+    hermes update || true
   vlarch_run "restart hermes gateway" \
     hermes gateway restart || true
 fi
