@@ -105,14 +105,14 @@ vlarch_run "install vlarch-wallpaper" \
 _hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
 if [[ -x "$_hermes_bin" ]]; then
   PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "update hermes agent" \
-    hermes update || true
+    bash -c 'hermes update || true'
   PATH="$(vlarch_user_home "${VLARCH_USER}")/.local/bin:${PATH}" vlarch_run "restart hermes gateway" \
-    hermes gateway restart || true
+    bash -c 'hermes gateway restart || true'
 elif command -v hermes >/dev/null 2>&1; then
   vlarch_run "update hermes agent" \
-    hermes update || true
+    bash -c 'hermes update || true'
   vlarch_run "restart hermes gateway" \
-    hermes gateway restart || true
+    bash -c 'hermes gateway restart || true'
 fi
 unset _hermes_bin
 
