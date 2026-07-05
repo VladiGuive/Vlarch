@@ -27,6 +27,7 @@ quick_activate = []
 "archlinuxpkgs" = { input = "Search packages...", list = "No packages found" }
 "todo" = { input = "!> type a task…", list = "No todos — type !> task name, then Enter (or Ctrl+A, type, Enter)" }
 "menus:themes" = { input = "Themes...", list = "No themes found" }
+"menus:wallpapers" = { input = "Wallpapers...", list = "No wallpapers found — add images to ~/Pictures/Wallpapers/" }
 
 [providers]
 max_results = 256
@@ -86,6 +87,10 @@ provider = "todo"
 [[providers.prefixes]]
 prefix = "$"
 provider = "menus:themes"
+
+[[providers.prefixes]]
+prefix = "-"
+provider = "menus:wallpapers"
 
 [providers.actions]
 archlinuxpkgs = [

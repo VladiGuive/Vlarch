@@ -30,6 +30,7 @@ vlarch_load_install_info "$VLARCH_INFO_FILE" \
 [[ -f "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" ]] || vlarch_die "missing bin/vlarch-ensure-hermes"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" ]] || vlarch_die "missing bin/vlarch-hermes-dashboard"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-agent" ]] || vlarch_die "missing bin/vlarch-agent"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-wallpaper" ]] || vlarch_die "missing bin/vlarch-wallpaper"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -97,6 +98,9 @@ vlarch_run "install vlarch-hermes-dashboard" \
 
 vlarch_run "install vlarch-agent" \
   install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /usr/local/bin/vlarch-agent
+
+vlarch_run "install vlarch-wallpaper" \
+  install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-wallpaper" /usr/local/bin/vlarch-wallpaper
 
 _hermes_bin="$(vlarch_user_home "${VLARCH_USER}")/.local/bin/hermes"
 if [[ -x "$_hermes_bin" ]]; then

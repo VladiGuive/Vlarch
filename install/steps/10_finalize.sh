@@ -30,6 +30,7 @@ vlarch_config_validate
 [[ -f "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" ]] || vlarch_die "missing bin/vlarch-ensure-hermes"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" ]] || vlarch_die "missing bin/vlarch-hermes-dashboard"
 [[ -f "${VLARCH_BIN_DIR}/vlarch-agent" ]] || vlarch_die "missing bin/vlarch-agent"
+[[ -f "${VLARCH_BIN_DIR}/vlarch-wallpaper" ]] || vlarch_die "missing bin/vlarch-wallpaper"
 [[ -f "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" ]] || vlarch_die "missing update/lib/overrides.sh"
 [[ -f "${VLARCH_SCRIPT_DIR}/lib/version.sh" ]] || vlarch_die "missing lib/version.sh"
 
@@ -55,6 +56,7 @@ install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-theme-generate" /mnt/usr/local/bin/vla
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-ensure-hermes" /mnt/usr/local/bin/vlarch-ensure-hermes
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-hermes-dashboard" /mnt/usr/local/bin/vlarch-hermes-dashboard
 install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-agent" /mnt/usr/local/bin/vlarch-agent
+install -Dm0755 "${VLARCH_BIN_DIR}/vlarch-wallpaper" /mnt/usr/local/bin/vlarch-wallpaper
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
 install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
 

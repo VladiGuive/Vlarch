@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# vlarch-wallpaper - set, pick, list, reset wallpapers.
+# Primary interface: via Walker (prefix "-", provider "menus:wallpapers").
+# Secondary: CLI for power users and scripting.
+
+set -euo pipefail
+
+# --- Paths ---
+ACTIVE_DIR="${HOME}/.local/share/vlarch"
+ACTIVE_FILE="${ACTIVE_DIR}/wallpaper"
+HYPRPAPER_CONF="${HOME}/.config/hypr/hyprpaper.conf"
+WALLPAPER_DIRS=(
+  "${HOME}/Pictures/Wallpapers"
+  "${HOME}/Descargas"
+  "/usr/share/vlarch/wallpapers"
+)
+
+# --- Helpers ---
+_die() { printf '[vlarch-wallpaper] error: %s\n' "$*" >&2; exit 1; }
+_info() { printf '[vlarch-wallpaper] %s\n' "$*"; }
+
+_vlarch_is_image() {
+  local path="$1"
+  [[ -f "$path" ]] || return 1
+  local mime
+  mime="$(file --brief --mime-type "$path" 2>/dev/null || echo "")"
+  case "$mime" in
+    image/png|image/jpeg|image/webp|image/bmp|image/gif) return 0 ;;
+  esac
+  return 1
+}
+
+_vlarch_find_gui_picker() {
+  if command -v zenity >/dev/null 2>&1; then
+    printf 'zenity'
+    return 0
+  fi
+  if command -v yad >/dev/null 2>&1; then
+    printf 'yad'
+    return 0
+  fi
+  return 1
+}
+
+_vlarch_normalize_path() {
+  local path="$1"
+  # Expand ~ if present
+  case "$path" in
+    "~/"*) path="${HOME}/${path#"~/"}" ;;
+  esac
+  readlink -f "$path" 2>/dev/null || printf '%s' "$path"
+}
+
+_vlarch_apply_wallpaper() {
+  local image="$1"
+
+  [[ -f "$image" ]] || _die "image not found: $image"
+  _vlarch_is_image "$image" || _die "not a valid image: $image"
+
+  # Ensure target dir
+  mkdir -p "$ACTIVE_DIR"
+
+  # Copy to active path (format-agnostic, no extension needed)
+  cp -- "$image" "$ACTIVE_FILE"
+
+  # Absolute path for hyprpaper conf
+  local abs_active
+  abs_active="$(readlink -f "$ACTIVE_FILE")"
+
+  # Write hyprpaper config
+  cat > "$HYPRPAPER_CONF" <<-CONF
+# vlarch:wallpaper - auto-managed by vlarch-wallpaper.
+# Run \`vlarch-wallpaper set <image>\` to change, or use Walker (prefix "-").
+preload = ${abs_active}
+
+wallpaper {
+    monitor =
+    path = ${abs_active}
+    fit_mode = cover
+}
+CONF
+
+  # Apply live via hyprctl
+  if command -v hyprctl >/dev/null 2>&1; then
+    # Unload all, preload new, set
+    hyprctl hyprpaper unload all >/dev/null 2>&1 || true
+    hyprctl hyprpaper preload "$abs_active" >/dev/null 2>&1 || true
+    hyprctl hyprpaper wallpaper ",$abs_active" >/dev/null 2>&1 || true
+  fi
+
+  _info "wallpaper set: $image"
+}
+
+_vlarch_list_images() {
+  local dir
+  for dir in "${WALLPAPER_DIRS[@]}"; do
+    [[ -d "$dir" ]] || continue
+    find "$dir" -maxdepth 1 -type f \( \
+      -iname '*.png' -o \
+      -iname '*.jpg' -o \
+      -iname '*.jpeg' -o \
+      -iname '*.webp' -o \
+      -iname '*.bmp' -o \
+      -iname '*.gif' \
+    \) -printf '%p\n' 2>/dev/null | sort
+  done
+}
+
+_vlarch_pick_gui() {
+  local picker
+
+  picker="$(_vlarch_find_gui_picker)" || {
+    _info "no GUI picker found (install zenity or yad)"
+    _info "usage: vlarch-wallpaper set /path/to/image"
+    return 1
+  }
+
+  local file=""
+  case "$picker" in
+    zenity)
+      file="$(zenity --file-selection \
+        --title="Seleccionar fondo de pantalla" \
+        --file-filter="Imágenes | *.png *.jpg *.jpeg *.webp *.bmp *.gif" \
+        2>/dev/null || true)"
+      ;;
+    yad)
+      file="$(yad --file-selection \
+        --title="Seleccionar fondo de pantalla" \
+        --file-filter="Imágenes | *.png *.jpg *.jpeg *.webp *.bmp *.gif" \
+        2>/dev/null || true)"
+      ;;
+  esac
+
+  if [[ -n "$file" && -f "$file" ]]; then
+    _vlarch_apply_wallpaper "$file"
+  fi
+}
+
+# --- Commands ---
+_cmd_set() {
+  [[ $# -ge 1 ]] || _die "usage: vlarch-wallpaper set <image-path>"
+  local image
+  image="$(_vlarch_normalize_path "$1")"
+  _vlarch_apply_wallpaper "$image"
+}
+
+_cmd_pick() {
+  _vlarch_pick_gui
+}
+
+_cmd_list() {
+  _vlarch_list_images
+}
+
+_cmd_reset() {
+  local default="/usr/share/vlarch/background.png"
+  if [[ -f "$default" ]]; then
+    _vlarch_apply_wallpaper "$default"
+  else
+    _die "default wallpaper not found: $default"
+  fi
+}
+
+_cmd_help() {
+  cat <<'HELP'
+vlarch-wallpaper - manage desktop wallpapers
+
+Usage:
+  vlarch-wallpaper set <image>   Set wallpaper from file
+  vlarch-wallpaper pick          Open GUI file picker (zenity/yad)
+  vlarch-wallpaper list          List available wallpapers
+  vlarch-wallpaper reset         Restore default wallpaper
+  vlarch-wallpaper help          Show this help
+
+Walker: type "-" then the wallpaper name (prefix "-", provider "wallpapers").
+Sources: ~/Pictures/Wallpapers/, ~/Descargas/, /usr/share/vlarch/wallpapers/
+HELP
+}
+
+# --- Main ---
+main() {
+  [[ $# -ge 1 ]] || { _cmd_help; exit 0; }
+
+  local cmd="$1"
+  shift
+
+  case "$cmd" in
+    set)    _cmd_set "$@" ;;
+    pick)   _cmd_pick "$@" ;;
+    list)   _cmd_list "$@" ;;
+    reset)  _cmd_reset "$@" ;;
+    help|--help|-h) _cmd_help ;;
+    *)      _die "unknown command: $cmd (try: vlarch-wallpaper help)" ;;
+  esac
+}
+
+main "$@"
