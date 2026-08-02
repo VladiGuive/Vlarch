@@ -23,7 +23,7 @@ VLARCH_BOOTSTRAP_LOGO
   printf '\n'
 }
 _print_bootstrap_preparing() {
-  printf '%b%b%b\n' "${_BS_DIM}" 'Preparing installation environment...' "${_BS_RESET}"
+  printf 'Preparing installation environment...'
 }
 _ensure_cowspace_early() {
   local cow="/run/archiso/cowspace"
