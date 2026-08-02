@@ -11,45 +11,21 @@ _die() {
   printf '[vlarch] SEE FULL LOG: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
   exit 1
 }
-_ensure_cowspace_early() {
-  local cow="/run/archiso/cowspace"
-  local target="${VLARCH_COW_SPACE_SIZE:-75%}"
-  local path avail_k
-
-  [[ "$(id -u)" -eq 0 ]] || return 0
-  [[ -d "$cow" ]] || return 0
-  mountpoint -q "$cow" 2>/dev/null || return 0
-
-  for path in / "$cow"; do
-    avail_k=$(df -k "$path" | awk 'NR==2 {print $4}')
-    if ((avail_k < VLARCH_LIVE_MIN_FREE_K)); then
-      mount -o remount,size="${target}" "$cow"
-      break
-    fi
-  done
-
-  avail_k=$(df -k / | awk 'NR==2 {print $4}')
-  if ((avail_k < VLARCH_LIVE_MIN_FREE_K)); then
-    _die "low disk space on / ($((avail_k / 1024)) MiB free; need >= $((VLARCH_LIVE_MIN_FREE_K / 1024)) MiB). Reboot and add cow_spacesize=${target} at GRUB."
-  fi
-}
-
-# Entrypoint
-echo "Installing Vlarch." >$VLARCH_BOOTSTRAP_LOG
-reset
-cat <<'VLARCH_BOOTSTRAP_LOGO'
+_clear() {
+  clear
+  cat <<'VLARCH_BOOTSTRAP_LOGO'
  _   ____             __
 | | / / /__ _________/ /
 | |/ / / _ `/ __/ __/ _ \
 |___/_/\_,_/_/  \__/_//_/
 VLARCH_BOOTSTRAP_LOGO
+}
 
+# Entrypoint
+echo "Installing Vlarch." >$VLARCH_BOOTSTRAP_LOG
+reset
+_clear
 printf 'Preparing installation environment...\n'
-
-# Ensuring enough work space
-printf 'Checking workspace size...\n'
-_ensure_cowspace_early
-printf 'Workspace size suficient.\n'
 
 # Needed deps
 printf 'Installing needed dependencies...\n'
@@ -66,5 +42,23 @@ printf 'Temporal workdir created.\n'
 printf 'Cloning Vlarch repository...\n'
 git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 && printf 'Repository cloned successfully.\n' || _die "Could not clone Vlarch repository."
 
-# Calling main install script from repo
-exec bash "${WORKDIR}/install/main.sh"
+# Repo root doubles as VLARCH_SCRIPT_DIR (matches update.sh contract)
+VLARCH_SCRIPT_DIR="${WORKDIR}"
+export VLARCH_SCRIPT_DIR
+
+# Sourcing install utils from the cloned repo
+printf 'Sourcing install utils...\n'
+source "${VLARCH_SCRIPT_DIR}/install/lib/live.sh"
+
+# 01 - preflight: prep the live ISO for installs.
+printf 'Checking live environment...\n'
+vlarch_live_ensure_cowspace
+vlarch_live_assert_disk_space
+vlarch_live_ensure_keyring
+vlarch_live_refresh_mirrors
+vlarch_live_sync_keyring
+for cmd in pacstrap arch-chroot cryptsetup mkfs.btrfs mkfs.vfat mkfs.ext4 sgdisk efibootmgr lsblk blkid genfstab fzf; do
+  command -v "$cmd" >/dev/null 2>&1 || _die "missing required command: $cmd"
+done
+
+_clear
