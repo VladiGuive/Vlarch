@@ -22,7 +22,7 @@ _ensure_cowspace_early() {
   for path in / "$cow"; do
     avail_k=$(df -k "$path" | awk 'NR==2 {print $4}')
     if ((avail_k < VLARCH_LIVE_MIN_FREE_K)); then
-      _run "remount cowspace ${target}" mount -o remount,size="${target}" "$cow"
+      mount -o remount,size="${target}" "$cow"
       break
     fi
   done
