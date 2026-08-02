@@ -1,77 +1,30 @@
 #!/usr/bin/env bash
-# Vlarch live-USB entry point. Runs from `curl ... | bash` on a fresh Arch live ISO.
-# Three responsibilities: live preflight, bootstrap+clone, hand off to install/main.sh.
-#
-# Silent during normal operation; only fatal errors print, and they include the
-# captured tail of the failing command. Set VLARCH_VERBOSE=1 (or pass --verbose
-# through to main.sh) to stream every command's output.
 set -euo pipefail
-
-: "${VLARCH_GIT_URL:=https://github.com/VladiGuive/Vlarch.git}"
-: "${VLARCH_GIT_BRANCH:=}"
-: "${VLARCH_VERBOSE:=0}"
-VLARCH_LIVE_MIN_FREE_K="${VLARCH_LIVE_MIN_FREE_K:-524288}" # ~512 MiB
-VLARCH_BOOTSTRAP_LOG="${VLARCH_BOOTSTRAP_LOG:-/tmp/vlarch-bootstrap.log}"
-
+# Vars
+VLARCH_GIT_URL=https://github.com/VladiGuive/Vlarch.git
+VLARCH_GIT_BRANCH=dev
+VLARCH_LIVE_MIN_FREE_K=524288
+VLARCH_BOOTSTRAP_LOG=/tmp/vlarch-bootstrap.log
+# Functions
 _log() {
-  ((VLARCH_VERBOSE)) && printf '[vlarch] %s\n' "$*"
+  printf '[vlarch] %s\n' "$*"
 }
 _die() {
-  printf '[vlarch] error: %s\n' "$*" >&2
-  if [[ -s "$VLARCH_BOOTSTRAP_LOG" ]]; then
-    printf '[vlarch] last 20 lines of %s:\n' "$VLARCH_BOOTSTRAP_LOG" >&2
-    tail -n 20 "$VLARCH_BOOTSTRAP_LOG" | sed 's/^/  /' >&2
-    printf '[vlarch] full log: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
-  fi
+  printf '[vlarch] CRITICAL ERROR: full log in %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
   exit 1
 }
-
-# Nord bootstrap branding (sync heredoc with install/assets/ansi_logo.txt)
-_BS_RESET=$'\033[0m'
-_BS_DIM=$'\033[38;5;245m'
-_BS_FG=$'\033[38;5;253m'
-
 _print_bootstrap_logo() {
-  local assets_dir="${1:-}"
-  if [[ -n "$assets_dir" && -f "${assets_dir}/ansi_logo.txt" ]]; then
-    cat "${assets_dir}/ansi_logo.txt"
-    printf '\n'
-    return 0
-  fi
   cat <<'VLARCH_BOOTSTRAP_LOGO'
-[48;5;236m[38;5;255m▄█████▄     ▄█████████████▄                                           ▄███████▄[0m
-[48;5;236m[38;5;109m██   ██    ▄█▀   ▄█▀   ▄█▀                                           ▄█▀   ▄█▀[0m
-[48;5;236m[38;5;109m██   ██   ▄█▀   ▄█▀   ▄█▀                              [38;5;176m@ VladiGuive[38;5;109m ▄█▀   ▄█▀[0m
-[48;5;236m[38;5;109m██   ██  ▄█▀   ▄█▀   ▄█████████████▄   ▄█████████████████████████████▀   ▄█▀[0m
-[48;5;236m[38;5;109m██   ██ ▄█▀   ▄█▀   ▄█▀           ▀█▄ ▄█▀           ▄█▀           ▄█▀    ▀▀▀▀▀▀▀█▄[0m
-[48;5;236m[38;5;109m██   ██▄█▀   ▄█▀   ▄█▀             ▀█▄█▀           ▄█▀           ▄█▀            ▀█▄[0m
-[48;5;236m[38;5;109m██   ███▀   ▄█▀   ▄█▀      ▄▄▄▄     ▄█▀   ▄▄▄▄▄▄▄▄▄█▀    ▄▄▄▄▄▄▄▄█▀    ▄▄▄▄▄▄    ▀█▄[0m
-[48;5;236m[38;5;109m██         ▄█▀   ▄█▀█▄             ▄█▀   ▄█▀      ▀█▄          ▄█▀   ▄█▀   ▄█▀   ▄█▀[0m
-[48;5;236m[38;5;109m██        ▄█▀   ▄█▀ ▀█▄           ▄█▀   ▄█▀        ▀█▄        ▄█▀   ▄█▀   ▄█▀   ▄█▀[0m
-[48;5;236m[38;5;255m▀██▄▄▄▄▄▄██▀▄▄▄▄█▀   ▀█▄▄▄▄▄█▀▄▄▄▄█▀▄▄▄▄█▀          ▀█▄▄▄▄▄▄▄▄█▀▄▄▄▄█▀    ▀█▄▄▄▄█▀[0m
+ _   ____             __
+| | / / /__ _________/ /
+| |/ / / _ `/ __/ __/ _ \
+|___/_/\_,_/_/  \__/_//_/
 VLARCH_BOOTSTRAP_LOGO
   printf '\n'
 }
-
 _print_bootstrap_preparing() {
   printf '%b%b%b\n' "${_BS_DIM}" 'Preparing installation environment...' "${_BS_RESET}"
 }
-
-
-# Run a command silently in quiet mode (output appended to bootstrap log) and
-# stream it directly in verbose mode. Dies with the tail on failure.
-_run() {
-  local label="$1"; shift
-  if ((VLARCH_VERBOSE)); then
-    "$@" || _die "${label} failed (exit $?)"
-    return 0
-  fi
-  : >>"$VLARCH_BOOTSTRAP_LOG"
-  printf '\n--- %s ---\ncmd: %s\n' "$label" "$*" >>"$VLARCH_BOOTSTRAP_LOG"
-  "$@" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 || _die "${label} failed (exit $?)"
-}
-
-# Live overlay is a RAM-backed tmpfs (~25% RAM by default). Expand to 75% when low.
 _ensure_cowspace_early() {
   local cow="/run/archiso/cowspace"
   local target="${VLARCH_COW_SPACE_SIZE:-75%}"
@@ -94,7 +47,6 @@ _ensure_cowspace_early() {
     _die "low disk space on / ($((avail_k / 1024)) MiB free; need >= $((VLARCH_LIVE_MIN_FREE_K / 1024)) MiB). Reboot and add cow_spacesize=${target} at GRUB."
   fi
 }
-
 _ensure_bootstrap_pkgs() {
   if command -v git >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
     return 0
@@ -105,11 +57,8 @@ _ensure_bootstrap_pkgs() {
   command -v pacman >/dev/null 2>&1 || _die "pacman not found; this script expects an Arch live ISO"
   _run "pacman -Sy git fzf" pacman -Sy --noconfirm --needed git fzf
 }
-
 _run_main() {
   local root="$1"
-  shift
-  [[ -f "${root}/install/main.sh" ]] || _die "install/main.sh missing in ${root}"
   export VLARCH_SCRIPT_DIR="${root}"
   if [[ -f "${root}/version.txt" ]]; then
     VLARCH_VERSION="$(<"${root}/version.txt")"
@@ -118,67 +67,21 @@ _run_main() {
   exec bash "${root}/install/main.sh" "$@"
 }
 
-# When `install.sh` is run directly from a checked-out repo (not via curl), reuse it.
-if [[ -n "${VLARCH_SCRIPT_DIR:-}" && -f "${VLARCH_SCRIPT_DIR}/install/main.sh" ]]; then
-  _print_bootstrap_logo "${VLARCH_SCRIPT_DIR}/install/assets"
-  _print_bootstrap_preparing
-  _run_main "${VLARCH_SCRIPT_DIR}" "$@"
-fi
-_self="${BASH_SOURCE[0]:-}"
-if [[ -n "${_self}" && -f "${_self}" && "${_self}" != *"/dev/fd/"* && "${_self}" != *"/proc/self/fd/"* ]]; then
-  _root="$(cd -- "$(dirname -- "${_self}")" && pwd -P)"
-  if [[ -f "${_root}/install/main.sh" ]]; then
-    _print_bootstrap_logo "${_root}/install/assets"
-    _print_bootstrap_preparing
-    _run_main "${_root}" "$@"
-  fi
-fi
-
-# Otherwise we are piped from curl: prep the live ISO, clone, and hand off.
+# Entrypoint
 _print_bootstrap_logo
 _print_bootstrap_preparing
 _ensure_cowspace_early
 _ensure_bootstrap_pkgs
 
 WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-install.XXXXXX)}"
-[[ "$WORKDIR" == /tmp/vlarch-install.* ]] || _die "VLARCH_WORKDIR must be /tmp/vlarch-install.*"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 rm -rf "${WORKDIR}"
 
-# Pre-scan args so --verbose flips bootstrap output back on (it's also passed
-# through to main.sh below). --repo / --branch are consumed here; everything
-# else passes through unchanged.
-ARGS=()
-while (($#)); do
-  case "$1" in
-    --verbose)
-      VLARCH_VERBOSE=1
-      ARGS+=("$1")
-      shift
-      ;;
-    --repo)
-      [[ $# -ge 2 ]] || _die "--repo requires a URL"
-      VLARCH_GIT_URL="$2"
-      shift 2
-      ;;
-    --branch)
-      [[ $# -ge 2 ]] || _die "--branch requires a ref"
-      VLARCH_GIT_BRANCH="$2"
-      shift 2
-      ;;
-    *)
-      ARGS+=("$1")
-      shift
-      ;;
-  esac
-done
-
 if [[ -n "${VLARCH_GIT_BRANCH}" ]]; then
-  _run "git clone ${VLARCH_GIT_URL}#${VLARCH_GIT_BRANCH}" \
-    git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
+  git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}"
 else
-  _run "git clone ${VLARCH_GIT_URL}" \
-    git clone --depth 1 "${VLARCH_GIT_URL}" "${WORKDIR}"
+  git clone --depth 1 --branch main "${VLARCH_GIT_URL}" "${WORKDIR}"
 fi
 
-_run_main "${WORKDIR}" "${ARGS[@]}"
+printf 'SUCCESS ON FLOW'
+#_run_main "${WORKDIR}"
