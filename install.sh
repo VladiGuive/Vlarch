@@ -4,6 +4,7 @@ set -euo pipefail
 VLARCH_GIT_URL=https://github.com/VladiGuive/Vlarch.git
 VLARCH_GIT_BRANCH=dev
 VLARCH_LIVE_MIN_FREE_K=524288
+VLARCH_BOOTSTRAP_LOG=/var/log/vlarch_install.log
 
 _die() {
   printf '[vlarch] CRITICAL ERROR: %s\n' "$*" >&2
@@ -51,7 +52,7 @@ printf 'Workspace size suficient.\n'
 
 # Needed deps
 printf 'Installing needed dependencies...\n'
-pacman -Sy --noconfirm --needed git fzf >/dev/null 2>&1 && printf'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
+pacman -Sy --noconfirm --needed git fzf >$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
 
 # Creating workdir
 printf 'Creating temporal workdir...\n'
@@ -62,7 +63,7 @@ printf 'Temporal workdir created.\n'
 
 # Cloning repository
 printf 'Cloning Vlarch repository...\n'
-git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >/dev/null 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
+git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
 
 # Calling main install script from repo
 printf 'SUCCESS ON FLOW'
