@@ -35,7 +35,7 @@ _ensure_cowspace_early() {
 }
 
 # Entrypoint
-echo "Installing Vlarch." >>$VLARCH_BOOTSTRAP_LOG
+echo "Installing Vlarch." >$VLARCH_BOOTSTRAP_LOG
 reset
 cat <<'VLARCH_BOOTSTRAP_LOGO'
  _   ____             __
@@ -64,14 +64,7 @@ printf 'Temporal workdir created.\n'
 
 # Cloning repository
 printf 'Cloning Vlarch repository...\n'
-git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
+git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 && printf 'Repository cloned successfully.\n' || _die "Could not clone Vlarch repository."
 
 # Calling main install script from repo
-printf 'SUCCESS ON FLOW'
-#  local root="$1"
-#  export VLARCH_SCRIPT_DIR="${root}"
-#  if [[ -f "${root}/version.txt" ]]; then
-#    VLARCH_VERSION="$(<"${root}/version.txt")"
-#    export VLARCH_VERSION
-#  fi
-#  exec bash "${root}/install/main.sh" "$@"_run_main "${WORKDIR}"
+exec bash "${WORKDIR}/install/main.sh"
