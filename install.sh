@@ -46,10 +46,10 @@ printf 'Preparing installation environment...'
 # Ensuring enough work space
 printf 'Checking workspace size...'
 _ensure_cowspace_early
-prinft 'Workspace size suficient.'
+printf 'Workspace size suficient.'
 
 # Needed deps
-prinft 'Installing needed dependencies...'
+printf 'Installing needed dependencies...'
 pacman -Sy --noconfirm --needed git fzf printf 'Needed dependencies installed.' >/dev/null 2>&1 || _die "Could not install needed dependencies."
 
 # Creating workdir
