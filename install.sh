@@ -10,7 +10,8 @@ _log() {
   printf '[vlarch] %s\n' "$*"
 }
 _die() {
-  printf '[vlarch] CRITICAL ERROR: full log in %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
+  printf '[vlarch] CRITICAL ERROR: %s\n' "$*" >&2
+  printf '[vlarch] SEE FULL LOG: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
   exit 1
 }
 _print_bootstrap_logo() {
