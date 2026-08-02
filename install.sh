@@ -7,13 +7,6 @@ VLARCH_LIVE_MIN_FREE_K=524288
 VLARCH_BOOTSTRAP_LOG=/var/log/vlarch_install.log
 VLARCH_CONFIG_FILE="${VLARCH_CONFIG_FILE:-/tmp/vlarch-install.env}"
 
-# Nord palette (256-color indices)
-VLARCH_ESC_RESET=$'\033[0m'
-VLARCH_NORD_FG=$'\033[38;5;253m'
-VLARCH_NORD_DIM=$'\033[38;5;245m'
-VLARCH_NORD_YELLOW=$'\033[38;5;221m'
-VLARCH_NORD_CYAN=$'\033[38;5;109m'
-
 _die() {
   printf '[vlarch] CRITICAL ERROR: %s\n' "$*" >&2
   printf '[vlarch] SEE FULL LOG: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
@@ -153,19 +146,19 @@ vlarch_live_ensure_keyring() {
 
   ((healthy)) && return 0
 
-  vlarch_live_run "pacman-key --init"               pacman-key --init
+  vlarch_live_run "pacman-key --init" pacman-key --init
   vlarch_live_run "pacman-key --populate archlinux" pacman-key --populate archlinux
 
-  pacman-key -l >/dev/null 2>&1 \
-    || _die "pacman keyring still unhealthy after --init/--populate"
+  pacman-key -l >/dev/null 2>&1 ||
+    _die "pacman keyring still unhealthy after --init/--populate"
 }
 
 # Pull the current archlinux-keyring from mirrors and refresh packager trust.
 # Live ISOs ship a stale keyring; without this, pacstrap fails with "unknown trust".
 vlarch_live_sync_keyring() {
   command -v pacman-key >/dev/null 2>&1 || _die "pacman-key missing on live ISO"
-  [[ -s /etc/pacman.d/mirrorlist ]] \
-    || _die "mirrorlist empty; run vlarch_live_refresh_mirrors first"
+  [[ -s /etc/pacman.d/mirrorlist ]] ||
+    _die "mirrorlist empty; run vlarch_live_refresh_mirrors first"
 
   vlarch_live_run "pacman -Sy archlinux-keyring" \
     pacman -Sy archlinux-keyring --needed --noconfirm
@@ -179,8 +172,8 @@ vlarch_live_refresh_mirrors() {
       reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
   fi
   [[ -s /etc/pacman.d/mirrorlist ]] || _die "/etc/pacman.d/mirrorlist is empty"
-  grep -q '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist \
-    || _die "/etc/pacman.d/mirrorlist has no Server entries"
+  grep -q '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist ||
+    _die "/etc/pacman.d/mirrorlist has no Server entries"
 }
 
 # ---- TUI input helpers (migrated from install/steps/02_collect_input.sh) ----
@@ -205,11 +198,11 @@ _read_password_twice() {
     read -rsp "$prompt (again): " second
     printf '\n' >&2
     if [[ "$first" != "$second" ]]; then
-      printf '%b  passwords do not match; try again%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
+      printf '  passwords do not match; try again\n' >&2
       continue
     fi
     if [[ -z "$first" ]]; then
-      printf '%b  password cannot be empty%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
+      printf '  password cannot be empty\n' >&2
       continue
     fi
     printf '%s' "$first"
@@ -242,19 +235,19 @@ _clear
 printf 'Preparing installation environment...\n'
 
 # Needed deps
-printf 'Installing needed dependencies...\n'
-pacman -Sy --noconfirm --needed git fzf >>$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
+printf '  Installing needed dependencies...\n'
+pacman -Sy --noconfirm --needed git fzf >>$VLARCH_BOOTSTRAP_LOG 2>&1 && printf '  Needed dependencies installed.\n' || _die "Could not install needed dependencies."
 
 # Creating workdir
-printf 'Creating temporal workdir...\n'
+printf '  Creating temporal workdir...\n'
 WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-install.XXXXXX)}"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 rm -rf "${WORKDIR}"
-printf 'Temporal workdir created.\n'
+printf '  Temporal workdir created.\n'
 
 # Cloning repository
-printf 'Cloning Vlarch repository...\n'
-git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 && printf 'Repository cloned successfully.\n' || _die "Could not clone Vlarch repository."
+printf '  Cloning Vlarch repository...\n'
+git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 && printf '  Repository cloned successfully.\n' || _die "Could not clone Vlarch repository."
 
 # Repo root doubles as VLARCH_SCRIPT_DIR (matches update.sh contract)
 VLARCH_SCRIPT_DIR="${WORKDIR}"
@@ -289,7 +282,7 @@ for cmd in pacstrap arch-chroot cryptsetup mkfs.btrfs mkfs.vfat mkfs.ext4 sgdisk
 done
 printf '  All required commands present.\n'
 
-# 02 - collect_input: TUI capturing every VLARCH_* the rest of the installer needs.
+# 02 - collect_input: capture every VLARCH_* the rest of the installer needs.
 
 # Make sure stdin is a TTY when running under `curl | bash`.
 if [[ ! -t 0 ]] && [[ -c /dev/tty ]]; then
@@ -298,29 +291,29 @@ fi
 trap 'exit 130' INT
 
 _clear
-printf '%bVlarch installer%b\n\n' "${VLARCH_NORD_FG}" "${VLARCH_ESC_RESET}"
+printf 'Vlarch installer\n\n'
 
 reused=0
 if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
-  reuse=$(printf 'Use existing config\nStart fresh\n' \
-    | _fzf --header "Found saved config at ${VLARCH_CONFIG_FILE}" --prompt='> ')
+  reuse=$(printf 'Use existing config\nStart fresh\n' |
+    _fzf --header "Found saved config at ${VLARCH_CONFIG_FILE}" --prompt='> ')
   if [[ "$reuse" == "Use existing config" ]]; then
     vlarch_config_load "$VLARCH_CONFIG_FILE"
     if vlarch_config_validate 2>/dev/null; then
       reused=1
     else
-      printf '%b  saved config is incomplete; starting fresh%b\n' "${VLARCH_NORD_YELLOW}" "${VLARCH_ESC_RESET}" >&2
+      printf '  saved config is incomplete; starting fresh\n' >&2
     fi
   fi
 fi
 
-if ((! reused)); then
+if ((!reused)); then
   current=$(_detect_network_type)
   if [[ "$current" == "wifi" ]]; then
     VLARCH_NETWORK_TYPE="wifi"
   else
-    VLARCH_NETWORK_TYPE=$(printf 'ethernet\nwifi\n' \
-      | _fzf --header 'Networking' --prompt='> ')
+    VLARCH_NETWORK_TYPE=$(printf 'ethernet\nwifi\n' |
+      _fzf --header 'Networking' --prompt='> ')
   fi
   if [[ "$VLARCH_NETWORK_TYPE" == "wifi" ]]; then
     read -rp "  WiFi SSID: " VLARCH_WIFI_SSID
@@ -328,29 +321,29 @@ if ((! reused)); then
     echo
   fi
 
-  VLARCH_TIMEZONE=$(find /usr/share/zoneinfo -type f ! -name '*.tab' ! -name '*.list' \
-    | sed 's|/usr/share/zoneinfo/||' \
-    | grep -vE '^(posix|right|Etc|Factory)/|^[A-Z0-9_-]+$' \
-    | sort \
-    | _fzf --header 'Timezone' --prompt='> ')
+  VLARCH_TIMEZONE=$(find /usr/share/zoneinfo -type f ! -name '*.tab' ! -name '*.list' |
+    sed 's|/usr/share/zoneinfo/||' |
+    grep -vE '^(posix|right|Etc|Factory)/|^[A-Z0-9_-]+$' |
+    sort |
+    _fzf --header 'Timezone' --prompt='> ')
   [[ -n "$VLARCH_TIMEZONE" ]] || _die "no timezone selected"
 
-  VLARCH_LOCALE=$(grep -E '^#?[a-z][a-zA-Z_]+\\.UTF-8' /etc/locale.gen \
-    | sed 's/^# *//' \
-    | _fzf --query='en_US.UTF-8' --header 'Locale' --prompt='> ' \
-    | awk '{print $1}')
+  VLARCH_LOCALE=$(grep -E '^#?[a-z][a-zA-Z_]+\\\\.UTF-8' /etc/locale.gen |
+    sed 's/^# *//' |
+    _fzf --query='en_US.UTF-8' --header 'Locale' --prompt='> ' |
+    awk '{print $1}')
   [[ -n "$VLARCH_LOCALE" ]] || _die "no locale selected"
 
-  VLARCH_DISK=$(lsblk -dno PATH,SIZE,TYPE,MODEL \
-    | awk '$3 == "disk" { $3=""; print }' \
-    | _fzf --header 'Target disk (will be ERASED)' --prompt='> ' \
-    | awk '{print $1}')
+  VLARCH_DISK=$(lsblk -dno PATH,SIZE,TYPE,MODEL |
+    awk '$3 == "disk" { $3=""; print }' |
+    _fzf --header 'Target disk (will be ERASED)' --prompt='> ' |
+    awk '{print $1}')
   [[ -n "$VLARCH_DISK" ]] || _die "no disk selected"
   [[ -b "$VLARCH_DISK" ]] || _die "not a block device: $VLARCH_DISK"
 
   read -rp "Username: " VLARCH_USER
-  [[ "$VLARCH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] \
-    || _die "invalid username: $VLARCH_USER"
+  [[ "$VLARCH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] ||
+    _die "invalid username: $VLARCH_USER"
   read -rp "Real name: " VLARCH_REAL_NAME
   read -rp "Email: " VLARCH_USER_EMAIL
 
@@ -366,14 +359,14 @@ if ((! reused)); then
   vlarch_config_validate
   vlarch_config_save "$VLARCH_CONFIG_FILE"
 
-  printf '%bCaptured configuration:%b\n' "${VLARCH_NORD_CYAN}" "${VLARCH_ESC_RESET}"
-  printf '%b  user:        %s (%s)%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_USER}" "${VLARCH_REAL_NAME}" "${VLARCH_ESC_RESET}"
-  printf '%b  network:     %s%s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_NETWORK_TYPE}" "${VLARCH_WIFI_SSID:+ (SSID: ${VLARCH_WIFI_SSID})}" "${VLARCH_ESC_RESET}"
-  printf '%b  timezone:    %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_TIMEZONE}" "${VLARCH_ESC_RESET}"
-  printf '%b  locale:      %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_LOCALE}" "${VLARCH_ESC_RESET}"
-  printf '%b  disk:        %s%b\n' "${VLARCH_NORD_DIM}" "${VLARCH_DISK}" "${VLARCH_ESC_RESET}"
+  printf 'Captured configuration:\n'
+  printf '  user:        %s (%s)\n' "${VLARCH_USER}" "${VLARCH_REAL_NAME}"
+  printf '  network:     %s%s\n' "${VLARCH_NETWORK_TYPE}" "${VLARCH_WIFI_SSID:+ (SSID: ${VLARCH_WIFI_SSID})}"
+  printf '  timezone:    %s\n' "${VLARCH_TIMEZONE}"
+  printf '  locale:      %s\n' "${VLARCH_LOCALE}"
+  printf '  disk:        %s\n' "${VLARCH_DISK}"
   printf '\n'
-  read -rp "$(printf '%b' "${VLARCH_NORD_YELLOW}")Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort...$(printf '%b' "${VLARCH_ESC_RESET}")" _
+  read -rp "Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort..." _
 fi
 
 _clear
