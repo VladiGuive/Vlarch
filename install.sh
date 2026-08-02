@@ -34,6 +34,7 @@ _ensure_cowspace_early() {
 }
 
 # Entrypoint
+reset
 cat <<'VLARCH_BOOTSTRAP_LOGO'
  _   ____             __
 | | / / /__ _________/ /
@@ -41,27 +42,27 @@ cat <<'VLARCH_BOOTSTRAP_LOGO'
 |___/_/\_,_/_/  \__/_//_/
 VLARCH_BOOTSTRAP_LOGO
 
-printf 'Preparing installation environment...'
+printf 'Preparing installation environment...\n'
 
 # Ensuring enough work space
-printf 'Checking workspace size...'
+printf 'Checking workspace size...\n'
 _ensure_cowspace_early
-printf 'Workspace size suficient.'
+printf 'Workspace size suficient.\n'
 
 # Needed deps
-printf 'Installing needed dependencies...'
-pacman -Sy --noconfirm --needed git fzf printf 'Needed dependencies installed.' >/dev/null 2>&1 || _die "Could not install needed dependencies."
+printf 'Installing needed dependencies...\n'
+pacman -Sy --noconfirm --needed git fzf >/dev/null 2>&1 && printf'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
 
 # Creating workdir
-printf 'Creating temporal workdir...'
+printf 'Creating temporal workdir...\n'
 WORKDIR="${VLARCH_WORKDIR:-$(mktemp -d /tmp/vlarch-install.XXXXXX)}"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 rm -rf "${WORKDIR}"
-printf 'Temporal workdir created.'
+printf 'Temporal workdir created.\n'
 
 # Cloning repository
-printf 'Cloning Vlarch repository...'
-git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" printf 'Repository cloned successfully.' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
+printf 'Cloning Vlarch repository...\n'
+git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >/dev/null 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
 
 # Calling main install script from repo
 printf 'SUCCESS ON FLOW'
