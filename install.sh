@@ -35,6 +35,7 @@ _ensure_cowspace_early() {
 }
 
 # Entrypoint
+echo "Installing Vlarch." >>$VLARCH_BOOTSTRAP_LOG
 reset
 cat <<'VLARCH_BOOTSTRAP_LOGO'
  _   ____             __
@@ -52,7 +53,7 @@ printf 'Workspace size suficient.\n'
 
 # Needed deps
 printf 'Installing needed dependencies...\n'
-pacman -Sy --noconfirm --needed git fzf >$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
+pacman -Sy --noconfirm --needed git fzf >>$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Needed dependencies installed.\n' || _die "Could not install needed dependencies."
 
 # Creating workdir
 printf 'Creating temporal workdir...\n'
@@ -63,7 +64,7 @@ printf 'Temporal workdir created.\n'
 
 # Cloning repository
 printf 'Cloning Vlarch repository...\n'
-git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
+git clone --depth 1 --branch "${VLARCH_GIT_BRANCH}" "${VLARCH_GIT_URL}" "${WORKDIR}" >>$VLARCH_BOOTSTRAP_LOG 2>&1 && printf 'Repository cloned successfully.\n' >/dev/null 2>&1 || _die "Could not clone Vlarch repository."
 
 # Calling main install script from repo
 printf 'SUCCESS ON FLOW'
