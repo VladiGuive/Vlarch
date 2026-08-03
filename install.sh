@@ -169,8 +169,9 @@ vlarch_live_sync_keyring() {
 
 vlarch_live_refresh_mirrors() {
   if command -v reflector >/dev/null 2>&1; then
-    vlarch_live_run "reflector mirrorlist refresh" \
-      reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+    printf '\n--- reflector mirrorlist refresh ---\n' >>"$VLARCH_BOOTSTRAP_LOG"
+    reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist \
+      2>&1 | tee -a "$VLARCH_BOOTSTRAP_LOG" || _die "reflector mirrorlist refresh failed"
   fi
   [[ -s /etc/pacman.d/mirrorlist ]] || _die "/etc/pacman.d/mirrorlist is empty"
   grep -q '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist ||
@@ -535,26 +536,10 @@ base_pkgs=(
   base base-devel linux linux-firmware btrfs-progs grub efibootmgr
   networkmanager git curl sudo zsh rsync
 )
-attempt=1
-max_attempts=3
-while ((attempt <= max_attempts)); do
-  printf '  pacstrap (attempt %d/%d)...\n' "$attempt" "$max_attempts"
-  rc=0
-  {
-    printf '\n--- pacstrap attempt %d/%d ---\n' "$attempt" "$max_attempts"
-  } >>"$VLARCH_BOOTSTRAP_LOG"
-  pacstrap -K /mnt "${base_pkgs[@]}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 || rc=$?
-  if ((rc == 0)); then
-    break
-  fi
-  if ((attempt == max_attempts)); then
-    _die "pacstrap failed after ${max_attempts} attempts (exit ${rc})"
-  fi
-  vlarch_live_refresh_mirrors
-  vlarch_live_sync_keyring
-  vlarch_live_run "pacman -Syy" pacman -Syy --noconfirm
-  ((attempt++)) || true
-done
+printf '  Downloading and installing base packages...\n'
+if ! pacstrap -K /mnt "${base_pkgs[@]}" 2>&1 | tee -a "$VLARCH_BOOTSTRAP_LOG"; then
+  _die "pacstrap failed"
+fi
 printf '  Base system installed.\n'
 
 if ! genfstab -U /mnt >>/mnt/etc/fstab 2>>"$VLARCH_BOOTSTRAP_LOG"; then
