@@ -322,7 +322,7 @@ if ((!reused)); then
     _fzf --header 'Timezone' --prompt='> ')
   [[ -n "$VLARCH_TIMEZONE" ]] || _die "no timezone selected"
 
-  VLARCH_LOCALE=$(grep -E '^#?[a-z][a-zA-Z_]+\\\\.UTF-8' /etc/locale.gen |
+  VLARCH_LOCALE=$(grep -E '^#?[a-z][a-zA-Z_]+\.UTF-8' /etc/locale.gen |
     sed 's/^# *//' |
     _fzf --query='en_US.UTF-8' --header 'Locale' --prompt='> ' |
     awk '{print $1}')
