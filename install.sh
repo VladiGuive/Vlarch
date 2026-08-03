@@ -520,7 +520,7 @@ printf 'Partitioning complete.\n'
 _clear
 
 # 04 - software: pacstrap the base, then every system package + the AUR stack
-# (openrc init, plymouth splash) one at a time with a Package n/m counter.
+# one at a time with a Package n/m counter.
 
 printf 'Installing base system...\n'
 mountpoint -q /mnt || _die "/mnt is not mounted; run step 03 first"
@@ -606,15 +606,7 @@ for pkg in "${AUR_PKGS[@]}"; do
     _die "yay -S ${pkg} failed"
 done
 
-# plymouth (AUR) depends on systemd, so it was installed above while systemd
-# was still present. Now drop systemd itself: openrc is the init. systemd-libs
-# stays (other packages link against it) - it is not systemd.
-printf '  Removing systemd...\n'
-if arch-chroot /mnt pacman -Q systemd >/dev/null 2>&1; then
-  arch-chroot /mnt pacman -Rdd --noconfirm systemd >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 ||
-    _die "could not remove systemd"
-fi
-
+# plymouth (AUR) depends on systemd, which stays as the init system.
 missing=()
 for pkg in "${base_pkgs[@]}" "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
@@ -626,7 +618,7 @@ printf '  All packages present.\n'
 
 _clear
 
-# 05 - system: timezone, locale, hostname inside /mnt (openrc).
+# 05 - system: timezone, locale, hostname inside /mnt.
 
 printf 'Configuring system...\n'
 arch-chroot /mnt env \
@@ -651,10 +643,7 @@ locale-gen
 echo "LANG=${VLARCH_LOCALE}" >/etc/locale.conf
 
 printf '  Hostname...\n'
-# OpenRC reads the hostname from /etc/conf.d/hostname (NOT /etc/hostname).
-cat >/etc/conf.d/hostname <<HOST
-hostname="vlarch"
-HOST
+echo "vlarch" >/etc/hostname
 cat >/etc/hosts <<HOSTS
 127.0.0.1   localhost
 ::1         localhost
@@ -665,21 +654,24 @@ printf '  System configured.\n'
 
 _clear
 
-# 06 - users: autologin for the install user (openrc style).
+# 06 - users: autologin for the install user.
 
 printf 'Setting up autologin...\n'
 arch-chroot /mnt env "VLARCH_USER=${VLARCH_USER}" bash -s <<'USERS'
 set -euo pipefail
-# openrc agetty reads its options from /etc/conf.d/agetty (no systemd drop-in).
-cat >/etc/conf.d/agetty <<AGETTY
-AGETTY_OPTS="--autologin ${VLARCH_USER} --noclear"
-AGETTY
+# systemd drop-in: autologin on tty1.
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat >/etc/systemd/system/getty@tty1.service.d/autologin.conf <<UNIT
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin ${VLARCH_USER} --noclear %I \$TERM
+UNIT
 USERS
 printf '  Autologin ready.\n'
 
 _clear
 
-# 07 - boot: plymouth + LUKS initramfs, GRUB, openrc services.
+# 07 - boot: plymouth + LUKS initramfs, GRUB, services.
 
 printf 'Setting up boot...\n'
 arch-chroot /mnt env "VLARCH_LUKS_UUID=${VLARCH_LUKS_UUID}" bash -s <<'BOOT'
@@ -710,11 +702,8 @@ grub-mkconfig -o /boot/grub/grub.cfg
 printf '  Enabling services...\n'
 # swapfile entry (genfstab does not emit it).
 grep -q '^/swap/swapfile' /etc/fstab || echo '/swap/swapfile none swap defaults 0 0' >>/etc/fstab
-rc-update add udev sysinit
-rc-update add dbus default
-rc-update add NetworkManager default
-rc-update add agetty default
-rc-update add plymouth boot
+systemctl enable NetworkManager.service
+systemctl enable plymouth-start.service
 BOOT
 printf '  Boot ready.\n'
 

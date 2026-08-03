@@ -1,16 +1,10 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 # steam is in pacman.txt (multilib), not here.
-# openrc + plymouth: init system and boot splash. openrc replaces systemd;
-# plymouth (AUR) depends on systemd, so the installer installs it while
-# systemd is still present, then removes systemd.
 oh-my-posh-bin
 nordic-theme-git
 timeshift-autosnap
 xwaylandvideobridge
 obsidian-bin
 zen-browser-bin
-openrc
-openrc-arch-services-git
 plymouth
-plymouth-openrc-plugin
 quickshell
