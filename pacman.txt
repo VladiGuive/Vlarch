@@ -1,51 +1,54 @@
 # Official Arch packages (installed as root via pacman).
-hyprland
-hyprpaper
-waybar
-upower
-kitty
-fzf
-neovim
-tmux
-zoxide
-yazi
-7zip
-btop
-fastfetch
-ttf-jetbrains-mono-nerd
-ttf-nerd-fonts-symbols
-vulkan-radeon
+# BASE 
 intel-ucode
 amd-ucode
-openssh
-rsync
-timeshift
-grub-btrfs
-inotify-tools
-pipewire
-pipewire-alsa
-pipewire-pulse
-wireplumber
-xdg-desktop-portal
-xdg-desktop-portal-hyprland
-xdg-desktop-portal-gtk
-qt6-wayland
-pavucontrol
-papirus-icon-theme
-noto-fonts
-noto-fonts-emoji
-brightnessctl
-playerctl
-grim
-slurp
-wl-clipboard
-gtk4-layer-shell
-gnome-keyring
-libsecret
-cmake
-cpio
-pkg-config
-base-devel
-git
-meson
-ninja
+
+# OTHER
+kitty
+neovim
+fastfetch
+
+# hyprpaper
+# waybar
+# upower
+# fzf
+# tmux
+# zoxide
+# yazi
+# 7zip
+# btop
+# ttf-jetbrains-mono-nerd
+# ttf-nerd-fonts-symbols
+# vulkan-radeon
+# openssh
+# rsync
+# timeshift
+# grub-btrfs
+# inotify-tools
+# pipewire
+# pipewire-alsa
+# pipewire-pulse
+# wireplumber
+# xdg-desktop-portal
+# xdg-desktop-portal-hyprland
+# xdg-desktop-portal-gtk
+# qt6-wayland
+# pavucontrol
+# papirus-icon-theme
+# noto-fonts
+# noto-fonts-emoji
+# brightnessctl
+# playerctl
+# grim
+# slurp
+# wl-clipboard
+# gtk4-layer-shell
+# gnome-keyring
+# libsecret
+# cmake
+# cpio
+# pkg-config
+# base-devel
+# git
+# meson
+# ninja
