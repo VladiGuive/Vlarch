@@ -568,8 +568,8 @@ fi
 sed -i '/^\[multilib\]/,/Include/ s/^#//' /mnt/etc/pacman.conf
 
 # Every explicit package, one at a time, with a global progress counter.
-mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/update/packages/pacman.txt")
-mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/update/packages/aur.txt")
+mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/pacman.txt")
+mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/aur.txt")
 total=$(( ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
 n=0
 
@@ -754,9 +754,6 @@ mountpoint -q /mnt || _die "/mnt not mounted; cannot finalize install"
 for script in "${VLARCH_SCRIPT_DIR}"/bin/*; do
   install -Dm0755 "$script" "/mnt/usr/local/bin/$(basename "$script")"
 done
-install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
-install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
-install -Dm0644 "${VLARCH_SCRIPT_DIR}/install/assets/background.png" /mnt/usr/share/vlarch/background.png
 
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {
@@ -766,9 +763,6 @@ mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
   printf 'timezone=%s\n'     "${VLARCH_TIMEZONE}"
   printf 'locale=%s\n'       "${VLARCH_LOCALE}"
   printf 'branch=%s\n'       "${VLARCH_GIT_BRANCH:-main}"
-  if [[ -f "${VLARCH_SCRIPT_DIR}/version.txt" ]]; then
-    printf 'version=%s\n' "$(tr -d '[:space:]' <"${VLARCH_SCRIPT_DIR}/version.txt")"
-  fi
 } >/mnt/etc/vlarch/install-info
 
 # Persist non-secret runtime hints for post-install (WiFi join, etc).
