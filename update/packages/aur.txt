@@ -13,3 +13,4 @@ openrc
 openrc-arch-services-git
 plymouth
 plymouth-openrc-plugin
+quickshell

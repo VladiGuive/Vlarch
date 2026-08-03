@@ -524,8 +524,8 @@ _clear
 printf 'Installing base system...\n'
 mountpoint -q /mnt || _die "/mnt is not mounted; run step 03 first"
 
-# Steam and other 32-bit deps need multilib in the live env (pacstrap resolves
-# against it); the target's pacman.conf gets it after the base is in place.
+# 32-bit deps need multilib in the live env (pacstrap resolves against it);
+# the target's pacman.conf gets it after the base is in place.
 sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
 vlarch_live_refresh_mirrors

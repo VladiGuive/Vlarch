@@ -1,4 +1,4 @@
-# Official Arch packages (installed as root via pacman; steam needs multilib).
+# Official Arch packages (installed as root via pacman).
 hyprland
 hyprpaper
 waybar
@@ -32,7 +32,6 @@ xdg-desktop-portal-gtk
 qt6-wayland
 pavucontrol
 papirus-icon-theme
-steam
 noto-fonts
 noto-fonts-emoji
 brightnessctl
