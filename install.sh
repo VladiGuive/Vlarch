@@ -640,3 +640,97 @@ done
 printf '  All packages present.\n'
 
 _clear
+
+# 05 - system: timezone, locale, hostname inside /mnt (openrc).
+
+printf 'Configuring system...\n'
+arch-chroot /mnt env \
+  "VLARCH_TIMEZONE=${VLARCH_TIMEZONE}" \
+  "VLARCH_LOCALE=${VLARCH_LOCALE}" \
+  bash -s <<'SYS'
+set -euo pipefail
+
+printf '  Timezone...\n'
+ln -sf "/usr/share/zoneinfo/${VLARCH_TIMEZONE}" /etc/localtime
+hwclock --systohc
+
+printf '  Locale...\n'
+if ! grep -qE "^${VLARCH_LOCALE} UTF-8" /etc/locale.gen; then
+  if grep -qE "^#${VLARCH_LOCALE} UTF-8" /etc/locale.gen; then
+    sed -i "s/^#\(${VLARCH_LOCALE} UTF-8\)/\1/" /etc/locale.gen
+  else
+    echo "${VLARCH_LOCALE} UTF-8" >>/etc/locale.gen
+  fi
+fi
+locale-gen
+echo "LANG=${VLARCH_LOCALE}" >/etc/locale.conf
+
+printf '  Hostname...\n'
+# OpenRC reads the hostname from /etc/conf.d/hostname (NOT /etc/hostname).
+cat >/etc/conf.d/hostname <<HOST
+hostname="vlarch"
+HOST
+cat >/etc/hosts <<HOSTS
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   vlarch.localdomain vlarch
+HOSTS
+SYS
+printf '  System configured.\n'
+
+_clear
+
+# 06 - users: autologin for the install user (openrc style).
+
+printf 'Setting up autologin...\n'
+arch-chroot /mnt env "VLARCH_USER=${VLARCH_USER}" bash -s <<'USERS'
+set -euo pipefail
+# openrc agetty reads its options from /etc/conf.d/agetty (no systemd drop-in).
+cat >/etc/conf.d/agetty <<AGETTY
+AGETTY_OPTS="--autologin ${VLARCH_USER} --noclear"
+AGETTY
+USERS
+printf '  Autologin ready.\n'
+
+_clear
+
+# 07 - boot: plymouth + LUKS initramfs, GRUB, openrc services.
+
+printf 'Setting up boot...\n'
+arch-chroot /mnt env "VLARCH_LUKS_UUID=${VLARCH_LUKS_UUID}" bash -s <<'BOOT'
+set -euo pipefail
+
+printf '  Building initramfs...\n'
+# plymouth draws the LUKS passphrase prompt (no console text); the
+# plymouth-encrypt hook replaces plain encrypt.
+sed -i -E "s/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block plymouth plymouth-encrypt filesystems fsck)/" /etc/mkinitcpio.conf
+mkinitcpio -P
+
+printf '  Installing GRUB...\n'
+cmdline="cryptdevice=UUID=${VLARCH_LUKS_UUID}:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ quiet splash"
+if grep -q "^GRUB_ENABLE_CRYPTODISK=" /etc/default/grub; then
+  sed -i "s|^GRUB_ENABLE_CRYPTODISK=.*|GRUB_ENABLE_CRYPTODISK=y|" /etc/default/grub
+else
+  echo "GRUB_ENABLE_CRYPTODISK=y" >>/etc/default/grub
+fi
+if grep -q "^GRUB_CMDLINE_LINUX=" /etc/default/grub; then
+  sed -i "s|^GRUB_CMDLINE_LINUX=.*|GRUB_CMDLINE_LINUX=\"${cmdline}\"|" /etc/default/grub
+else
+  echo "GRUB_CMDLINE_LINUX=\"${cmdline}\"" >>/etc/default/grub
+fi
+mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2>/dev/null || true
+grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Vlarch
+grub-mkconfig -o /boot/grub/grub.cfg
+
+printf '  Enabling services...\n'
+# swapfile entry (genfstab does not emit it).
+grep -q '^/swap/swapfile' /etc/fstab || echo '/swap/swapfile none swap defaults 0 0' >>/etc/fstab
+rc-update add udev sysinit
+rc-update add dbus default
+rc-update add NetworkManager default
+rc-update add agetty default
+rc-update add plymouth boot
+BOOT
+printf '  Boot ready.\n'
+
+_clear
