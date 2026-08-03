@@ -541,14 +541,12 @@ if [[ -f /etc/resolv.conf ]]; then
 fi
 
 # Every explicit package, one at a time, with a global progress counter.
-BASE_EXTRA=(base-devel linux linux-firmware btrfs-progs grub efibootmgr
-  networkmanager git curl sudo zsh rsync)
 mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/pacman.txt")
 mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/aur.txt")
-total=$(( ${#BASE_EXTRA[@]} + ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
+total=$(( ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
 n=0
 
-for pkg in "${BASE_EXTRA[@]}" "${PACMAN_PKGS[@]}"; do
+for pkg in "${PACMAN_PKGS[@]}"; do
   n=$((n + 1))
   _clear
   printf 'Package %d/%d\n' "$n" "$total"
@@ -598,7 +596,7 @@ done
 
 # plymouth (AUR) depends on systemd, which stays as the init system.
 missing=()
-for pkg in base "${BASE_EXTRA[@]}" "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
+for pkg in base "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
     missing+=("$pkg")
   fi

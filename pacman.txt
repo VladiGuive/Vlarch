@@ -1,5 +1,17 @@
-# Official Arch packages (installed as root via pacman).
-# BASE 
+# Official Arch packages (installed via pacman, one at a time).
+# BASE - required for the system to boot (do not comment these out).
+base-devel
+linux
+linux-firmware
+btrfs-progs
+grub
+efibootmgr
+networkmanager
+git
+curl
+sudo
+zsh
+rsync
 intel-ucode
 amd-ucode
 
@@ -21,7 +33,6 @@ fastfetch
 # ttf-nerd-fonts-symbols
 # vulkan-radeon
 # openssh
-# rsync
 # timeshift
 # grub-btrfs
 # inotify-tools
@@ -48,7 +59,5 @@ fastfetch
 # cmake
 # cpio
 # pkg-config
-# base-devel
-# git
 # meson
 # ninja
