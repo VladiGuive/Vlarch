@@ -193,9 +193,9 @@ _read_password_twice() {
   # `printf '%s' "$first"` writes the captured value.
   local prompt="$1" first second
   while :; do
-    read -rsp "$prompt: " first
+    read -rsp "$prompt: " first </dev/tty
     printf '\n' >&2
-    read -rsp "$prompt (again): " second
+    read -rsp "$prompt (again): " second </dev/tty
     printf '\n' >&2
     if [[ "$first" != "$second" ]]; then
       printf '  passwords do not match; try again\n' >&2
@@ -284,10 +284,10 @@ printf '  All required commands present.\n'
 
 # 02 - collect_input: capture every VLARCH_* the rest of the installer needs.
 
-# Make sure stdin is a TTY when running under `curl | bash`.
-if [[ ! -t 0 ]] && [[ -c /dev/tty ]]; then
-  exec </dev/tty
-fi
+# NOTE: do NOT `exec </dev/tty` here — bash reads this script from the curl
+# pipe in chunks; redirecting fd 0 mid-script loses the unread tail and the
+# install hangs waiting for the rest of the script on /dev/tty. Every
+# interactive `read` below redirects its own stdin to /dev/tty instead.
 trap 'exit 130' INT
 
 _clear
@@ -316,8 +316,8 @@ if ((!reused)); then
       _fzf --header 'Networking' --prompt='> ')
   fi
   if [[ "$VLARCH_NETWORK_TYPE" == "wifi" ]]; then
-    read -rp "  WiFi SSID: " VLARCH_WIFI_SSID
-    read -rsp "  WiFi password: " VLARCH_WIFI_PASSWORD
+    read -rp "  WiFi SSID: " VLARCH_WIFI_SSID </dev/tty
+    read -rsp "  WiFi password: " VLARCH_WIFI_PASSWORD </dev/tty
     echo
   fi
 
@@ -341,11 +341,11 @@ if ((!reused)); then
   [[ -n "$VLARCH_DISK" ]] || _die "no disk selected"
   [[ -b "$VLARCH_DISK" ]] || _die "not a block device: $VLARCH_DISK"
 
-  read -rp "Username: " VLARCH_USER
+  read -rp "Username: " VLARCH_USER </dev/tty
   [[ "$VLARCH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] ||
     _die "invalid username: $VLARCH_USER"
-  read -rp "Real name: " VLARCH_REAL_NAME
-  read -rp "Email: " VLARCH_USER_EMAIL
+  read -rp "Real name: " VLARCH_REAL_NAME </dev/tty
+  read -rp "Email: " VLARCH_USER_EMAIL </dev/tty
 
   VLARCH_USER_PASSWORD=$(_read_password_twice "Password for $VLARCH_USER")
   VLARCH_ROOT_PASSWORD=$(_read_password_twice "Root password")
@@ -366,7 +366,7 @@ if ((!reused)); then
   printf '  locale:      %s\n' "${VLARCH_LOCALE}"
   printf '  disk:        %s\n' "${VLARCH_DISK}"
   printf '\n'
-  read -rp "Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort..." _
+  read -rp "Press Enter to start the install (will ERASE ${VLARCH_DISK}), or Ctrl-C to abort..." _ </dev/tty
 fi
 
 _clear
