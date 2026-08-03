@@ -517,3 +517,123 @@ vlarch_config_save "$VLARCH_CONFIG_FILE"
 printf 'Partitioning complete.\n'
 
 _clear
+
+# 04 - software: pacstrap the base, then every system package + the AUR stack
+# (openrc init, plymouth splash) one at a time with a Package n/m counter.
+
+printf 'Installing base system...\n'
+mountpoint -q /mnt || _die "/mnt is not mounted; run step 03 first"
+
+# Steam and other 32-bit deps need multilib in both the live env and the target.
+sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+sed -i '/^\[multilib\]/,/Include/ s/^#//' /mnt/etc/pacman.conf
+
+vlarch_live_refresh_mirrors
+vlarch_live_sync_keyring
+
+base_pkgs=(
+  base base-devel linux linux-firmware btrfs-progs grub efibootmgr
+  networkmanager git curl sudo zsh rsync
+)
+attempt=1
+max_attempts=3
+while ((attempt <= max_attempts)); do
+  printf '  pacstrap (attempt %d/%d)...\n' "$attempt" "$max_attempts"
+  rc=0
+  {
+    printf '\n--- pacstrap attempt %d/%d ---\n' "$attempt" "$max_attempts"
+  } >>"$VLARCH_BOOTSTRAP_LOG"
+  pacstrap -K /mnt "${base_pkgs[@]}" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 || rc=$?
+  if ((rc == 0)); then
+    break
+  fi
+  if ((attempt == max_attempts)); then
+    _die "pacstrap failed after ${max_attempts} attempts (exit ${rc})"
+  fi
+  vlarch_live_refresh_mirrors
+  vlarch_live_sync_keyring
+  vlarch_live_run "pacman -Syy" pacman -Syy --noconfirm
+  ((attempt++)) || true
+done
+printf '  Base system installed.\n'
+
+if ! genfstab -U /mnt >>/mnt/etc/fstab 2>>"$VLARCH_BOOTSTRAP_LOG"; then
+  _die "genfstab failed"
+fi
+if [[ -f /etc/resolv.conf ]]; then
+  cp -L /etc/resolv.conf /mnt/etc/resolv.conf
+fi
+
+# Every explicit package, one at a time, with a global progress counter.
+mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/update/packages/pacman.txt")
+mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/update/packages/aur.txt")
+total=$(( ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
+n=0
+
+for pkg in "${PACMAN_PKGS[@]}"; do
+  n=$((n + 1))
+  _clear
+  printf 'Package %d/%d\n' "$n" "$total"
+  printf '  %s...\n' "$pkg"
+  arch-chroot /mnt pacman -S --noconfirm --needed "$pkg" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 ||
+    _die "pacman -S ${pkg} failed"
+done
+
+# yay needs a real user (makepkg refuses to run as root).
+printf '  Creating user %s...\n' "$VLARCH_USER"
+user_shell=/bin/bash
+[[ -x /mnt/usr/bin/zsh ]] && user_shell=/usr/bin/zsh
+printf '%s\n' "root:${VLARCH_ROOT_PASSWORD}" | arch-chroot /mnt chpasswd
+if ! arch-chroot /mnt id "$VLARCH_USER" >/dev/null 2>&1; then
+  arch-chroot /mnt useradd -m -G wheel -c "${VLARCH_REAL_NAME}" -s "$user_shell" "$VLARCH_USER"
+fi
+printf '%s\n' "${VLARCH_USER}:${VLARCH_USER_PASSWORD}" | arch-chroot /mnt chpasswd
+install -m 0440 /dev/stdin /mnt/etc/sudoers.d/wheel <<SUDOERS
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL
+SUDOERS
+arch-chroot /mnt visudo -c -f /etc/sudoers.d/wheel >/dev/null
+
+printf '  Bootstrapping yay...\n'
+arch-chroot /mnt env "VLARCH_USER=${VLARCH_USER}" bash -s <<'YAY'
+set -euo pipefail
+if ! command -v yay >/dev/null 2>&1; then
+  build_dir="$(mktemp -d)"
+  chown "${VLARCH_USER}:${VLARCH_USER}" "$build_dir"
+  trap 'rm -rf "$build_dir"' EXIT
+  su - "${VLARCH_USER}" -c "
+    set -euo pipefail
+    git clone --depth 1 https://aur.archlinux.org/yay-bin.git \"${build_dir}\"
+    cd \"${build_dir}\"
+    makepkg -si --noconfirm
+  "
+fi
+YAY
+
+for pkg in "${AUR_PKGS[@]}"; do
+  n=$((n + 1))
+  _clear
+  printf 'Package %d/%d\n' "$n" "$total"
+  printf '  %s...\n' "$pkg"
+  arch-chroot /mnt su - "$VLARCH_USER" -c "yay -S --noconfirm --needed '$pkg'" >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 ||
+    _die "yay -S ${pkg} failed"
+done
+
+# plymouth (AUR) depends on systemd, so it was installed above while systemd
+# was still present. Now drop systemd itself: openrc is the init. systemd-libs
+# stays (other packages link against it) - it is not systemd.
+printf '  Removing systemd...\n'
+if arch-chroot /mnt pacman -Q systemd >/dev/null 2>&1; then
+  arch-chroot /mnt pacman -Rdd --noconfirm systemd >>"$VLARCH_BOOTSTRAP_LOG" 2>&1 ||
+    _die "could not remove systemd"
+fi
+
+missing=()
+for pkg in "${base_pkgs[@]}" "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
+  if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
+    missing+=("$pkg")
+  fi
+done
+((${#missing[@]} == 0)) || _die "packages missing: ${missing[*]}"
+printf '  All packages present.\n'
+
+_clear
