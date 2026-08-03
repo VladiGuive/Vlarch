@@ -169,9 +169,8 @@ vlarch_live_sync_keyring() {
 
 vlarch_live_refresh_mirrors() {
   if command -v reflector >/dev/null 2>&1; then
-    printf '\n--- reflector mirrorlist refresh ---\n' >>"$VLARCH_BOOTSTRAP_LOG"
-    reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist \
-      2>&1 | tee -a "$VLARCH_BOOTSTRAP_LOG" || _die "reflector mirrorlist refresh failed"
+    vlarch_live_run "reflector mirrorlist refresh" \
+      reflector -f 30 --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
   fi
   [[ -s /etc/pacman.d/mirrorlist ]] || _die "/etc/pacman.d/mirrorlist is empty"
   grep -q '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist ||
@@ -525,22 +524,14 @@ _clear
 printf 'Installing base system...\n'
 mountpoint -q /mnt || _die "/mnt is not mounted; run step 03 first"
 
-# 32-bit deps need multilib in the live env (pacstrap resolves against it);
-# the target's pacman.conf gets it after the base is in place.
-sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
-
 vlarch_live_refresh_mirrors
 vlarch_live_sync_keyring
 
-base_pkgs=(
-  base base-devel linux linux-firmware btrfs-progs grub efibootmgr
-  networkmanager git curl sudo zsh rsync
-)
-printf '  Downloading and installing base packages...\n'
-if ! pacstrap -K /mnt "${base_pkgs[@]}" 2>&1 | tee -a "$VLARCH_BOOTSTRAP_LOG"; then
+printf '  Installing base...\n'
+if ! pacstrap -K /mnt base >>"$VLARCH_BOOTSTRAP_LOG" 2>&1; then
   _die "pacstrap failed"
 fi
-printf '  Base system installed.\n'
+printf '  Base installed.\n'
 
 if ! genfstab -U /mnt >>/mnt/etc/fstab 2>>"$VLARCH_BOOTSTRAP_LOG"; then
   _die "genfstab failed"
@@ -549,16 +540,15 @@ if [[ -f /etc/resolv.conf ]]; then
   cp -L /etc/resolv.conf /mnt/etc/resolv.conf
 fi
 
-# multilib for the target (steam and other 32-bit deps in pacman.txt).
-sed -i '/^\[multilib\]/,/Include/ s/^#//' /mnt/etc/pacman.conf
-
 # Every explicit package, one at a time, with a global progress counter.
+BASE_EXTRA=(base-devel linux linux-firmware btrfs-progs grub efibootmgr
+  networkmanager git curl sudo zsh rsync)
 mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/pacman.txt")
 mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/aur.txt")
-total=$(( ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
+total=$(( ${#BASE_EXTRA[@]} + ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
 n=0
 
-for pkg in "${PACMAN_PKGS[@]}"; do
+for pkg in "${BASE_EXTRA[@]}" "${PACMAN_PKGS[@]}"; do
   n=$((n + 1))
   _clear
   printf 'Package %d/%d\n' "$n" "$total"
@@ -608,7 +598,7 @@ done
 
 # plymouth (AUR) depends on systemd, which stays as the init system.
 missing=()
-for pkg in "${base_pkgs[@]}" "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
+for pkg in base "${BASE_EXTRA[@]}" "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
     missing+=("$pkg")
   fi
