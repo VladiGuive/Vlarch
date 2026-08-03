@@ -1,20 +1,23 @@
 [Plymouth Theme]
 Name=Vlarch
-Description=A theme designed by jimmac that features a simple spinner.
+Description=Vlarch custom boot splash
 ModuleName=two-step
 
 [two-step]
 Font=Cantarell 12
 TitleFont=Cantarell Light 30
 ImageDir=/usr/share/plymouth/themes/vlarch
+# Full-screen background image (1920x1080) drawn as the watermark layer.
+WatermarkImage=background.png
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.5
+# Password prompt at the bottom, no keyboard image.
 DialogHorizontalAlignment=.5
-DialogVerticalAlignment=.382
+DialogVerticalAlignment=.8
 TitleHorizontalAlignment=.5
 TitleVerticalAlignment=.382
 HorizontalAlignment=.5
 VerticalAlignment=.7
-WatermarkHorizontalAlignment=.5
-WatermarkVerticalAlignment=.96
 Transition=none
 TransitionDuration=0.0
 BackgroundStartColor=0x000000
@@ -24,7 +27,8 @@ ProgressBarForegroundColor=0xffffff
 MessageBelowAnimation=true
 
 [boot-up]
-UseEndAnimation=false
+# Play end-animation-*.png once after the boot finishes (does not block boot).
+UseEndAnimation=true
 
 [shutdown]
 UseEndAnimation=false
