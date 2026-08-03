@@ -284,6 +284,12 @@ printf '  All required commands present.\n'
 
 # 02 - collect_input: capture every VLARCH_* the rest of the installer needs.
 
+# Make sure stdin is a TTY when running under `curl | bash`.
+if [[ ! -t 0 ]] && [[ -c /dev/tty ]]; then
+  exec </dev/tty
+fi
+trap 'exit 130' INT
+
 _clear
 printf 'Vlarch installer\n\n'
 
