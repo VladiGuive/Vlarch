@@ -686,7 +686,9 @@ else
   echo "GRUB_CMDLINE_LINUX=\"${cmdline}\"" >>/etc/default/grub
 fi
 mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2>/dev/null || true
-grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Vlarch
+# --removable: also install the fallback path /EFI/BOOT/BOOTX64.EFI so GRUB
+# boots even when the UEFI NVRAM has no BootOrder entry (e.g. fresh VM vars).
+grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Vlarch --removable
 grub-mkconfig -o /boot/grub/grub.cfg
 
 printf '  Enabling services...\n'
