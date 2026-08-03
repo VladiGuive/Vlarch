@@ -734,3 +734,61 @@ BOOT
 printf '  Boot ready.\n'
 
 _clear
+
+# 09 - dotfiles: minimal seed - fastfetch config as a first-boot sanity check.
+
+printf 'Seeding dotfiles...\n'
+ff_src="${VLARCH_SCRIPT_DIR}/dotfiles/.config/fastfetch/config.jsonc"
+[[ -f "$ff_src" ]] || _die "missing fastfetch config: $ff_src"
+install -Dm0644 -o "${VLARCH_USER}" -g "${VLARCH_USER}" \
+  "$ff_src" "/mnt/home/${VLARCH_USER}/.config/fastfetch/config.jsonc"
+printf '  fastfetch config deployed.\n'
+
+_clear
+
+# 10 - finalize: vlarch bins, install-info, wallpaper, first-boot marker.
+
+printf 'Finalizing install...\n'
+mountpoint -q /mnt || _die "/mnt not mounted; cannot finalize install"
+
+for script in "${VLARCH_SCRIPT_DIR}"/bin/*; do
+  install -Dm0755 "$script" "/mnt/usr/local/bin/$(basename "$script")"
+done
+install -Dm0644 "${VLARCH_SCRIPT_DIR}/update/lib/overrides.sh" /mnt/usr/local/share/vlarch/overrides.sh
+install -Dm0644 "${VLARCH_SCRIPT_DIR}/lib/version.sh" /mnt/usr/local/share/vlarch/version.sh
+install -Dm0644 "${VLARCH_SCRIPT_DIR}/install/assets/background.png" /mnt/usr/share/vlarch/background.png
+
+mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
+{
+  printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'user=%s\n'         "${VLARCH_USER}"
+  printf 'disk=%s\n'         "${VLARCH_DISK}"
+  printf 'timezone=%s\n'     "${VLARCH_TIMEZONE}"
+  printf 'locale=%s\n'       "${VLARCH_LOCALE}"
+  printf 'branch=%s\n'       "${VLARCH_GIT_BRANCH:-main}"
+  if [[ -f "${VLARCH_SCRIPT_DIR}/version.txt" ]]; then
+    printf 'version=%s\n' "$(tr -d '[:space:]' <"${VLARCH_SCRIPT_DIR}/version.txt")"
+  fi
+} >/mnt/etc/vlarch/install-info
+
+# Persist non-secret runtime hints for post-install (WiFi join, etc).
+{
+  if [[ -n "${VLARCH_WIFI_SSID:-}" ]]; then
+    printf 'VLARCH_WIFI_SSID=%q\n' "${VLARCH_WIFI_SSID}"
+    printf 'VLARCH_WIFI_PASSWORD=%q\n' "${VLARCH_WIFI_PASSWORD:-}"
+  fi
+} >/mnt/var/lib/vlarch/runtime.env
+chmod 600 /mnt/var/lib/vlarch/runtime.env
+
+# First-login marker (consumed by a future first-boot hook).
+: >/mnt/var/lib/vlarch/first-boot.pending
+printf '  Install complete.\n'
+
+_clear
+
+# Unmount everything so the user can reboot or re-run the installer cleanly.
+printf 'Unmounting...\n'
+swapoff -a >/dev/null 2>&1 || true
+umount -R /mnt >/dev/null 2>&1 || true
+cryptsetup close cryptroot >/dev/null 2>&1 || true
+printf '  Done. Reboot into the installed system.\n'
