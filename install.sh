@@ -270,10 +270,10 @@ vlarch_partition_apply() {
   printf '  Creating partition layout...\n'
   vlarch_live_run "sgdisk layout ${disk}" \
     sgdisk \
-      -n1:0:+512M -t1:ef00 -c1:VLARCH_EFI \
-      -n2:0:+1G   -t2:8300 -c2:VLARCH_BOOT \
-      -n3:0:0     -t3:8309 -c3:VLARCH_LUKS \
-      "$disk"
+    -n1:0:+512M -t1:ef00 -c1:VLARCH_EFI \
+    -n2:0:+1G -t2:8300 -c2:VLARCH_BOOT \
+    -n3:0:0 -t3:8309 -c3:VLARCH_LUKS \
+    "$disk"
   vlarch_live_run "partprobe ${disk}" partprobe "$disk"
   sleep 1
 
@@ -289,13 +289,13 @@ vlarch_partition_apply() {
 
   # luksFormat reads the passphrase from stdin, so it can't use vlarch_live_run.
   printf '  Encrypting with LUKS...\n'
-  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
-       | cryptsetup --type luks1 --batch-mode -v luksFormat "$p3" --key-file - \
-         >>"$VLARCH_BOOTSTRAP_LOG" 2>&1; then
+  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" |
+    cryptsetup --type luks1 --batch-mode -v luksFormat "$p3" --key-file - \
+      >>"$VLARCH_BOOTSTRAP_LOG" 2>&1; then
     _die "cryptsetup luksFormat ${p3} failed"
   fi
-  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" \
-       | cryptsetup open "$p3" cryptroot --key-file - >>"$VLARCH_BOOTSTRAP_LOG" 2>&1; then
+  if ! printf '%s' "$VLARCH_LUKS_PASSPHRASE" |
+    cryptsetup open "$p3" cryptroot --key-file - >>"$VLARCH_BOOTSTRAP_LOG" 2>&1; then
     _die "cryptsetup open ${p3} failed"
   fi
   printf '  LUKS encryption ready.\n'
@@ -303,11 +303,11 @@ vlarch_partition_apply() {
   printf '  Creating btrfs subvolumes...\n'
   vlarch_live_run "mkfs.btrfs cryptroot" mkfs.btrfs -f -L VLARCH_ROOT /dev/mapper/cryptroot
   vlarch_live_run "mount cryptroot top" mount /dev/mapper/cryptroot /mnt
-  vlarch_live_run "btrfs subvolume create @"          btrfs subvolume create /mnt/@
-  vlarch_live_run "btrfs subvolume create @home"      btrfs subvolume create /mnt/@home
+  vlarch_live_run "btrfs subvolume create @" btrfs subvolume create /mnt/@
+  vlarch_live_run "btrfs subvolume create @home" btrfs subvolume create /mnt/@home
   vlarch_live_run "btrfs subvolume create @snapshots" btrfs subvolume create /mnt/@snapshots
-  vlarch_live_run "btrfs subvolume create @var_log"   btrfs subvolume create /mnt/@var_log
-  vlarch_live_run "btrfs subvolume create @swap"      btrfs subvolume create /mnt/@swap
+  vlarch_live_run "btrfs subvolume create @var_log" btrfs subvolume create /mnt/@var_log
+  vlarch_live_run "btrfs subvolume create @swap" btrfs subvolume create /mnt/@swap
   vlarch_live_run "umount cryptroot top" umount /mnt
   printf '  Subvolumes created.\n'
 
@@ -324,24 +324,24 @@ vlarch_partition_apply() {
 
 # Mount every subvolume + EFI + /boot at /mnt and create the swapfile.
 vlarch_partition_mount() {
-  [[ -n "${VLARCH_PART_EFI:-}"  ]] || _die "VLARCH_PART_EFI not set"
+  [[ -n "${VLARCH_PART_EFI:-}" ]] || _die "VLARCH_PART_EFI not set"
   [[ -n "${VLARCH_PART_BOOT:-}" ]] || _die "VLARCH_PART_BOOT not set"
   [[ -e /dev/mapper/cryptroot ]] || _die "cryptroot is not open"
 
   local opts="rw,noatime,compress=zstd:3,space_cache=v2"
 
   printf '  Mounting filesystems...\n'
-  vlarch_live_run "mount @"          mount -o "${opts},subvol=@"          /dev/mapper/cryptroot /mnt
+  vlarch_live_run "mount @" mount -o "${opts},subvol=@" /dev/mapper/cryptroot /mnt
   mkdir -p /mnt/{home,.snapshots,var/log,swap,boot,boot/EFI}
-  vlarch_live_run "mount @home"      mount -o "${opts},subvol=@home"      /dev/mapper/cryptroot /mnt/home
+  vlarch_live_run "mount @home" mount -o "${opts},subvol=@home" /dev/mapper/cryptroot /mnt/home
   vlarch_live_run "mount @snapshots" mount -o "${opts},subvol=@snapshots" /dev/mapper/cryptroot /mnt/.snapshots
-  vlarch_live_run "mount @var_log"   mount -o "${opts},subvol=@var_log"   /dev/mapper/cryptroot /mnt/var/log
+  vlarch_live_run "mount @var_log" mount -o "${opts},subvol=@var_log" /dev/mapper/cryptroot /mnt/var/log
   # Swap subvolume must not be compressed/CoW.
-  vlarch_live_run "mount @swap"      mount -o "rw,noatime,subvol=@swap"   /dev/mapper/cryptroot /mnt/swap
+  vlarch_live_run "mount @swap" mount -o "rw,noatime,subvol=@swap" /dev/mapper/cryptroot /mnt/swap
 
-  vlarch_live_run "mount /boot"      mount "${VLARCH_PART_BOOT}" /mnt/boot
+  vlarch_live_run "mount /boot" mount "${VLARCH_PART_BOOT}" /mnt/boot
   mkdir -p /mnt/boot/EFI
-  vlarch_live_run "mount /boot/EFI"  mount "${VLARCH_PART_EFI}"  /mnt/boot/EFI
+  vlarch_live_run "mount /boot/EFI" mount "${VLARCH_PART_EFI}" /mnt/boot/EFI
 
   printf '  Creating swapfile...\n'
   local swapfile="/mnt/swap/swapfile"
@@ -543,7 +543,7 @@ fi
 # Every explicit package, one at a time, with a global progress counter.
 mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/pacman.txt")
 mapfile -t AUR_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/aur.txt")
-total=$(( ${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]} ))
+total=$((${#PACMAN_PKGS[@]} + ${#AUR_PKGS[@]}))
 n=0
 
 for pkg in "${PACMAN_PKGS[@]}"; do
@@ -699,21 +699,18 @@ printf '  Boot ready.\n'
 
 _clear
 
-# 09 - dotfiles: minimal seed - fastfetch config as a first-boot sanity check.
+# 09 - dotfiles: seed dotfiles/ into the user's home (first-boot sanity check).
 
 printf 'Seeding dotfiles...\n'
-ff_src="${VLARCH_SCRIPT_DIR}/dotfiles/.config/fastfetch/config.jsonc"
-[[ -f "$ff_src" ]] || _die "missing fastfetch config: $ff_src"
 # cp + chown inside the chroot: install -o/-g would resolve the user on the
 # live ISO, where VLARCH_USER does not exist ("invalid user").
-mkdir -p "/mnt/home/${VLARCH_USER}/.config/fastfetch"
-cp "${VLARCH_SCRIPT_DIR}/dotfiles/.config/fastfetch/"* "/mnt/home/${VLARCH_USER}/.config/fastfetch/"
-arch-chroot /mnt chown -R "${VLARCH_USER}:${VLARCH_USER}" "/home/${VLARCH_USER}/.config"
-printf '  fastfetch config deployed.\n'
+cp -r "${VLARCH_SCRIPT_DIR}/dotfiles/." "/mnt/home/${VLARCH_USER}/"
+arch-chroot /mnt chown -R "${VLARCH_USER}:${VLARCH_USER}" "/home/${VLARCH_USER}/"
+printf '  Dotfiles seeded.\n'
 
 _clear
 
-# 10 - finalize: vlarch bins, install-info, wallpaper, first-boot marker.
+# 10 - finalize: vlarch bins, install-info, first-boot marker.
 
 printf 'Finalizing install...\n'
 mountpoint -q /mnt || _die "/mnt not mounted; cannot finalize install"
@@ -725,11 +722,11 @@ done
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
 {
   printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  printf 'user=%s\n'         "${VLARCH_USER}"
-  printf 'disk=%s\n'         "${VLARCH_DISK}"
-  printf 'timezone=%s\n'     "${VLARCH_TIMEZONE}"
-  printf 'locale=%s\n'       "${VLARCH_LOCALE}"
-  printf 'branch=%s\n'       "${VLARCH_GIT_BRANCH:-main}"
+  printf 'user=%s\n' "${VLARCH_USER}"
+  printf 'disk=%s\n' "${VLARCH_DISK}"
+  printf 'timezone=%s\n' "${VLARCH_TIMEZONE}"
+  printf 'locale=%s\n' "${VLARCH_LOCALE}"
+  printf 'branch=%s\n' "${VLARCH_GIT_BRANCH:-main}"
 } >/mnt/etc/vlarch/install-info
 
 # Persist non-secret runtime hints for post-install (WiFi join, etc).
