@@ -666,9 +666,11 @@ arch-chroot /mnt env "VLARCH_LUKS_UUID=${VLARCH_LUKS_UUID}" bash -s <<'BOOT'
 set -euo pipefail
 
 printf '  Building initramfs...\n'
-# plymouth draws the LUKS passphrase prompt (no console text); the
-# plymouth-encrypt hook replaces plain encrypt.
-sed -i -E "s/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block plymouth plymouth-encrypt filesystems fsck)/" /etc/mkinitcpio.conf
+# plymouth before encrypt: mkinitcpio's encrypt hook asks for the LUKS
+# passphrase through plymouth (ask_for_password), so the prompt shows in
+# the splash, not as console text. (There is no plymouth-encrypt hook in
+# the official plymouth package.)
+sed -i -E "s/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)/" /etc/mkinitcpio.conf
 mkinitcpio -P
 
 printf '  Installing GRUB...\n'
