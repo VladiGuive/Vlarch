@@ -707,7 +707,7 @@ ff_src="${VLARCH_SCRIPT_DIR}/dotfiles/.config/fastfetch/config.jsonc"
 # cp + chown inside the chroot: install -o/-g would resolve the user on the
 # live ISO, where VLARCH_USER does not exist ("invalid user").
 mkdir -p "/mnt/home/${VLARCH_USER}/.config/fastfetch"
-cp "$ff_src" "/mnt/home/${VLARCH_USER}/.config/fastfetch/config.jsonc"
+cp "${VLARCH_SCRIPT_DIR}/dotfiles/.config/fastfetch/"* "/mnt/home/${VLARCH_USER}/.config/fastfetch/"
 arch-chroot /mnt chown -R "${VLARCH_USER}:${VLARCH_USER}" "/home/${VLARCH_USER}/.config"
 printf '  fastfetch config deployed.\n'
 
