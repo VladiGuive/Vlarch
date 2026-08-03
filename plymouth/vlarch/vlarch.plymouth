@@ -6,7 +6,7 @@ ModuleName=two-step
 [two-step]
 Font=Cantarell 12
 TitleFont=Cantarell Light 30
-ImageDir=@PLYMOUTH_THEME_PATH@/vlarch
+ImageDir=/usr/share/plymouth/themes/vlarch
 DialogHorizontalAlignment=.5
 DialogVerticalAlignment=.382
 TitleHorizontalAlignment=.5
