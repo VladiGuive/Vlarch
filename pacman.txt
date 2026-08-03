@@ -14,6 +14,7 @@ zsh
 rsync
 intel-ucode
 amd-ucode
+plymouth
 
 # OTHER
 kitty
