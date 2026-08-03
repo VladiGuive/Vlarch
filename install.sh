@@ -524,9 +524,9 @@ _clear
 printf 'Installing base system...\n'
 mountpoint -q /mnt || _die "/mnt is not mounted; run step 03 first"
 
-# Steam and other 32-bit deps need multilib in both the live env and the target.
+# Steam and other 32-bit deps need multilib in the live env (pacstrap resolves
+# against it); the target's pacman.conf gets it after the base is in place.
 sed -i '/^\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
-sed -i '/^\[multilib\]/,/Include/ s/^#//' /mnt/etc/pacman.conf
 
 vlarch_live_refresh_mirrors
 vlarch_live_sync_keyring
@@ -563,6 +563,9 @@ fi
 if [[ -f /etc/resolv.conf ]]; then
   cp -L /etc/resolv.conf /mnt/etc/resolv.conf
 fi
+
+# multilib for the target (steam and other 32-bit deps in pacman.txt).
+sed -i '/^\[multilib\]/,/Include/ s/^#//' /mnt/etc/pacman.conf
 
 # Every explicit package, one at a time, with a global progress counter.
 mapfile -t PACMAN_PKGS < <(grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${VLARCH_SCRIPT_DIR}/update/packages/pacman.txt")
