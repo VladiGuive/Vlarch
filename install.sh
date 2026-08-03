@@ -594,7 +594,6 @@ for pkg in "${AUR_PKGS[@]}"; do
     _die "yay -S ${pkg} failed"
 done
 
-# plymouth (AUR) depends on systemd, which stays as the init system.
 missing=()
 for pkg in base "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"; do
   if ! arch-chroot /mnt pacman -Q "$pkg" >/dev/null 2>&1; then
@@ -662,15 +661,23 @@ _clear
 # 07 - boot: plymouth + LUKS initramfs, GRUB, services.
 
 printf 'Setting up boot...\n'
+
+# Theme de plymouth (vlarch) al sistema, antes de mkinitcpio para que el
+# initramfs lo incluya.
+cp -r "${VLARCH_SCRIPT_DIR}/plymouth/vlarch" /mnt/usr/share/plymouth/themes/
 arch-chroot /mnt env "VLARCH_LUKS_UUID=${VLARCH_LUKS_UUID}" bash -s <<'BOOT'
 set -euo pipefail
+
+printf '  Installing plymouth theme...\n'
+# Set the theme BEFORE mkinitcpio so the initramfs includes it.
+plymouth-set-default-theme vlarch
 
 printf '  Building initramfs...\n'
 # plymouth before encrypt: mkinitcpio's encrypt hook asks for the LUKS
 # passphrase through plymouth (ask_for_password), so the prompt shows in
 # the splash, not as console text. (There is no plymouth-encrypt hook in
 # the official plymouth package.)
-sed -i -E "s/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)/" /etc/mkinitcpio.conf
+sed -i -E "s/^HOOKS=.*/HOOKS=(base udev plymouth autodetect modconf kms keyboard keymap consolefont block encrypt filesystems fsck)/" /etc/mkinitcpio.conf
 mkinitcpio -P
 
 printf '  Installing GRUB...\n'
