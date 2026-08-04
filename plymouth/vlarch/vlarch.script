@@ -4,8 +4,10 @@
 # - LUKS password prompt at the bottom (no keyboard), bullets visible
 # - post animation (video seconds 1-5), plays once after the password
 #
-# Dialog + bullets are pre-created at load time (same pattern as the
-# background) and revealed via SetOpacity - no runtime sprite creation.
+# The 60 post frames (~500MB raw) are NOT loaded at script load: their
+# names are stored as strings and the images are loaded one per refresh
+# tick while the password prompt is shown, so the initramfs never needs
+# all of them in RAM at once.
 
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
@@ -35,6 +37,8 @@ for (i = 0; i < 24; i++)
 password_requested = false;
 post_active = false;
 pre.done = false;
+post.next_loaded = 0;
+post.all_loaded = false;
 
 fun refresh_callback ()
   {
@@ -46,12 +50,21 @@ fun refresh_callback ()
           {
             pre.done = true;
             pre.sprite.SetOpacity(0);
-            # show the password prompt right after the pre animation ends
             dialog.entry.SetOpacity(1);
             dialog.lock.SetOpacity(1);
           }
         else if (pre.frames[pre.index])
           pre.sprite.SetImage(pre.frames[pre.index]);
+      }
+
+    # load one post frame per tick while the password prompt is shown
+    if (pre.done && !post_active && !post.all_loaded)
+      {
+        post.next_loaded++;
+        if (post.next_loaded > 60)
+          post.all_loaded = true;
+        else
+          post.frames[post.next_loaded] = Image(post.names[post.next_loaded]);
       }
 
     # post animation plays once after the password
@@ -67,7 +80,6 @@ fun refresh_callback ()
 
 fun display_password_callback (prompt, bullets)
   {
-    # framework is asking for the password: show the dialog and the bullets
     dialog.entry.SetOpacity(1);
     dialog.lock.SetOpacity(1);
     password_requested = true;
@@ -84,7 +96,6 @@ fun display_normal_callback ()
   {
     if (password_requested)
       {
-        # password resolved: play the post animation once, hide the dialog
         password_requested = false;
         post_active = true;
         post.index = 0;
@@ -99,7 +110,7 @@ Plymouth.SetRefreshFunction(refresh_callback);
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
 
-# ---- animation frames (loaded after the callbacks are registered) ----
+# ---- animation frames ----
 pre.frames[1] = Image("animation-0001.png");
 pre.frames[2] = Image("animation-0002.png");
 pre.frames[3] = Image("animation-0003.png");
@@ -119,66 +130,66 @@ pre.sprite = Sprite(pre.frames[1]);
 pre.sprite.SetPosition(0, 0, 1);
 pre.index = 1;
 
-post.frames[1] = Image("end-animation-0001.png");
-post.frames[2] = Image("end-animation-0002.png");
-post.frames[3] = Image("end-animation-0003.png");
-post.frames[4] = Image("end-animation-0004.png");
-post.frames[5] = Image("end-animation-0005.png");
-post.frames[6] = Image("end-animation-0006.png");
-post.frames[7] = Image("end-animation-0007.png");
-post.frames[8] = Image("end-animation-0008.png");
-post.frames[9] = Image("end-animation-0009.png");
-post.frames[10] = Image("end-animation-0010.png");
-post.frames[11] = Image("end-animation-0011.png");
-post.frames[12] = Image("end-animation-0012.png");
-post.frames[13] = Image("end-animation-0013.png");
-post.frames[14] = Image("end-animation-0014.png");
-post.frames[15] = Image("end-animation-0015.png");
-post.frames[16] = Image("end-animation-0016.png");
-post.frames[17] = Image("end-animation-0017.png");
-post.frames[18] = Image("end-animation-0018.png");
-post.frames[19] = Image("end-animation-0019.png");
-post.frames[20] = Image("end-animation-0020.png");
-post.frames[21] = Image("end-animation-0021.png");
-post.frames[22] = Image("end-animation-0022.png");
-post.frames[23] = Image("end-animation-0023.png");
-post.frames[24] = Image("end-animation-0024.png");
-post.frames[25] = Image("end-animation-0025.png");
-post.frames[26] = Image("end-animation-0026.png");
-post.frames[27] = Image("end-animation-0027.png");
-post.frames[28] = Image("end-animation-0028.png");
-post.frames[29] = Image("end-animation-0029.png");
-post.frames[30] = Image("end-animation-0030.png");
-post.frames[31] = Image("end-animation-0031.png");
-post.frames[32] = Image("end-animation-0032.png");
-post.frames[33] = Image("end-animation-0033.png");
-post.frames[34] = Image("end-animation-0034.png");
-post.frames[35] = Image("end-animation-0035.png");
-post.frames[36] = Image("end-animation-0036.png");
-post.frames[37] = Image("end-animation-0037.png");
-post.frames[38] = Image("end-animation-0038.png");
-post.frames[39] = Image("end-animation-0039.png");
-post.frames[40] = Image("end-animation-0040.png");
-post.frames[41] = Image("end-animation-0041.png");
-post.frames[42] = Image("end-animation-0042.png");
-post.frames[43] = Image("end-animation-0043.png");
-post.frames[44] = Image("end-animation-0044.png");
-post.frames[45] = Image("end-animation-0045.png");
-post.frames[46] = Image("end-animation-0046.png");
-post.frames[47] = Image("end-animation-0047.png");
-post.frames[48] = Image("end-animation-0048.png");
-post.frames[49] = Image("end-animation-0049.png");
-post.frames[50] = Image("end-animation-0050.png");
-post.frames[51] = Image("end-animation-0051.png");
-post.frames[52] = Image("end-animation-0052.png");
-post.frames[53] = Image("end-animation-0053.png");
-post.frames[54] = Image("end-animation-0054.png");
-post.frames[55] = Image("end-animation-0055.png");
-post.frames[56] = Image("end-animation-0056.png");
-post.frames[57] = Image("end-animation-0057.png");
-post.frames[58] = Image("end-animation-0058.png");
-post.frames[59] = Image("end-animation-0059.png");
-post.frames[60] = Image("end-animation-0060.png");
+post.names[1] = "end-animation-0001.png";
+post.names[2] = "end-animation-0002.png";
+post.names[3] = "end-animation-0003.png";
+post.names[4] = "end-animation-0004.png";
+post.names[5] = "end-animation-0005.png";
+post.names[6] = "end-animation-0006.png";
+post.names[7] = "end-animation-0007.png";
+post.names[8] = "end-animation-0008.png";
+post.names[9] = "end-animation-0009.png";
+post.names[10] = "end-animation-0010.png";
+post.names[11] = "end-animation-0011.png";
+post.names[12] = "end-animation-0012.png";
+post.names[13] = "end-animation-0013.png";
+post.names[14] = "end-animation-0014.png";
+post.names[15] = "end-animation-0015.png";
+post.names[16] = "end-animation-0016.png";
+post.names[17] = "end-animation-0017.png";
+post.names[18] = "end-animation-0018.png";
+post.names[19] = "end-animation-0019.png";
+post.names[20] = "end-animation-0020.png";
+post.names[21] = "end-animation-0021.png";
+post.names[22] = "end-animation-0022.png";
+post.names[23] = "end-animation-0023.png";
+post.names[24] = "end-animation-0024.png";
+post.names[25] = "end-animation-0025.png";
+post.names[26] = "end-animation-0026.png";
+post.names[27] = "end-animation-0027.png";
+post.names[28] = "end-animation-0028.png";
+post.names[29] = "end-animation-0029.png";
+post.names[30] = "end-animation-0030.png";
+post.names[31] = "end-animation-0031.png";
+post.names[32] = "end-animation-0032.png";
+post.names[33] = "end-animation-0033.png";
+post.names[34] = "end-animation-0034.png";
+post.names[35] = "end-animation-0035.png";
+post.names[36] = "end-animation-0036.png";
+post.names[37] = "end-animation-0037.png";
+post.names[38] = "end-animation-0038.png";
+post.names[39] = "end-animation-0039.png";
+post.names[40] = "end-animation-0040.png";
+post.names[41] = "end-animation-0041.png";
+post.names[42] = "end-animation-0042.png";
+post.names[43] = "end-animation-0043.png";
+post.names[44] = "end-animation-0044.png";
+post.names[45] = "end-animation-0045.png";
+post.names[46] = "end-animation-0046.png";
+post.names[47] = "end-animation-0047.png";
+post.names[48] = "end-animation-0048.png";
+post.names[49] = "end-animation-0049.png";
+post.names[50] = "end-animation-0050.png";
+post.names[51] = "end-animation-0051.png";
+post.names[52] = "end-animation-0052.png";
+post.names[53] = "end-animation-0053.png";
+post.names[54] = "end-animation-0054.png";
+post.names[55] = "end-animation-0055.png";
+post.names[56] = "end-animation-0056.png";
+post.names[57] = "end-animation-0057.png";
+post.names[58] = "end-animation-0058.png";
+post.names[59] = "end-animation-0059.png";
+post.names[60] = "end-animation-0060.png";
 post.sprite = Sprite();
 post.sprite.SetPosition(0, 0, 2);
 post.index = 0;
