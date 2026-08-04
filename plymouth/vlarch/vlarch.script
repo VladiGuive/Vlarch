@@ -1,19 +1,28 @@
 # Vlarch custom splash
 # - full-screen background (placeholder image)
-# - pre-prompt cube animation (video seconds 6-7), loops while waiting
+# - pre-prompt cube animation (video seconds 6-7), plays once
 # - LUKS password prompt at the bottom (no keyboard)
-# - post animation (video seconds 1-5), plays once right after the password
+# - post animation (video seconds 1-5), plays once after the password
 #
-# Callbacks are registered BEFORE the animation frames are loaded, so a
-# failing Image() (large 1080p frames in the initramfs) can never leave
-# the password prompt unhandled.
+# The dialog sprites are created at load time (same as the background,
+# which works) and revealed with SetOpacity - creating sprites at
+# runtime from the refresh callback proved fragile.
 
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 
+# Full-screen background
 background.image = Image("background.png");
 background.sprite = Sprite(background.image);
 background.sprite.SetPosition(0, 0, 0);
+
+# Password dialog, hidden until the pre animation ends
+dialog.lock = Sprite(Image("lock.png"));
+dialog.entry = Sprite(Image("entry.png"));
+dialog.lock.SetPosition(730, 930, 10001);
+dialog.entry.SetPosition(770, 930, 10001);
+dialog.lock.SetOpacity(0);
+dialog.entry.SetOpacity(0);
 
 password_requested = false;
 post_active = false;
@@ -31,8 +40,8 @@ fun refresh_callback ()
           {
             pre.done = true;
             # show the password prompt right after the pre animation ends
-            if (!dialog.entry)
-              dialog_show();
+            dialog.entry.SetOpacity(1);
+            dialog.lock.SetOpacity(1);
           }
         else if (pre.frames[pre.index])
           pre.sprite.SetImage(pre.frames[pre.index]);
@@ -49,28 +58,11 @@ fun refresh_callback ()
       }
   }
 
-fun dialog_show ()
-  {
-    local.cx;
-    local.cy;
-
-    cx = Window.GetX() + Window.GetWidth() / 2;
-    cy = Window.GetY() + Window.GetHeight() - 150;
-
-    dialog.lock_image = Image("lock.png");
-    dialog.entry_image = Image("entry.png");
-    dialog.lock = Sprite(dialog.lock_image);
-    dialog.entry = Sprite(dialog.entry_image);
-    dialog.entry_x = cx - dialog.entry_image.GetWidth() / 2;
-    dialog.entry_y = cy;
-    dialog.lock.SetPosition(dialog.entry_x - dialog.lock_image.GetWidth(), cy, 10001);
-    dialog.entry.SetPosition(dialog.entry_x, cy, 10001);
-  }
-
 fun display_password_callback (prompt, bullets)
   {
-    if (!dialog.entry)
-      dialog_show();
+    # the framework is asking for the password: make sure the dialog shows
+    dialog.entry.SetOpacity(1);
+    dialog.lock.SetOpacity(1);
     password_requested = true;
   }
 
@@ -82,11 +74,8 @@ fun display_normal_callback ()
         password_requested = false;
         post_active = true;
         post.index = 0;
-        if (dialog.entry)
-          {
-            dialog.entry.SetOpacity(0);
-            dialog.lock.SetOpacity(0);
-          }
+        dialog.entry.SetOpacity(0);
+        dialog.lock.SetOpacity(0);
       }
   }
 
