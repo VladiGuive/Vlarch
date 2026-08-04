@@ -19,6 +19,13 @@ PanelWindow {
     property int displayedMonth: now.getMonth()
     property int displayedYear: now.getFullYear()
 
+    // Closing the expanded view when the panel window loses focus keeps the
+    // compact clock as the default state.
+    onActiveChanged: {
+        if (!active)
+            panel.expanded = false
+    }
+
     function pad(value) {
         return value < 10 ? "0" + value : value
     }
@@ -240,8 +247,8 @@ PanelWindow {
             }
 
             Row {
-                anchors.left: parent.left
-                anchors.leftMargin: 28
+                anchors.right: parent.right
+                anchors.rightMargin: 20
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 20
                 spacing: 10
