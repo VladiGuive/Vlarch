@@ -133,26 +133,40 @@ fun dialog_hide ()
 
 password_requested = false;
 post_active = false;
+pre.ticks = 0;
+post.ticks = 0;
 
 fun refresh_callback ()
   {
-    # pre animation loops while waiting (until the post animation starts)
+    # pre animation loops while waiting (until the post animation starts).
+    # The plugin refresh runs at 50fps; advance one frame every 3 ticks to
+    # replay the source video (15fps) at its original speed.
     if (!post_active)
       {
-        pre.index++;
-        if (pre.index > 15)
-          pre.index = 1;
-        pre.sprite.SetImage(pre.frames[pre.index]);
+        pre.ticks++;
+        if (pre.ticks >= 3)
+          {
+            pre.ticks = 0;
+            pre.index++;
+            if (pre.index > 15)
+              pre.index = 1;
+            pre.sprite.SetImage(pre.frames[pre.index]);
+          }
       }
 
     # post animation plays once after the password
     if (post_active)
       {
-        post.index++;
-        if (post.index > 60)
-          post_active = false;
-        else
-          post.sprite.SetImage(post.frames[post.index]);
+        post.ticks++;
+        if (post.ticks >= 3)
+          {
+            post.ticks = 0;
+            post.index++;
+            if (post.index > 60)
+              post_active = false;
+            else
+              post.sprite.SetImage(post.frames[post.index]);
+          }
       }
   }
 
