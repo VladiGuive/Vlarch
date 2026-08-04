@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import QtQuick
 
 PanelWindow {
@@ -15,6 +16,7 @@ PanelWindow {
     implicitHeight: island.expanded ? 390 : 42
 
     property bool expanded: false
+    property var expandedFocusWindow: null
     property date now: new Date()
     property int displayedMonth: now.getMonth()
     property int displayedYear: now.getFullYear()
@@ -43,14 +45,12 @@ PanelWindow {
         onTriggered: {
             panel.now = new Date()
             analogClock.requestPaint()
+            if (panel.expanded && panel.expandedFocusWindow !== null &&
+                    Hyprland.activeToplevel !== panel.expandedFocusWindow) {
+                panel.expanded = false
+                panel.expandedFocusWindow = null
+            }
         }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        z: 0
-        enabled: panel.expanded
-        onClicked: panel.expanded = false
     }
 
     Process {
@@ -85,7 +85,11 @@ PanelWindow {
         MouseArea {
             anchors.fill: parent
             z: -1
-            onClicked: panel.expanded = !panel.expanded
+            onClicked: {
+                panel.expanded = !panel.expanded
+                if (panel.expanded)
+                    panel.expandedFocusWindow = Hyprland.activeToplevel
+            }
         }
 
         Text {
@@ -95,6 +99,7 @@ PanelWindow {
             color: "white"
             font.pixelSize: 16
             font.weight: Font.DemiBold
+            visible: !panel.expanded
         }
 
         Item {
@@ -111,12 +116,14 @@ PanelWindow {
 
             Text {
                 anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.left: analogClock.left
+                anchors.right: analogClock.right
                 anchors.topMargin: 18
                 text: panel.pad(panel.now.getHours()) + ":" + panel.pad(panel.now.getMinutes()) + ":" + panel.pad(panel.now.getSeconds())
                 color: "white"
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
             }
 
             Canvas {
@@ -189,7 +196,7 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.rightMargin: 20
                 anchors.top: parent.top
-                anchors.topMargin: 58
+                anchors.topMargin: 42
                 spacing: 8
 
                 Text {
