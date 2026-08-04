@@ -15,6 +15,7 @@ PanelWindow {
     color: "transparent"
     implicitHeight: island.expanded ? 250 : 42
     exclusionMode: ExclusionMode.Normal
+    exclusiveZone: 42
     WlrLayershell.layer: Layer.Top
 
     property bool expanded: false
@@ -57,8 +58,8 @@ PanelWindow {
         z: 1
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        width: expanded ? 430 : 190
-        height: expanded ? 230 : 38
+        width: expanded ? 390 : 190
+        height: expanded ? 220 : 38
         radius: expanded ? 0 : 19
         color: "transparent"
         border.color: "transparent"
@@ -148,11 +149,11 @@ PanelWindow {
             Canvas {
                 id: analogClock
                 anchors.left: parent.left
-                anchors.leftMargin: 28
+                anchors.leftMargin: 20
                 anchors.top: parent.top
                 anchors.topMargin: 38
-                width: 110
-                height: 110
+                width: 100
+                height: 100
 
                 onPaint: {
                     var ctx = getContext("2d")
@@ -211,9 +212,9 @@ PanelWindow {
 
             Column {
                 anchors.left: analogClock.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 10
                 anchors.right: parent.right
-                anchors.rightMargin: 20
+                anchors.rightMargin: 10
                 anchors.top: parent.top
                 anchors.topMargin: 12
                 spacing: 4
@@ -251,7 +252,7 @@ PanelWindow {
                     Repeater {
                         model: 42
                         Rectangle {
-                            width: (parent.width - 12) / 7
+                            width: parent.width / 7
                             height: 20
                             radius: 5
                             color: {
