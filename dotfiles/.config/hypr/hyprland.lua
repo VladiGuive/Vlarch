@@ -4,7 +4,12 @@
 -- Reload with: hyprctl reload
 
 local mainMod = "SUPER"
-local terminal = "kitty"
+local terminal = "kitty zsh"
+
+-- Frosted glass needs a real image underneath the translucent surfaces.
+hl.on("hyprland.start", function()
+    hl.exec_cmd("hyprpaper")
+end)
 
 hl.monitor({
 	output = "",
@@ -24,21 +29,24 @@ hl.config({
 	},
 
 	decoration = {
-		active_opacity = 0.94,
-		inactive_opacity = 0.84,
+		active_opacity = 0.88,
+		inactive_opacity = 0.78,
 		fullscreen_opacity = 1.0,
 
-		rounding = 12,
+		rounding = 14,
 
 		shadow = {
-			enabled = false,
+		    enabled = true,
+		    range = 18,
+		    render_power = 3,
+		    color = "0x66000000",
 		},
 
 		blur = {
 			enabled = true,
-			size = 8,
-			passes = 3,
-			vibrancy = 0.20,
+			size = 10,
+			passes = 4,
+			vibrancy = 0.35,
 			new_optimizations = true,
 			xray = false,
 		},
@@ -57,8 +65,7 @@ hl.config({
 	},
 
 	misc = {
-	    -- Keep Hyprland's default wallpaper visible in the gaps.
-	    force_default_wallpaper = 1,
+	    force_default_wallpaper = 0,
 	    disable_hyprland_logo = true,
 	},
 
