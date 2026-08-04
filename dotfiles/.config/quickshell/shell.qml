@@ -14,8 +14,8 @@ PanelWindow {
 
     color: "transparent"
     implicitHeight: island.expanded ? 250 : 42
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: Layer.Overlay
+    exclusionMode: ExclusionMode.Normal
+    WlrLayershell.layer: Layer.Top
 
     property bool expanded: false
 
@@ -60,15 +60,46 @@ PanelWindow {
         width: expanded ? 430 : 190
         height: expanded ? 230 : 38
         radius: expanded ? 0 : 19
-        color: "#B32E3440"
-        border.color: "#5588C0D0"
-        border.width: 1
+        color: "transparent"
+        border.color: "transparent"
+        border.width: 0
         clip: true
 
         property bool expanded: panel.expanded
+        onWidthChanged: islandBackground.requestPaint()
+        onHeightChanged: islandBackground.requestPaint()
+        onExpandedChanged: islandBackground.requestPaint()
         Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
         Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
         Behavior on radius { NumberAnimation { duration: 260 } }
+
+        Canvas {
+            id: islandBackground
+            anchors.fill: parent
+            z: -2
+
+            onPaint: {
+                var ctx = getContext("2d")
+                var w = width
+                var h = height
+                var r = panel.expanded ? 0 : 18
+
+                ctx.reset()
+                ctx.beginPath()
+                ctx.moveTo(0, 0)
+                ctx.lineTo(w, 0)
+                ctx.lineTo(w, h - r)
+                ctx.quadraticCurveTo(w, h, w - r, h)
+                ctx.lineTo(r, h)
+                ctx.quadraticCurveTo(0, h, 0, h - r)
+                ctx.closePath()
+                ctx.fillStyle = "#B32E3440"
+                ctx.fill()
+                ctx.lineWidth = 1
+                ctx.strokeStyle = "#5588C0D0"
+                ctx.stroke()
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
