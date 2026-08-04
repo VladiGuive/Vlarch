@@ -6,11 +6,6 @@
 local mainMod = "SUPER"
 local terminal = "kitty zsh"
 
--- Frosted glass needs a real image underneath the translucent surfaces.
-hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprpaper")
-end)
-
 hl.monitor({
 	output = "",
 	mode = "preferred",
@@ -65,8 +60,8 @@ hl.config({
 	},
 
 	misc = {
-	    force_default_wallpaper = 0,
-	    disable_hyprland_logo = true,
+		force_default_wallpaper = 0,
+		disable_hyprland_logo = false,
 	},
 
 	input = {
