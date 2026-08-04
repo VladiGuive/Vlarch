@@ -17,16 +17,19 @@ background.sprite.SetPosition(0, 0, 0);
 
 password_requested = false;
 post_active = false;
+pre.done = false;
 
 fun refresh_callback ()
   {
-    # pre animation loops while waiting (until the post animation starts)
-    if (!post_active)
+    # pre animation plays ONCE (no loop): a 50fps loop of 1080p frames
+    # saturates the plymouth event loop and the LUKS password request
+    # never gets processed.
+    if (!pre.done && !post_active)
       {
         pre.index++;
         if (pre.index > 15)
-          pre.index = 1;
-        if (pre.frames[pre.index])
+          pre.done = true;
+        else if (pre.frames[pre.index])
           pre.sprite.SetImage(pre.frames[pre.index]);
       }
 
