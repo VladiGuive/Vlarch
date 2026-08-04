@@ -4,81 +4,82 @@
 -- Reload with: hyprctl reload
 
 local mainMod = "SUPER"
-local terminal = "kitty -e tmux"
+local terminal = "kitty"
 
 hl.monitor({
-    output = "",
-    mode = "preferred",
-    position = "auto",
-    scale = "auto",
+	output = "",
+	mode = "preferred",
+	position = "auto",
+	scale = "auto",
 })
 
 hl.config({
-    general = {
-        gaps_in = 6,
-        gaps_out = 12,
-        border_size = 0,
-        resize_on_border = false,
-        allow_tearing = false,
-        layout = "dwindle",
-    },
+	general = {
+		gaps_in = 6,
+		gaps_out = 12,
+		border_size = 0,
+		resize_on_border = false,
+		allow_tearing = false,
+		layout = "dwindle",
+	},
 
-    decoration = {
-        active_opacity = 0.94,
-        inactive_opacity = 0.84,
-        fullscreen_opacity = 1.0,
+	decoration = {
+		active_opacity = 0.94,
+		inactive_opacity = 0.84,
+		fullscreen_opacity = 1.0,
 
-        rounding = 12,
+		rounding = 12,
 
-        shadow = {
-            enabled = false,
-        },
+		shadow = {
+			enabled = false,
+		},
 
-        blur = {
-            enabled = true,
-            size = 8,
-            passes = 3,
-            vibrancy = 0.20,
-            new_optimizations = true,
-            xray = false,
-        },
-    },
+		blur = {
+			enabled = true,
+			size = 8,
+			passes = 3,
+			vibrancy = 0.20,
+			new_optimizations = true,
+			xray = false,
+		},
+	},
 
-    animations = {
-        enabled = true,
-    },
+	animations = {
+		enabled = true,
+	},
 
-    dwindle = {
-        preserve_split = true,
-    },
+	dwindle = {
+		preserve_split = true,
+	},
 
-    master = {
-        new_status = "master",
-    },
+	master = {
+		new_status = "master",
+	},
 
-    misc = {
-        force_default_wallpaper = 0,
-        disable_hyprland_logo = true,
-    },
+	misc = {
+	    -- Keep Hyprland's default wallpaper visible in the gaps.
+	    force_default_wallpaper = 1,
+	    disable_hyprland_logo = true,
+	},
 
-    input = {
-        kb_layout = "us",
-        follow_mouse = 1,
-        sensitivity = 0,
-        scroll_method = "2fg",
+	input = {
+		kb_layout = "us",
+		follow_mouse = 1,
+		sensitivity = 0,
+		scroll_method = "2fg",
 
-        touchpad = {
-            natural_scroll = false,
-            scroll_factor = 1.0,
-            disable_while_typing = true,
-            tap_to_click = true,
-            clickfinger_behavior = true,
-        },
-    },
+		touchpad = {
+			natural_scroll = false,
+			scroll_factor = 1.0,
+			disable_while_typing = true,
+			tap_to_click = true,
+			clickfinger_behavior = true,
+		},
+	},
 
-    binds = {
-        drag_threshold = 10,
-    },
+	binds = {
+		drag_threshold = 10,
+	},
 })
 
 -- Applications
@@ -96,19 +97,19 @@ hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
 
 -- Workspaces 1–10
 for key, workspace in pairs({
-    ["1"] = 1,
-    ["2"] = 2,
-    ["3"] = 3,
-    ["4"] = 4,
-    ["5"] = 5,
-    ["6"] = 6,
-    ["7"] = 7,
-    ["8"] = 8,
-    ["9"] = 9,
-    ["0"] = 10,
+	["1"] = 1,
+	["2"] = 2,
+	["3"] = 3,
+	["4"] = 4,
+	["5"] = 5,
+	["6"] = 6,
+	["7"] = 7,
+	["8"] = 8,
+	["9"] = 9,
+	["0"] = 10,
 }) do
-    hl.bind(mainMod .. " + " .. key, hl.dsp.exec_cmd("vlarch-workspace goto " .. workspace))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.exec_cmd("vlarch-workspace move " .. workspace))
+	hl.bind(mainMod .. " + " .. key, hl.dsp.exec_cmd("vlarch-workspace goto " .. workspace))
+	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.exec_cmd("vlarch-workspace move " .. workspace))
 end
 
 -- Move/resize windows with mainMod + LMB/RMB.
@@ -117,36 +118,12 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, drag = 
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, drag = true })
 
 -- Multimedia keys
-hl.bind(
-    "XF86AudioRaiseVolume",
-    hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"),
-    { locked = true }
-)
-hl.bind(
-    "XF86AudioLowerVolume",
-    hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
-    { locked = true }
-)
-hl.bind(
-    "XF86AudioMute",
-    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
-    { locked = true }
-)
-hl.bind(
-    "XF86AudioMicMute",
-    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-    { locked = true }
-)
-hl.bind(
-    "XF86MonBrightnessUp",
-    hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),
-    { locked = true }
-)
-hl.bind(
-    "XF86MonBrightnessDown",
-    hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),
-    { locked = true }
-)
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true })
 
 -- Screenshots
 -- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(
