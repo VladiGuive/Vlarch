@@ -1,10 +1,10 @@
 # AUR packages synced on update (yay-bin is bootstrapped at install time).
 # OTHER
+timeshift-autosnap
 
 # steam
 # oh-my-posh-bin
 # nordic-theme-git
-# timeshift-autosnap
 # xwaylandvideobridge
 # obsidian-bin
 # zen-browser-bin

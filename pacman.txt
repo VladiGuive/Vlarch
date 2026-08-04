@@ -20,6 +20,10 @@ plymouth
 kitty
 neovim
 fastfetch
+hyprland
+ttf-jetbrains-mono-nerd
+ttf-nerd-fonts-symbols
+openssh
 
 # hyprpaper
 # waybar
@@ -30,10 +34,7 @@ fastfetch
 # yazi
 # 7zip
 # btop
-# ttf-jetbrains-mono-nerd
-# ttf-nerd-fonts-symbols
 # vulkan-radeon
-# openssh
 # timeshift
 # grub-btrfs
 # inotify-tools
