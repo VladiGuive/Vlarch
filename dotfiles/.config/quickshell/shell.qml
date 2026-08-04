@@ -104,10 +104,14 @@ PanelWindow {
 
         MouseArea {
             anchors.fill: parent
-            z: 0
+            z: 2
+            hoverEnabled: true
             onClicked: {
                 panel.expanded = !panel.expanded
-
+            }
+            onExited: {
+                if (panel.expanded)
+                    panel.expanded = false
             }
         }
 
@@ -152,8 +156,8 @@ PanelWindow {
                 anchors.leftMargin: 20
                 anchors.top: parent.top
                 anchors.topMargin: 38
-                width: 100
-                height: 100
+                width: 125
+                height: 125
 
                 onPaint: {
                     var ctx = getContext("2d")
@@ -275,33 +279,6 @@ PanelWindow {
                 }
             }
 
-            Column {
-                anchors.right: parent.right
-                anchors.rightMargin: 16
-                anchors.top: parent.top
-                anchors.topMargin: 76
-                spacing: 8
-
-                Rectangle {
-                    width: 96
-                    height: 34
-                    radius: 12
-                    color: "#352f3945"
-                    border.color: "#35ffffff"
-                    Text { anchors.centerIn: parent; text: "⏻  Apagar"; color: "#ffb4b4"; font.pixelSize: 13 }
-                    MouseArea { anchors.fill: parent; onClicked: poweroffProcess.running = true }
-                }
-
-                Rectangle {
-                    width: 96
-                    height: 34
-                    radius: 12
-                    color: "#352f3945"
-                    border.color: "#35ffffff"
-                    Text { anchors.centerIn: parent; text: "↻  Reiniciar"; color: "#c5d9ff"; font.pixelSize: 13 }
-                    MouseArea { anchors.fill: parent; onClicked: rebootProcess.running = true }
-                }
-            }
         }
     }
 }
