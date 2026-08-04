@@ -85,7 +85,7 @@ hl.config({
 -- Applications
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + V", hl.dsp.window.float())
+hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 -- hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("vlarch-walker"))
 
