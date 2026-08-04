@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=Vlarch
-Description=Vlarch custom boot splash (cube animation + bottom password prompt)
+Description=Vlarch custom boot splash (pointing arrow animation + bottom password prompt)
 ModuleName=script
 
 [script]
