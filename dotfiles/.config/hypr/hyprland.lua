@@ -5,84 +5,84 @@
 ---@module 'hl'
 
 hl.monitor({
-    output   = "",
-    mode     = "preferred",
-    position = "auto",
-    scale    = "auto",
+	output = "",
+	mode = "preferred",
+	position = "auto",
+	scale = "auto",
 })
 
 local terminal = "kitty -e tmux"
 
 hl.config({
-    general = {
-        gaps_in = 5,
-        gaps_out = 10,
-        border_size = 1,
-        resize_on_border = false,
-        allow_tearing = false,
-        layout = "dwindle",
-    },
+	general = {
+		gaps_in = 5,
+		gaps_out = 10,
+		border_size = 1,
+		resize_on_border = false,
+		allow_tearing = false,
+		layout = "dwindle",
+	},
 })
 
 hl.config({
-    decoration = {
-        active_opacity = 1.0,
-        inactive_opacity = 1.0,
-        shadow = {
-            enabled = true,
-            range = 4,
-            render_power = 3,
-        },
-        blur = {
-            enabled = true,
-            size = 3,
-            passes = 1,
-            vibrancy = 0.1696,
-        },
-    },
+	decoration = {
+		active_opacity = 1.0,
+		inactive_opacity = 1.0,
+		shadow = {
+			enabled = true,
+			range = 4,
+			render_power = 3,
+		},
+		blur = {
+			enabled = true,
+			size = 3,
+			passes = 1,
+			vibrancy = 0.1696,
+		},
+	},
 })
 
 hl.config({
-    animations = {
-        enabled = true,
-    },
+	animations = {
+		enabled = true,
+	},
 })
 
 hl.config({
-    dwindle = {
-        preserve_split = true,
-        -- You probably want this
-    },
+	dwindle = {
+		preserve_split = true,
+		-- You probably want this
+	},
 })
 
 hl.config({
-    master = {
-        new_status = "master",
-    },
+	master = {
+		new_status = "master",
+	},
 })
 
 hl.config({
-    misc = {
-        force_default_wallpaper = 0,
-        disable_hyprland_logo = false,
-    },
+	misc = {
+		force_default_wallpaper = 0,
+		disable_hyprland_logo = false,
+	},
 })
 
 hl.config({
-    input = {
-        kb_layout = "us",
-        follow_mouse = 1,
-        sensitivity = 0,
-        -- -1.0 - 1.0, 0 means no modification.
-        scroll_method = "2fg",
-        touchpad = {
-            natural_scroll = false,
-            scroll_factor = 1.0,
-            disable_while_typing = true,
-            tap_to_click = true,
-            clickfinger_behavior = true,
-        },
-    },
+	input = {
+		kb_layout = "us",
+		follow_mouse = 1,
+		sensitivity = 0,
+		-- -1.0 - 1.0, 0 means no modification.
+		scroll_method = "2fg",
+		touchpad = {
+			natural_scroll = false,
+			scroll_factor = 1.0,
+			disable_while_typing = true,
+			tap_to_click = true,
+			clickfinger_behavior = true,
+		},
+	},
 })
 
 local mainMod = "SUPER"
@@ -155,7 +155,7 @@ hl.bind(mainMod .. " + " .. "SHIFT" .. " + " .. 0, hl.dsp.exec_cmd("vlarch-works
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 
-hl.bind(mainMod .. " + " .. "mouse:272", nil, { mouse = true })
+hl.bind(mainMod .. " + " .. "mouse:272", hl.dsp.window.move(nil), { mouse = true })
 
 hl.bind(mainMod .. " + " .. "mouse:273", hl.dsp.window.resize(nil), { mouse = true })
 
