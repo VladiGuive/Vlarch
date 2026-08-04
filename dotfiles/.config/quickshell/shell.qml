@@ -19,12 +19,6 @@ PanelWindow {
     property int displayedMonth: now.getMonth()
     property int displayedYear: now.getFullYear()
 
-    // Closing the expanded view when the panel window loses focus keeps the
-    // compact clock as the default state.
-    onActiveChanged: {
-        if (!active)
-            panel.expanded = false
-    }
 
     function pad(value) {
         return value < 10 ? "0" + value : value
@@ -52,6 +46,13 @@ PanelWindow {
         }
     }
 
+    MouseArea {
+        anchors.fill: parent
+        z: 0
+        enabled: panel.expanded
+        onClicked: panel.expanded = false
+    }
+
     Process {
         id: poweroffProcess
         command: ["systemctl", "poweroff"]
@@ -65,13 +66,14 @@ PanelWindow {
     Rectangle {
         id: island
         objectName: "dynamicIsland"
+        z: 1
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         width: expanded ? 560 : 190
         height: expanded ? 370 : 38
         radius: expanded ? 24 : 19
-        color: "#e91e293b"
-        border.color: "#40ffffff"
+        color: "#B32E3440"
+        border.color: "#5588C0D0"
         border.width: 1
         clip: true
 
