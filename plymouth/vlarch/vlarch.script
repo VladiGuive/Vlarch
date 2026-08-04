@@ -1,0 +1,197 @@
+# Vlarch custom splash
+# - full-screen background (placeholder image)
+# - pre-prompt animation (video seconds 6-7), loops while waiting
+# - LUKS password prompt at the bottom (no keyboard), appears after ~2s
+# - post animation (video seconds 1-5), plays once right after the password
+
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+# Full-screen background
+background.image = Image("background.png");
+background.sprite = Sprite(background.image);
+background.sprite.SetPosition(0, 0, 0);
+
+# Pre-prompt animation frames
+pre.frames[1] = Image("animation-0001.png");
+pre.frames[2] = Image("animation-0002.png");
+pre.frames[3] = Image("animation-0003.png");
+pre.frames[4] = Image("animation-0004.png");
+pre.frames[5] = Image("animation-0005.png");
+pre.frames[6] = Image("animation-0006.png");
+pre.frames[7] = Image("animation-0007.png");
+pre.frames[8] = Image("animation-0008.png");
+pre.frames[9] = Image("animation-0009.png");
+pre.frames[10] = Image("animation-0010.png");
+pre.frames[11] = Image("animation-0011.png");
+pre.frames[12] = Image("animation-0012.png");
+pre.frames[13] = Image("animation-0013.png");
+pre.frames[14] = Image("animation-0014.png");
+pre.frames[15] = Image("animation-0015.png");
+pre.sprite = Sprite(pre.frames[1]);
+pre.sprite.SetPosition(0, 0, 1);
+pre.index = 1;
+
+# Post animation frames
+post.frames[1] = Image("end-animation-0001.png");
+post.frames[2] = Image("end-animation-0002.png");
+post.frames[3] = Image("end-animation-0003.png");
+post.frames[4] = Image("end-animation-0004.png");
+post.frames[5] = Image("end-animation-0005.png");
+post.frames[6] = Image("end-animation-0006.png");
+post.frames[7] = Image("end-animation-0007.png");
+post.frames[8] = Image("end-animation-0008.png");
+post.frames[9] = Image("end-animation-0009.png");
+post.frames[10] = Image("end-animation-0010.png");
+post.frames[11] = Image("end-animation-0011.png");
+post.frames[12] = Image("end-animation-0012.png");
+post.frames[13] = Image("end-animation-0013.png");
+post.frames[14] = Image("end-animation-0014.png");
+post.frames[15] = Image("end-animation-0015.png");
+post.frames[16] = Image("end-animation-0016.png");
+post.frames[17] = Image("end-animation-0017.png");
+post.frames[18] = Image("end-animation-0018.png");
+post.frames[19] = Image("end-animation-0019.png");
+post.frames[20] = Image("end-animation-0020.png");
+post.frames[21] = Image("end-animation-0021.png");
+post.frames[22] = Image("end-animation-0022.png");
+post.frames[23] = Image("end-animation-0023.png");
+post.frames[24] = Image("end-animation-0024.png");
+post.frames[25] = Image("end-animation-0025.png");
+post.frames[26] = Image("end-animation-0026.png");
+post.frames[27] = Image("end-animation-0027.png");
+post.frames[28] = Image("end-animation-0028.png");
+post.frames[29] = Image("end-animation-0029.png");
+post.frames[30] = Image("end-animation-0030.png");
+post.frames[31] = Image("end-animation-0031.png");
+post.frames[32] = Image("end-animation-0032.png");
+post.frames[33] = Image("end-animation-0033.png");
+post.frames[34] = Image("end-animation-0034.png");
+post.frames[35] = Image("end-animation-0035.png");
+post.frames[36] = Image("end-animation-0036.png");
+post.frames[37] = Image("end-animation-0037.png");
+post.frames[38] = Image("end-animation-0038.png");
+post.frames[39] = Image("end-animation-0039.png");
+post.frames[40] = Image("end-animation-0040.png");
+post.frames[41] = Image("end-animation-0041.png");
+post.frames[42] = Image("end-animation-0042.png");
+post.frames[43] = Image("end-animation-0043.png");
+post.frames[44] = Image("end-animation-0044.png");
+post.frames[45] = Image("end-animation-0045.png");
+post.frames[46] = Image("end-animation-0046.png");
+post.frames[47] = Image("end-animation-0047.png");
+post.frames[48] = Image("end-animation-0048.png");
+post.frames[49] = Image("end-animation-0049.png");
+post.frames[50] = Image("end-animation-0050.png");
+post.frames[51] = Image("end-animation-0051.png");
+post.frames[52] = Image("end-animation-0052.png");
+post.frames[53] = Image("end-animation-0053.png");
+post.frames[54] = Image("end-animation-0054.png");
+post.frames[55] = Image("end-animation-0055.png");
+post.frames[56] = Image("end-animation-0056.png");
+post.frames[57] = Image("end-animation-0057.png");
+post.frames[58] = Image("end-animation-0058.png");
+post.frames[59] = Image("end-animation-0059.png");
+post.frames[60] = Image("end-animation-0060.png");
+post.sprite = Sprite();
+post.sprite.SetPosition(0, 0, 1);
+post.index = 0;
+
+# Password dialog (bottom, no keyboard)
+dialog.prompt_text = Image.Text("Enter encryption password.", 1, 1, 1, 1, "Cantarell 20", 0);
+dialog.lock_image = Image("lock.png");
+dialog.entry_image = Image("entry.png");
+dialog.bullet_image = Image("bullet.png");
+
+fun dialog_show (bullets)
+  {
+    local.cx;
+    local.cy;
+
+    cx = Window.GetX() + Window.GetWidth() / 2;
+    cy = Window.GetY() + Window.GetHeight() - 150;
+
+    dialog.prompt = Sprite(dialog.prompt_text);
+    dialog.prompt.SetPosition(cx - dialog.prompt_text.GetWidth() / 2, cy - 70, 10000);
+
+    dialog.lock = Sprite(dialog.lock_image);
+    dialog.entry = Sprite(dialog.entry_image);
+    dialog.lock.SetPosition(cx - dialog.entry_image.GetWidth() / 2 - dialog.lock_image.GetWidth(), cy, 10001);
+    dialog.entry.SetPosition(cx - dialog.entry_image.GetWidth() / 2, cy, 10001);
+
+    dialog.bullets = [];
+    for (b = 0; b < bullets; b++)
+      {
+        dialog.bullets[b] = Sprite(dialog.bullet_image);
+        dialog.bullets[b].SetPosition(cx - dialog.entry_image.GetWidth() / 2 + b * dialog.bullet_image.GetWidth(), cy + dialog.entry_image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2, 10002);
+      }
+  }
+
+fun dialog_hide ()
+  {
+    dialog.prompt.SetOpacity(0);
+    dialog.lock.SetOpacity(0);
+    dialog.entry.SetOpacity(0);
+  }
+
+password_requested = false;
+password_pending = false;
+delay_ticks = 0;
+post_active = false;
+dialog_bullets = 0;
+
+fun refresh_callback ()
+  {
+    # pre animation loops while waiting (until the post animation starts)
+    if (!post_active)
+      {
+        pre.index++;
+        if (pre.index > 15)
+          pre.index = 1;
+        pre.sprite.SetImage(pre.frames[pre.index]);
+      }
+
+    # post animation plays once after the password
+    if (post_active)
+      {
+        post.index++;
+        if (post.index > 60)
+          post_active = false;
+        else
+          post.sprite.SetImage(post.frames[post.index]);
+      }
+
+    # show the password prompt ~2s after it was requested
+    if (password_pending)
+      {
+        delay_ticks++;
+        if (delay_ticks >= 40)
+          {
+            password_pending = false;
+            dialog_show(dialog_bullets);
+          }
+      }
+  }
+
+fun display_password_callback (prompt, bullets)
+  {
+    password_requested = true;
+    password_pending = true;
+    dialog_bullets = bullets;
+  }
+
+fun display_normal_callback ()
+  {
+    if (password_requested)
+      {
+        # password resolved: stop the pre animation, play the post once
+        password_requested = false;
+        post_active = true;
+        post.index = 0;
+        dialog_hide();
+      }
+  }
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);

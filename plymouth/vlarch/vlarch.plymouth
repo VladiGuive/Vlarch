@@ -1,65 +1,9 @@
 [Plymouth Theme]
 Name=Vlarch
-Description=Vlarch custom boot splash
-ModuleName=two-step
+Description=Vlarch custom boot splash (cube animation + bottom password prompt)
+ModuleName=script
 
-[two-step]
-Font=Cantarell 12
-TitleFont=Cantarell Light 30
+[script]
 ImageDir=/usr/share/plymouth/themes/vlarch
-# Full-screen background image (1920x1080) drawn as the watermark layer.
-WatermarkImage=background.png
-WatermarkHorizontalAlignment=.5
-WatermarkVerticalAlignment=.5
-# Password prompt at the bottom, no keyboard image.
-DialogHorizontalAlignment=.5
-DialogVerticalAlignment=.8
-TitleHorizontalAlignment=.5
-TitleVerticalAlignment=.382
-HorizontalAlignment=.5
-VerticalAlignment=.7
-Transition=none
-TransitionDuration=0.0
-BackgroundStartColor=0x000000
-BackgroundEndColor=0x000000
-ProgressBarBackgroundColor=0x606060
-ProgressBarForegroundColor=0xffffff
-MessageBelowAnimation=true
-
-[boot-up]
-# Play end-animation-*.png once after the boot finishes (does not block boot).
-UseEndAnimation=true
-
-[shutdown]
-UseEndAnimation=false
-
-[reboot]
-UseEndAnimation=false
-
-[updates]
-SuppressMessages=true
-ProgressBarShowPercentComplete=true
-UseProgressBar=true
-Title=Installing Updates...
-SubTitle=Do not turn off your computer
-
-[system-upgrade]
-SuppressMessages=true
-ProgressBarShowPercentComplete=true
-UseProgressBar=true
-Title=Upgrading System...
-SubTitle=Do not turn off your computer
-
-[firmware-upgrade]
-SuppressMessages=true
-ProgressBarShowPercentComplete=true
-UseProgressBar=true
-Title=Upgrading Firmware...
-SubTitle=Do not turn off your computer
-
-[system-reset]
-SuppressMessages=true
-ProgressBarShowPercentComplete=true
-UseProgressBar=true
-Title=Resetting System...
-SubTitle=Do not turn off your computer
+ScriptFile=/usr/share/plymouth/themes/vlarch/vlarch.script
+ConsoleLogBackgroundColor=0x00000000
