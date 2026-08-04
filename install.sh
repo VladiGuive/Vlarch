@@ -7,6 +7,15 @@ VLARCH_LIVE_MIN_FREE_K=524288
 VLARCH_BOOTSTRAP_LOG=/var/log/vlarch_install.log
 VLARCH_CONFIG_FILE="${VLARCH_CONFIG_FILE:-/tmp/vlarch-install.env}"
 
+# ---- args ----
+VLARCH_DEMO=0
+for _arg in "$@"; do
+  case "$_arg" in
+    --demo) VLARCH_DEMO=1 ;;
+    *) printf 'install: unknown option: %s\n' "$_arg" >&2; exit 1 ;;
+  esac
+done
+
 _die() {
   printf '[vlarch] CRITICAL ERROR: %s\n' "$*" >&2
   printf '[vlarch] SEE FULL LOG: %s\n' "$VLARCH_BOOTSTRAP_LOG" >&2
@@ -429,7 +438,7 @@ _clear
 printf 'Vlarch installer\n\n'
 
 reused=0
-if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
+if [[ -f "$VLARCH_CONFIG_FILE" && !((VLARCH_DEMO)) ]]; then
   reuse=$(printf 'Use existing config\nStart fresh\n' |
     _fzf --header "Found saved config at ${VLARCH_CONFIG_FILE}" --prompt='> ')
   if [[ "$reuse" == "Use existing config" ]]; then
@@ -442,7 +451,22 @@ if [[ -f "$VLARCH_CONFIG_FILE" ]]; then
   fi
 fi
 
-if ((!reused)); then
+if ((VLARCH_DEMO)); then
+  # Demo presets (matches the VM test environment) - no prompts.
+  VLARCH_NETWORK_TYPE=ethernet
+  VLARCH_WIFI_SSID=
+  VLARCH_WIFI_PASSWORD=
+  VLARCH_TIMEZONE=America/Argentina/Buenos_Aires
+  VLARCH_LOCALE=en_US.UTF-8
+  VLARCH_DISK=/dev/vda
+  VLARCH_USER=vladi
+  VLARCH_REAL_NAME=vladi
+  VLARCH_USER_EMAIL=vladi
+  VLARCH_USER_PASSWORD=vladi
+  VLARCH_ROOT_PASSWORD=vladi
+  VLARCH_LUKS_PASSPHRASE=vladi
+  [[ -b "$VLARCH_DISK" ]] || _die "demo disk not found: ${VLARCH_DISK}"
+elif ((!reused)); then
   current=$(_detect_network_type)
   if [[ "$current" == "wifi" ]]; then
     VLARCH_NETWORK_TYPE="wifi"
@@ -485,15 +509,20 @@ if ((!reused)); then
   VLARCH_USER_PASSWORD=$(_read_password_twice "Password for $VLARCH_USER")
   VLARCH_ROOT_PASSWORD=$(_read_password_twice "Password for root user")
   VLARCH_LUKS_PASSPHRASE=$(_read_password_twice "Password for disk encryption (asked at every boot)")
+fi
 
-  export VLARCH_NETWORK_TYPE VLARCH_WIFI_SSID VLARCH_WIFI_PASSWORD
-  export VLARCH_TIMEZONE VLARCH_LOCALE VLARCH_DISK
-  export VLARCH_USER VLARCH_REAL_NAME VLARCH_USER_EMAIL
-  export VLARCH_USER_PASSWORD VLARCH_ROOT_PASSWORD VLARCH_LUKS_PASSPHRASE
+export VLARCH_NETWORK_TYPE VLARCH_WIFI_SSID VLARCH_WIFI_PASSWORD
+export VLARCH_TIMEZONE VLARCH_LOCALE VLARCH_DISK
+export VLARCH_USER VLARCH_REAL_NAME VLARCH_USER_EMAIL
+export VLARCH_USER_PASSWORD VLARCH_ROOT_PASSWORD VLARCH_LUKS_PASSPHRASE
 
-  vlarch_config_validate
-  vlarch_config_save "$VLARCH_CONFIG_FILE"
+vlarch_config_validate
+vlarch_config_save "$VLARCH_CONFIG_FILE"
 
+if ((VLARCH_DEMO)); then
+  printf 'Demo mode: preset config (disk=%s, user=%s, tz=%s)\n' \
+    "${VLARCH_DISK}" "${VLARCH_USER}" "${VLARCH_TIMEZONE}"
+elif ((!reused)); then
   printf 'Captured configuration:\n'
   printf '  user:        %s (%s)\n' "${VLARCH_USER}" "${VLARCH_REAL_NAME}"
   printf '  network:     %s%s\n' "${VLARCH_NETWORK_TYPE}" "${VLARCH_WIFI_SSID:+ (SSID: ${VLARCH_WIFI_SSID})}"
