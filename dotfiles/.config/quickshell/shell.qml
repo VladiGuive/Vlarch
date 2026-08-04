@@ -1,6 +1,6 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import Quickshell.Wayland
 import QtQuick
 
 PanelWindow {
@@ -13,10 +13,12 @@ PanelWindow {
     }
 
     color: "transparent"
-    implicitHeight: island.expanded ? 390 : 42
+    implicitHeight: island.expanded ? 300 : 42
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.layer: Layer.Overlay
 
     property bool expanded: false
-    property var expandedFocusWindow: null
+
     property date now: new Date()
     property int displayedMonth: now.getMonth()
     property int displayedYear: now.getFullYear()
@@ -45,11 +47,7 @@ PanelWindow {
         onTriggered: {
             panel.now = new Date()
             analogClock.requestPaint()
-            if (panel.expanded && panel.expandedFocusWindow !== null &&
-                    Hyprland.activeToplevel !== panel.expandedFocusWindow) {
-                panel.expanded = false
-                panel.expandedFocusWindow = null
-            }
+
         }
     }
 
@@ -69,8 +67,8 @@ PanelWindow {
         z: 1
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        width: expanded ? 560 : 190
-        height: expanded ? 370 : 38
+        width: expanded ? 430 : 190
+        height: expanded ? 280 : 38
         radius: expanded ? 24 : 19
         color: "#B32E3440"
         border.color: "#5588C0D0"
@@ -84,11 +82,10 @@ PanelWindow {
 
         MouseArea {
             anchors.fill: parent
-            z: -1
+            z: 0
             onClicked: {
                 panel.expanded = !panel.expanded
-                if (panel.expanded)
-                    panel.expandedFocusWindow = Hyprland.activeToplevel
+
             }
         }
 
@@ -104,6 +101,7 @@ PanelWindow {
 
         Item {
             id: expandedContent
+            z: 1
             anchors.fill: parent
             visible: panel.expanded
             opacity: panel.expanded ? 1 : 0
@@ -111,7 +109,7 @@ PanelWindow {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: mouse.accepted = true
+                onClicked: panel.expanded = false
             }
 
             Text {
@@ -131,9 +129,9 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 28
                 anchors.top: parent.top
-                anchors.topMargin: 56
-                width: 170
-                height: 170
+                anchors.topMargin: 46
+                width: 125
+                height: 125
 
                 onPaint: {
                     var ctx = getContext("2d")
@@ -192,11 +190,11 @@ PanelWindow {
 
             Column {
                 anchors.left: analogClock.right
-                anchors.leftMargin: 24
+                anchors.leftMargin: 16
                 anchors.right: parent.right
                 anchors.rightMargin: 20
                 anchors.top: parent.top
-                anchors.topMargin: 42
+                anchors.topMargin: 26
                 spacing: 8
 
                 Text {
@@ -255,16 +253,16 @@ PanelWindow {
                 }
             }
 
-            Row {
+            Column {
                 anchors.right: parent.right
-                anchors.rightMargin: 20
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 20
-                spacing: 10
+                anchors.rightMargin: 16
+                anchors.top: parent.top
+                anchors.topMargin: 76
+                spacing: 8
 
                 Rectangle {
-                    width: 112
-                    height: 38
+                    width: 96
+                    height: 34
                     radius: 12
                     color: "#352f3945"
                     border.color: "#35ffffff"
@@ -273,8 +271,8 @@ PanelWindow {
                 }
 
                 Rectangle {
-                    width: 112
-                    height: 38
+                    width: 96
+                    height: 34
                     radius: 12
                     color: "#352f3945"
                     border.color: "#35ffffff"
