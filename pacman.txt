@@ -24,6 +24,7 @@ hyprland
 ttf-jetbrains-mono-nerd
 ttf-nerd-fonts-symbols
 openssh
+btop
 
 # hyprpaper
 # waybar
@@ -33,7 +34,6 @@ openssh
 # zoxide
 # yazi
 # 7zip
-# btop
 # vulkan-radeon
 # timeshift
 # grub-btrfs
