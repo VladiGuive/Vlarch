@@ -25,8 +25,8 @@ hl.config({
 
 	decoration = {
 		-- Transparent Nord glass: the wallpaper should remain clearly visible.
-		active_opacity = 0.72,
-		inactive_opacity = 0.62,
+		active_opacity = 0.68,
+		inactive_opacity = 0.58,
 		fullscreen_opacity = 1.0,
 
 		rounding = 14,
@@ -37,9 +37,9 @@ hl.config({
 
 		blur = {
 			enabled = true,
-			size = 2,
+			size = 1,
 			passes = 1,
-			vibrancy = 0.10,
+			vibrancy = 0.05,
 			new_optimizations = true,
 			xray = false,
 		},
