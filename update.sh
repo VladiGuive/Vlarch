@@ -46,6 +46,19 @@ while (($#)); do
     -p|--packages) DO_PACKAGES=1; shift ;;
     -s|--splashscreen) DO_SPLASH=1; shift ;;
     -h|--help) usage; exit 0 ;;
+    -[bdpsh]*) # combinaciones cortas: -bs, -bdp, etc.
+      _opts="$1"; shift
+      for ((_i = 1; _i < ${#_opts}; _i++)); do
+        case "${_opts:_i:1}" in
+          b) DO_BIN=1 ;;
+          d) DO_DOTFILES=1 ;;
+          p) DO_PACKAGES=1 ;;
+          s) DO_SPLASH=1 ;;
+          h) usage; exit 0 ;;
+          *) printf 'update: unknown option: -%s\n' "${_opts:_i:1}" >&2; exit 1 ;;
+        esac
+      done
+      ;;
     *) printf 'update: unknown option: %s\n' "$1" >&2; usage >&2; exit 1 ;;
   esac
 done
