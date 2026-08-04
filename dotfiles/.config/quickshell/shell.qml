@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import QtQuick
 
 PanelWindow {
@@ -23,6 +24,114 @@ PanelWindow {
     property date now: new Date()
     property int displayedMonth: now.getMonth()
     property int displayedYear: now.getFullYear()
+
+    Rectangle {
+        id: launcher
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: 12
+        anchors.topMargin: 5
+        width: launcherHover.containsMouse ? 360 : 34
+        height: launcherHover.containsMouse ? 112 : 32
+        radius: launcherHover.containsMouse ? 18 : 16
+        color: "#B32E3440"
+        border.color: "#5588C0D0"
+        z: 3
+        clip: true
+        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.top: parent.top
+            anchors.topMargin: 8
+            text: "⌘"
+            color: "#D8DEE9"
+            font.pixelSize: 16
+        }
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 38
+            anchors.top: parent.top
+            anchors.topMargin: 10
+            text: "Aplicaciones"
+            color: "#D8DEE9"
+            font.pixelSize: 12
+            visible: launcherHover.containsMouse
+        }
+        MouseArea {
+            id: launcherHover
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: { /* launcher UI will be added here */ }
+        }
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
+            spacing: 6
+            visible: launcherHover.containsMouse
+
+            Repeater {
+                model: ["Terminal", "Navegador", "Archivos"]
+                Rectangle {
+                    width: 100
+                    height: 34
+                    radius: 10
+                    color: "#354C566A"
+                    Text { anchors.centerIn: parent; text: modelData; color: "#D8DEE9"; font.pixelSize: 11 }
+                }
+            }
+        }
+    }
+
+    Row {
+        anchors.left: launcher.right
+        anchors.leftMargin: 8
+        anchors.top: parent.top
+        anchors.topMargin: 5
+        spacing: 4
+        z: 3
+
+        Repeater {
+            model: 10
+            Rectangle {
+                width: 24
+                height: 32
+                radius: 12
+                color: "#B32E3440"
+                border.color: "#354C566A"
+                Text { anchors.centerIn: parent; text: index + 1; color: "#D8DEE9"; font.pixelSize: 11 }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Hyprland.dispatch("workspace " + (index + 1))
+                }
+            }
+        }
+    }
+
+    Row {
+        anchors.right: parent.right
+        anchors.rightMargin: 12
+        anchors.top: parent.top
+        anchors.topMargin: 5
+        spacing: 6
+        z: 3
+
+        Repeater {
+            model: ["󰕾", "󰌌", "󰐥"]
+            Rectangle {
+                width: 32
+                height: 32
+                radius: 16
+                color: "#B32E3440"
+                border.color: "#5588C0D0"
+                Text { anchors.centerIn: parent; text: modelData; color: "#D8DEE9"; font.pixelSize: 14 }
+            }
+        }
+    }
 
 
     function pad(value) {
