@@ -758,6 +758,11 @@ for script in "${VLARCH_SCRIPT_DIR}"/bin/*; do
 done
 
 mkdir -p /mnt/etc/vlarch /mnt/var/lib/vlarch
+# Use the launcher as the user's login shell. This keeps the autoboot entirely
+# system-configured: tty1 autologin enters the launcher, which starts Hyprland.
+# The real shell is persisted so non-tty1 logins still get the user's shell.
+printf '%s\n' "$user_shell" >/mnt/etc/vlarch/login-shell
+arch-chroot /mnt usermod -s /usr/local/bin/vlarch-tty-login "$VLARCH_USER"
 {
   printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'user=%s\n' "${VLARCH_USER}"

@@ -14,8 +14,13 @@ _vlarch_on_tty1() {
 }
 
 _vlarch_login_shell() {
-  local shell
-  shell="$(getent passwd "${USER:-root}" 2>/dev/null | cut -d: -f7-)"
+  local shell configured_shell
+  configured_shell=/etc/vlarch/login-shell
+  if [[ -r "$configured_shell" ]]; then
+    shell="$(<"$configured_shell")"
+  else
+    shell="$(getent passwd "${USER:-root}" 2>/dev/null | cut -d: -f7-)"
+  fi
   [[ -n "$shell" && -x "$shell" ]] || shell=""
   if [[ -z "$shell" ]]; then
     command -v zsh >/dev/null 2>&1 && shell="$(command -v zsh)"
@@ -31,7 +36,9 @@ _vlarch_first_boot_log() {
 }
 
 if ! _vlarch_on_tty1; then
-  exit 0
+  _shell="$(< /etc/vlarch/login-shell 2>/dev/null || true)"
+  [[ -x "$_shell" ]] || _shell="/bin/bash"
+  exec -l "$_shell" "$@"
 fi
 
 _first_log="$(_vlarch_first_boot_log)"
