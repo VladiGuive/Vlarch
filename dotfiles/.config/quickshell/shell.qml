@@ -13,7 +13,7 @@ PanelWindow {
     }
 
     color: "transparent"
-    implicitHeight: island.expanded ? 300 : 42
+    implicitHeight: island.expanded ? 250 : 42
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: Layer.Overlay
 
@@ -51,16 +51,6 @@ PanelWindow {
         }
     }
 
-    Process {
-        id: poweroffProcess
-        command: ["systemctl", "poweroff"]
-    }
-
-    Process {
-        id: rebootProcess
-        command: ["systemctl", "reboot"]
-    }
-
     Rectangle {
         id: island
         objectName: "dynamicIsland"
@@ -68,8 +58,8 @@ PanelWindow {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         width: expanded ? 430 : 190
-        height: expanded ? 280 : 38
-        radius: expanded ? 24 : 19
+        height: expanded ? 230 : 38
+        radius: expanded ? 0 : 19
         color: "#B32E3440"
         border.color: "#5588C0D0"
         border.width: 1
@@ -116,7 +106,7 @@ PanelWindow {
                 anchors.top: parent.top
                 anchors.left: analogClock.left
                 anchors.right: analogClock.right
-                anchors.topMargin: 18
+                anchors.topMargin: 12
                 text: panel.pad(panel.now.getHours()) + ":" + panel.pad(panel.now.getMinutes()) + ":" + panel.pad(panel.now.getSeconds())
                 color: "white"
                 font.pixelSize: 18
@@ -129,9 +119,9 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 28
                 anchors.top: parent.top
-                anchors.topMargin: 46
-                width: 125
-                height: 125
+                anchors.topMargin: 38
+                width: 110
+                height: 110
 
                 onPaint: {
                     var ctx = getContext("2d")
@@ -194,14 +184,14 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.rightMargin: 20
                 anchors.top: parent.top
-                anchors.topMargin: 26
-                spacing: 8
+                anchors.topMargin: 12
+                spacing: 4
 
                 Text {
                     width: parent.width
                     text: panel.monthName(panel.displayedMonth) + " " + panel.displayedYear
                     color: "white"
-                    font.pixelSize: 17
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -216,7 +206,7 @@ PanelWindow {
                             text: modelData
                             color: "#aab8cc"
                             horizontalAlignment: Text.AlignHCenter
-                            font.pixelSize: 12
+                            font.pixelSize: 10
                         }
                     }
                 }
@@ -225,14 +215,14 @@ PanelWindow {
                     width: parent.width
                     columns: 7
                     rows: 6
-                    spacing: 2
+                    spacing: 0
 
                     Repeater {
                         model: 42
                         Rectangle {
                             width: (parent.width - 12) / 7
-                            height: 25
-                            radius: 8
+                            height: 20
+                            radius: 5
                             color: {
                                 var first = new Date(panel.displayedYear, panel.displayedMonth, 1)
                                 var day = index - ((first.getDay() + 6) % 7) + 1
@@ -246,7 +236,7 @@ PanelWindow {
                                 property int day: index - ((first.getDay() + 6) % 7) + 1
                                 text: day
                                 color: (new Date(panel.displayedYear, panel.displayedMonth, day).getMonth() === panel.displayedMonth) ? "white" : "#66758a"
-                                font.pixelSize: 12
+                                font.pixelSize: 10
                             }
                         }
                     }
