@@ -60,7 +60,7 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         width: expanded ? 390 : 190
         height: expanded ? 220 : 38
-        radius: expanded ? 0 : 19
+        radius: expanded ? 24 : 19
         color: "transparent"
         border.color: "transparent"
         border.width: 0
@@ -83,7 +83,7 @@ PanelWindow {
                 var ctx = getContext("2d")
                 var w = width
                 var h = height
-                var r = panel.expanded ? 0 : 18
+                var r = panel.expanded ? 24 : 18
 
                 ctx.reset()
                 ctx.beginPath()
@@ -106,13 +106,9 @@ PanelWindow {
             anchors.fill: parent
             z: 2
             hoverEnabled: true
-            onClicked: {
-                panel.expanded = !panel.expanded
-            }
-            onExited: {
-                if (panel.expanded)
-                    panel.expanded = false
-            }
+            onEntered: panel.expanded = true
+            onExited: panel.expanded = false
+            onClicked: panel.expanded = true
         }
 
         Text {
