@@ -6,6 +6,7 @@
 #   -d, --dotfiles       copia dotfiles/ -> home del usuario
 #   -p, --packages       instala paquetes faltantes (pacman.txt + aur.txt)
 #   -s, --splashscreen   actualiza el theme de plymouth
+#   -r, --reboot         reinicia al finalizar
 #   -h, --help           muestra este texto
 #
 # Sin argumentos: muestra la ayuda.
@@ -38,6 +39,7 @@ DO_BIN=0
 DO_DOTFILES=0
 DO_PACKAGES=0
 DO_SPLASH=0
+DO_REBOOT=0
 
 while (($#)); do
   case "$1" in
@@ -45,8 +47,9 @@ while (($#)); do
     -d|--dotfiles) DO_DOTFILES=1; shift ;;
     -p|--packages) DO_PACKAGES=1; shift ;;
     -s|--splashscreen) DO_SPLASH=1; shift ;;
+    -r|--reboot) DO_REBOOT=1; shift ;;
     -h|--help) usage; exit 0 ;;
-    -[bdpsh]*) # combinaciones cortas: -bs, -bdp, etc.
+    -[bdprsh]*) # combinaciones cortas: -bs, -bdp, etc.
       _opts="$1"; shift
       for ((_i = 1; _i < ${#_opts}; _i++)); do
         case "${_opts:_i:1}" in
@@ -54,6 +57,7 @@ while (($#)); do
           d) DO_DOTFILES=1 ;;
           p) DO_PACKAGES=1 ;;
           s) DO_SPLASH=1 ;;
+          r) DO_REBOOT=1 ;;
           h) usage; exit 0 ;;
           *) printf 'update: unknown option: -%s\n' "${_opts:_i:1}" >&2; exit 1 ;;
         esac
@@ -165,7 +169,6 @@ if ((DO_SPLASH)); then
 fi
 
 printf 'Update complete.\n'
-read -rp "  Reboot now? [y/N] " _ans </dev/tty
-if [[ "${_ans,,}" == "y" ]]; then
+if ((DO_REBOOT)); then
   reboot
 fi
