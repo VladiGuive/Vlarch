@@ -70,9 +70,9 @@ PanelWindow {
         onWidthChanged: islandBackground.requestPaint()
         onHeightChanged: islandBackground.requestPaint()
         onExpandedChanged: islandBackground.requestPaint()
-        Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-        Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-        Behavior on radius { NumberAnimation { duration: 260 } }
+        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on radius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
         Canvas {
             id: islandBackground
@@ -131,7 +131,7 @@ PanelWindow {
             anchors.fill: parent
             visible: panel.expanded
             opacity: panel.expanded ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
             MouseArea {
                 anchors.fill: parent
