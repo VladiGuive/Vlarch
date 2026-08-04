@@ -1,7 +1,7 @@
 # Vlarch custom splash
 # - full-screen background (placeholder image)
-# - pre-prompt animation (video seconds 6-7), loops while waiting
-# - LUKS password prompt at the bottom (no keyboard), appears after ~2s
+# - pre-prompt cube animation (video seconds 6-7), loops while waiting
+# - LUKS password prompt at the bottom (no keyboard)
 # - post animation (video seconds 1-5), plays once right after the password
 
 Window.SetBackgroundTopColor(0, 0, 0);
@@ -98,12 +98,7 @@ post.sprite.SetPosition(0, 0, 1);
 post.index = 0;
 
 # Password dialog (bottom, no keyboard)
-dialog.prompt_text = Image.Text("Enter encryption password.", 1, 1, 1, 1, "Cantarell 20", 0);
-dialog.lock_image = Image("lock.png");
-dialog.entry_image = Image("entry.png");
-dialog.bullet_image = Image("bullet.png");
-
-fun dialog_show (bullets)
+fun dialog_setup ()
   {
     local.cx;
     local.cy;
@@ -111,20 +106,20 @@ fun dialog_show (bullets)
     cx = Window.GetX() + Window.GetWidth() / 2;
     cy = Window.GetY() + Window.GetHeight() - 150;
 
+    dialog.prompt_text = Image.Text("Enter encryption password.", 1, 1, 1);
     dialog.prompt = Sprite(dialog.prompt_text);
     dialog.prompt.SetPosition(cx - dialog.prompt_text.GetWidth() / 2, cy - 70, 10000);
 
+    dialog.lock_image = Image("lock.png");
+    dialog.entry_image = Image("entry.png");
+    dialog.bullet_image = Image("bullet.png");
+
     dialog.lock = Sprite(dialog.lock_image);
     dialog.entry = Sprite(dialog.entry_image);
-    dialog.lock.SetPosition(cx - dialog.entry_image.GetWidth() / 2 - dialog.lock_image.GetWidth(), cy, 10001);
-    dialog.entry.SetPosition(cx - dialog.entry_image.GetWidth() / 2, cy, 10001);
-
-    dialog.bullets = [];
-    for (b = 0; b < bullets; b++)
-      {
-        dialog.bullets[b] = Sprite(dialog.bullet_image);
-        dialog.bullets[b].SetPosition(cx - dialog.entry_image.GetWidth() / 2 + b * dialog.bullet_image.GetWidth(), cy + dialog.entry_image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2, 10002);
-      }
+    dialog.entry_x = cx - dialog.entry_image.GetWidth() / 2;
+    dialog.entry_y = cy;
+    dialog.lock.SetPosition(dialog.entry_x - dialog.lock_image.GetWidth(), cy, 10001);
+    dialog.entry.SetPosition(dialog.entry_x, cy, 10001);
   }
 
 fun dialog_hide ()
@@ -132,13 +127,12 @@ fun dialog_hide ()
     dialog.prompt.SetOpacity(0);
     dialog.lock.SetOpacity(0);
     dialog.entry.SetOpacity(0);
+    for (index = 0; dialog.bullet[index]; index++)
+      dialog.bullet[index].SetOpacity(0);
   }
 
 password_requested = false;
-password_pending = false;
-delay_ticks = 0;
 post_active = false;
-dialog_bullets = 0;
 
 fun refresh_callback ()
   {
@@ -160,24 +154,27 @@ fun refresh_callback ()
         else
           post.sprite.SetImage(post.frames[post.index]);
       }
-
-    # show the password prompt ~2s after it was requested
-    if (password_pending)
-      {
-        delay_ticks++;
-        if (delay_ticks >= 40)
-          {
-            password_pending = false;
-            dialog_show(dialog_bullets);
-          }
-      }
   }
 
 fun display_password_callback (prompt, bullets)
   {
+    # show the dialog right away (never leave the prompt waiting on the refresh)
+    if (!dialog.prompt)
+      dialog_setup();
     password_requested = true;
-    password_pending = true;
-    dialog_bullets = bullets;
+
+    for (index = 0; dialog.bullet[index] || index < bullets; index++)
+      {
+        if (!dialog.bullet[index])
+          {
+            dialog.bullet[index] = Sprite(dialog.bullet_image);
+            dialog.bullet[index].SetPosition(dialog.entry_x + index * dialog.bullet_image.GetWidth(), dialog.entry_y + dialog.entry_image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2, 10002);
+          }
+        if (index < bullets)
+          dialog.bullet[index].SetOpacity(1);
+        else
+          dialog.bullet[index].SetOpacity(0);
+      }
   }
 
 fun display_normal_callback ()
