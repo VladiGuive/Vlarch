@@ -15,6 +15,7 @@ rsync
 intel-ucode
 amd-ucode
 plymouth
+quickshell
 
 # OTHER
 kitty
