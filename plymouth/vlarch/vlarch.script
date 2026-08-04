@@ -28,7 +28,12 @@ fun refresh_callback ()
       {
         pre.index++;
         if (pre.index > 15)
-          pre.done = true;
+          {
+            pre.done = true;
+            # show the password prompt right after the pre animation ends
+            if (!dialog.entry)
+              dialog_show();
+          }
         else if (pre.frames[pre.index])
           pre.sprite.SetImage(pre.frames[pre.index]);
       }
