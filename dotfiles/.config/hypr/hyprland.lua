@@ -82,6 +82,12 @@ hl.config({
 	},
 })
 
+-- Start Quickshell once when Hyprland finishes starting.
+-- The directory contains shell.qml as the Quickshell entry point.
+hl.on("hyprland.start", function()
+	hl.exec_cmd("quickshell -c ~/.config/quickshell")
+end)
+
 -- Applications
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
