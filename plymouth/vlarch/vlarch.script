@@ -1,12 +1,11 @@
 # Vlarch custom splash
 # - full-screen background (placeholder image)
-# - pre-prompt cube animation (video seconds 6-7), plays once
-# - LUKS password prompt at the bottom (no keyboard)
+# - pre-prompt cube animation (video seconds 6-7), plays once, then hides
+# - LUKS password prompt at the bottom (no keyboard), bullets visible
 # - post animation (video seconds 1-5), plays once after the password
 #
-# The dialog sprites are created at load time (same as the background,
-# which works) and revealed with SetOpacity - creating sprites at
-# runtime from the refresh callback proved fragile.
+# Dialog + bullets are pre-created at load time (same pattern as the
+# background) and revealed via SetOpacity - no runtime sprite creation.
 
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
@@ -19,10 +18,19 @@ background.sprite.SetPosition(0, 0, 0);
 # Password dialog, hidden until the pre animation ends
 dialog.lock = Sprite(Image("lock.png"));
 dialog.entry = Sprite(Image("entry.png"));
-dialog.lock.SetPosition(730, 930, 10001);
-dialog.entry.SetPosition(770, 930, 10001);
+dialog.bullet_image = Image("bullet.png");
+dialog.entry_x = 770;
+dialog.entry_y = 930;
+dialog.lock.SetPosition(730, dialog.entry_y, 10001);
+dialog.entry.SetPosition(dialog.entry_x, dialog.entry_y, 10001);
 dialog.lock.SetOpacity(0);
 dialog.entry.SetOpacity(0);
+for (i = 0; i < 24; i++)
+  {
+    dialog.bullet[i] = Sprite(dialog.bullet_image);
+    dialog.bullet[i].SetPosition(dialog.entry_x + 8 + i * (dialog.bullet_image.GetWidth() + 4), dialog.entry_y + 12, 10002);
+    dialog.bullet[i].SetOpacity(0);
+  }
 
 password_requested = false;
 post_active = false;
@@ -30,15 +38,14 @@ pre.done = false;
 
 fun refresh_callback ()
   {
-    # pre animation plays ONCE (no loop): a 50fps loop of 1080p frames
-    # saturates the plymouth event loop and the LUKS password request
-    # never gets processed.
+    # pre animation plays ONCE, then hides so the background shows
     if (!pre.done && !post_active)
       {
         pre.index++;
         if (pre.index > 15)
           {
             pre.done = true;
+            pre.sprite.SetOpacity(0);
             # show the password prompt right after the pre animation ends
             dialog.entry.SetOpacity(1);
             dialog.lock.SetOpacity(1);
@@ -60,22 +67,31 @@ fun refresh_callback ()
 
 fun display_password_callback (prompt, bullets)
   {
-    # the framework is asking for the password: make sure the dialog shows
+    # framework is asking for the password: show the dialog and the bullets
     dialog.entry.SetOpacity(1);
     dialog.lock.SetOpacity(1);
     password_requested = true;
+    for (i = 0; i < 24; i++)
+      {
+        if (i < bullets)
+          dialog.bullet[i].SetOpacity(1);
+        else
+          dialog.bullet[i].SetOpacity(0);
+      }
   }
 
 fun display_normal_callback ()
   {
     if (password_requested)
       {
-        # password resolved: stop the pre animation, play the post once
+        # password resolved: play the post animation once, hide the dialog
         password_requested = false;
         post_active = true;
         post.index = 0;
         dialog.entry.SetOpacity(0);
         dialog.lock.SetOpacity(0);
+        for (i = 0; i < 24; i++)
+          dialog.bullet[i].SetOpacity(0);
       }
   }
 
@@ -164,5 +180,5 @@ post.frames[58] = Image("end-animation-0058.png");
 post.frames[59] = Image("end-animation-0059.png");
 post.frames[60] = Image("end-animation-0060.png");
 post.sprite = Sprite();
-post.sprite.SetPosition(0, 0, 1);
+post.sprite.SetPosition(0, 0, 2);
 post.index = 0;
