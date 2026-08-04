@@ -3,16 +3,90 @@
 # - pre-prompt cube animation (video seconds 6-7), loops while waiting
 # - LUKS password prompt at the bottom (no keyboard)
 # - post animation (video seconds 1-5), plays once right after the password
+#
+# Callbacks are registered BEFORE the animation frames are loaded, so a
+# failing Image() (large 1080p frames in the initramfs) can never leave
+# the password prompt unhandled.
 
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 
-# Full-screen background
 background.image = Image("background.png");
 background.sprite = Sprite(background.image);
 background.sprite.SetPosition(0, 0, 0);
 
-# Pre-prompt animation frames
+password_requested = false;
+post_active = false;
+
+fun refresh_callback ()
+  {
+    # pre animation loops while waiting (until the post animation starts)
+    if (!post_active)
+      {
+        pre.index++;
+        if (pre.index > 15)
+          pre.index = 1;
+        if (pre.frames[pre.index])
+          pre.sprite.SetImage(pre.frames[pre.index]);
+      }
+
+    # post animation plays once after the password
+    if (post_active)
+      {
+        post.index++;
+        if (post.index > 60)
+          post_active = false;
+        else if (post.frames[post.index])
+          post.sprite.SetImage(post.frames[post.index]);
+      }
+  }
+
+fun dialog_show ()
+  {
+    local.cx;
+    local.cy;
+
+    cx = Window.GetX() + Window.GetWidth() / 2;
+    cy = Window.GetY() + Window.GetHeight() - 150;
+
+    dialog.lock_image = Image("lock.png");
+    dialog.entry_image = Image("entry.png");
+    dialog.lock = Sprite(dialog.lock_image);
+    dialog.entry = Sprite(dialog.entry_image);
+    dialog.entry_x = cx - dialog.entry_image.GetWidth() / 2;
+    dialog.entry_y = cy;
+    dialog.lock.SetPosition(dialog.entry_x - dialog.lock_image.GetWidth(), cy, 10001);
+    dialog.entry.SetPosition(dialog.entry_x, cy, 10001);
+  }
+
+fun display_password_callback (prompt, bullets)
+  {
+    if (!dialog.entry)
+      dialog_show();
+    password_requested = true;
+  }
+
+fun display_normal_callback ()
+  {
+    if (password_requested)
+      {
+        # password resolved: stop the pre animation, play the post once
+        password_requested = false;
+        post_active = true;
+        post.index = 0;
+        if (dialog.entry)
+          {
+            dialog.entry.SetOpacity(0);
+            dialog.lock.SetOpacity(0);
+          }
+      }
+  }
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+# ---- animation frames (loaded after the callbacks are registered) ----
 pre.frames[1] = Image("animation-0001.png");
 pre.frames[2] = Image("animation-0002.png");
 pre.frames[3] = Image("animation-0003.png");
@@ -32,7 +106,6 @@ pre.sprite = Sprite(pre.frames[1]);
 pre.sprite.SetPosition(0, 0, 1);
 pre.index = 1;
 
-# Post animation frames
 post.frames[1] = Image("end-animation-0001.png");
 post.frames[2] = Image("end-animation-0002.png");
 post.frames[3] = Image("end-animation-0003.png");
@@ -96,113 +169,3 @@ post.frames[60] = Image("end-animation-0060.png");
 post.sprite = Sprite();
 post.sprite.SetPosition(0, 0, 1);
 post.index = 0;
-
-# Password dialog (bottom, no keyboard)
-fun dialog_setup ()
-  {
-    local.cx;
-    local.cy;
-
-    cx = Window.GetX() + Window.GetWidth() / 2;
-    cy = Window.GetY() + Window.GetHeight() - 150;
-
-    dialog.prompt_text = Image.Text("Enter encryption password.", 1, 1, 1);
-    dialog.prompt = Sprite(dialog.prompt_text);
-    dialog.prompt.SetPosition(cx - dialog.prompt_text.GetWidth() / 2, cy - 70, 10000);
-
-    dialog.lock_image = Image("lock.png");
-    dialog.entry_image = Image("entry.png");
-    dialog.bullet_image = Image("bullet.png");
-
-    dialog.lock = Sprite(dialog.lock_image);
-    dialog.entry = Sprite(dialog.entry_image);
-    dialog.entry_x = cx - dialog.entry_image.GetWidth() / 2;
-    dialog.entry_y = cy;
-    dialog.lock.SetPosition(dialog.entry_x - dialog.lock_image.GetWidth(), cy, 10001);
-    dialog.entry.SetPosition(dialog.entry_x, cy, 10001);
-  }
-
-fun dialog_hide ()
-  {
-    dialog.prompt.SetOpacity(0);
-    dialog.lock.SetOpacity(0);
-    dialog.entry.SetOpacity(0);
-    for (index = 0; dialog.bullet[index]; index++)
-      dialog.bullet[index].SetOpacity(0);
-  }
-
-password_requested = false;
-post_active = false;
-pre.ticks = 0;
-post.ticks = 0;
-
-fun refresh_callback ()
-  {
-    # pre animation loops while waiting (until the post animation starts).
-    # The plugin refresh runs at 50fps; advance one frame every 3 ticks to
-    # replay the source video (15fps) at its original speed.
-    if (!post_active)
-      {
-        pre.ticks++;
-        if (pre.ticks >= 3)
-          {
-            pre.ticks = 0;
-            pre.index++;
-            if (pre.index > 15)
-              pre.index = 1;
-            pre.sprite.SetImage(pre.frames[pre.index]);
-          }
-      }
-
-    # post animation plays once after the password
-    if (post_active)
-      {
-        post.ticks++;
-        if (post.ticks >= 3)
-          {
-            post.ticks = 0;
-            post.index++;
-            if (post.index > 60)
-              post_active = false;
-            else
-              post.sprite.SetImage(post.frames[post.index]);
-          }
-      }
-  }
-
-fun display_password_callback (prompt, bullets)
-  {
-    # show the dialog right away (never leave the prompt waiting on the refresh)
-    if (!dialog.prompt)
-      dialog_setup();
-    password_requested = true;
-
-    for (index = 0; dialog.bullet[index] || index < bullets; index++)
-      {
-        if (!dialog.bullet[index])
-          {
-            dialog.bullet[index] = Sprite(dialog.bullet_image);
-            dialog.bullet[index].SetPosition(dialog.entry_x + index * dialog.bullet_image.GetWidth(), dialog.entry_y + dialog.entry_image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2, 10002);
-          }
-        if (index < bullets)
-          dialog.bullet[index].SetOpacity(1);
-        else
-          dialog.bullet[index].SetOpacity(0);
-      }
-  }
-
-fun display_normal_callback ()
-  {
-    if (password_requested)
-      {
-        # password resolved: stop the pre animation, play the post once
-        password_requested = false;
-        post_active = true;
-        post.index = 0;
-        dialog_hide();
-      }
-  }
-
-Plymouth.SetRefreshFunction(refresh_callback);
-Plymouth.SetDisplayNormalFunction(display_normal_callback);
-Plymouth.SetDisplayPasswordFunction(display_password_callback);
